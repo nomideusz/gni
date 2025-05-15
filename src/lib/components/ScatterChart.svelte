@@ -746,11 +746,11 @@
               <!-- Circular base for the arrow with a contrasting outline -->
               <circle cx="0" cy="0" r="3" fill="#7dd3fc" stroke="#fff" stroke-width="1" />
               
-              <!-- Display wind speed to the right side of the arrow -->
+              <!-- Display wind speed to the side of the arrow -->
               <!-- Add a background rectangle for better contrast -->
               <rect 
-                x={getArrowLength(windArrow.length) / 2 - 25} 
-                y="-20"
+                x={getArrowLength(windArrow.length) + 10} 
+                y="-12"
                 width="50"
                 height="18"
                 rx="4"
@@ -759,8 +759,8 @@
                 stroke-width="1" />
                 
               <text 
-                x={getArrowLength(windArrow.length) / 2} 
-                y="-8"
+                x={getArrowLength(windArrow.length) + 35} 
+                y="0"
                 text-anchor="middle"
                 class="wind-label">
                 {windArrow.length.toFixed(1)} m/s
