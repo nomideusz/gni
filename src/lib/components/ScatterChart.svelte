@@ -42,7 +42,7 @@
       showWindArrow = false,
       windNColumn = 'WIND_N',
       windEColumn = 'WIND_E',
-      arrowColor = '#555555',
+      arrowColor = '#7dd3fc',
       arrowSize = 30,
       // External hover state for chart synchronization
       hoveredPoint: externalHoveredPoint = null
@@ -738,26 +738,26 @@
             <g class="wind-arrow" transform={`translate(${mousePosition.x}, ${mousePosition.y + getDotSize(activeHoveredPoint) * 2 + 5})`}>
               <path 
                 d={createArrowPath(0, 0, windArrow.angle, getArrowLength(windArrow.length))}
-                stroke={arrowColor}
-                stroke-width="2"
-                stroke-opacity="0.9"
+                stroke="#7dd3fc"
+                stroke-width="2.5"
+                stroke-opacity="1"
                 fill="none" />
               
               <!-- Circular base for the arrow with a contrasting outline -->
-              <circle cx="0" cy="0" r="3" fill={arrowColor} stroke="#fff" stroke-width="1" />
+              <circle cx="0" cy="0" r="3" fill="#7dd3fc" stroke="#fff" stroke-width="1" />
               
               <!-- Display wind speed to the right side of the arrow -->
-              <text 
-                x={getArrowLength(windArrow.length) / 2} 
-                y="-8"
-                text-anchor="middle"
-                class="wind-label"
-                stroke="#ffffff"
-                stroke-width="3"
-                stroke-opacity="0.8"
-                paint-order="stroke">
-                {windArrow.length.toFixed(1)} m/s
-              </text>
+              <!-- Add a background rectangle for better contrast -->
+              <rect 
+                x={getArrowLength(windArrow.length) / 2 - 25} 
+                y="-20"
+                width="50"
+                height="18"
+                rx="4"
+                fill="rgba(22, 22, 42, 0.85)"
+                stroke="#3a3a4f"
+                stroke-width="1" />
+                
               <text 
                 x={getArrowLength(windArrow.length) / 2} 
                 y="-8"
@@ -986,8 +986,12 @@
   
   .wind-label {
     font-size: 10px;
-    fill: #444;
+    fill: #e2e8f0;  /* Changed from #444 to light color for dark background */
     font-weight: 600;
+    stroke: #1e1e2e;  /* Dark stroke matching background */
+    stroke-width: 2.5;  /* Increased from default */
+    stroke-opacity: 0.9;  /* More opaque */
+    paint-order: stroke;  /* Ensure stroke is behind text */
   }
 </style>
   
