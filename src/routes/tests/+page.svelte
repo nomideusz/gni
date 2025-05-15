@@ -14,7 +14,7 @@
 	import { dataFiles, type DataFile } from '$lib/data/testData';
 	
     // Set default data file path
-    let dataFilePath = $state('/src/lib/data/test1_12-05-2025-07-57-07_C_Analytics.dat');
+    let dataFilePath = $state('/data/test1_12-05-2025-07-57-07_C_Analytics.dat');
     
     // Define data structure for DAT files
     interface DataItem {
