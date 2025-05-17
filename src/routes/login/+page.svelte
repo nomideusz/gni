@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { authState } from '$lib/auth';
-	import Loader from 'lucide-svelte/icons/loader';
-	import '$lib/styles/button-styles.css';
-	
+	import Loader from 'lucide-svelte/icons/loader';	
 	// Define the type for our form data
 	type LoginForm = {
 		email?: string;
