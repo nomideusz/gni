@@ -1,49 +1,46 @@
-import { redirect, fail } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
+import { authFSM } from '$lib/auth';
 
 export const actions: Actions = {
-    login: async ({ request, locals }) => {
-        // Get form data
-        const data = await request.formData();
-        const email = data.get('email')?.toString();
-        const password = data.get('password')?.toString();
-
-        // Validate form data
-        if (!email || !password) {
-            console.error('Login error: Email or password missing');
-            return fail(400, {
-                message: 'Email and password are required'
-            });
-        }
-
+    default: async ({ request, locals }) => {
+        // Extract form data
+        const formData = await request.formData();
+        const data = Object.fromEntries(formData.entries());
+        const email = data.email as string;
+        
         try {
-            console.log('Attempting login with PocketBase URL:', process.env.POCKETBASE_URL);
-            
-            // Check if PocketBase instance exists
+            // Try to authenticate
             if (!locals.pb) {
-                console.error('PocketBase instance is missing in locals');
-                return fail(500, {
-                    message: 'Internal server error: PocketBase not initialized'
-                });
+                return { error: 'Authentication service unavailable', email };
             }
             
-            // Login with PocketBase
-            await locals.pb.collection('users').authWithPassword(email, password);
+            // Trigger FSM login event
+            authFSM.send('login');
             
-            // Log successful login
-            console.log('Login successful, redirecting to homepage');
-        } catch (err: any) {
-            // Log detailed error
-            console.error('Login failed with error:', err);
+            // Attempt authentication
+            await locals.pb.collection('users').authWithPassword(
+                email,
+                data.password as string
+            );
             
-            // Return error message on login failure
-            return fail(400, {
-                message: err.message || 'Login failed'
-            });
+            // The FSM will handle transition to loggedIn after animation
+            return { success: true };
+        } catch (error) {
+            console.error('Login error:', error);
+            
+            // If login failed, manually transition to loggedOut
+            if (authFSM.current === 'loggingIn') {
+                authFSM.send('finishTransition');
+                authFSM.send('logout');
+            }
+            
+            return { error: 'Invalid email or password', email };
+        } finally {
+            // Redirect to home on successful login or stay on login page on error
+            if (locals.pb?.authStore.isValid) {
+                throw redirect(303, '/');
+            }
         }
-        
-        // If we get here, login was successful, so redirect
-        // This is outside the try/catch to avoid catching the redirect
-        throw redirect(303, '/');
     }
 }; 

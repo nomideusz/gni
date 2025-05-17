@@ -1,24 +1,35 @@
-import { Context } from "runed";
-import type { Language } from './i18n';
-import { language as languageStore } from './i18n';
+import { Context } from 'runed';
+import { writable, type Writable } from 'svelte/store';
+import { language, type Language } from './i18n';
 
-// Create language context
-export const languageContext = new Context<Language>("language");
+// Create a writable store for language
+export const languageStore: Writable<Language> = writable('en');
 
-// Helper functions to switch language
-export function switchLanguage(newLang: Language): void {
-  languageStore.set(newLang);
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('language', newLang);
-  }
+// Language context using the store
+export const languageContext = new Context<typeof languageStore>("language");
+
+// Function to switch language and update the store
+export function switchLanguage(lang: Language) {
+    language.set(lang);
+    languageStore.set(lang);
 }
 
-export function toggleLanguage(): void {
-  languageStore.update(current => {
-    const newLang = current === 'en' ? 'pl' : 'en';
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('language', newLang);
-    }
-    return newLang;
-  });
-} 
+// Subscribe to the language store to keep it synced with the language value
+language.subscribe(value => {
+    languageStore.set(value);
+});
+
+// Create navigation context and store
+export interface NavigationState {
+    pathname: string;
+    isNavigating: boolean;
+    shouldShowLoader: boolean;
+}
+
+export const navigationStore: Writable<NavigationState> = writable({ 
+    pathname: '/',
+    isNavigating: false,
+    shouldShowLoader: false
+});
+
+export const navigationContext = new Context<typeof navigationStore>("navigation"); 

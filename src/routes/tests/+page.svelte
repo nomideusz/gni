@@ -27,11 +27,12 @@
     
     // Use resource for reactive data fetching
     const dataResource = resource(
-        () => dataFilePath,
-        async (filePath, prevPath, { signal }) => {
-            console.log(`Fetching data from: ${filePath}`);
+        () => ({ path: dataFilePath }),
+        async (source, prevSource, { signal }) => {
+            console.log(`Fetching data from: ${source.path}`);
             
-            const response = await fetch(filePath, { signal });
+            // Handle server file
+            const response = await fetch(source.path, { signal });
             
             if (!response.ok) {
                 throw new Error(`Failed to load data file: ${response.status} ${response.statusText}`);
@@ -43,37 +44,42 @@
                 throw new Error('File is empty or contains no data');
             }
             
-            const lines = text.trim().split('\n');
-            
-            if (lines.length < 2) {
-                throw new Error('File does not contain enough data (needs header + at least one row)');
-            }
-            
-            // Parse header row to get column names
-            const columns = lines[0].trim().split(/\s+/);
-            
-            // Parse data rows
-            const parsedData = lines.slice(1).map(line => {
-                const values = line.trim().split(/\s+/);
-                const item: any = {};
-                
-                // Map each value to its column name
-                columns.forEach((col, index) => {
-                    item[col] = index < values.length ? parseFloat(values[index]) : null;
-                });
-                
-                return item as DataItem;
-            });
-            
-            return {
-                data: parsedData,
-                columns: columns
-            };
+            return parseDataText(text);
         },
         {
             initialValue: { data: [], columns: [] }
         }
     );
+    
+    // Parse DAT file contents
+    function parseDataText(text: string) {
+        const lines = text.trim().split('\n');
+        
+        if (lines.length < 2) {
+            throw new Error('File does not contain enough data (needs header + at least one row)');
+        }
+        
+        // Parse header row to get column names
+        const columns = lines[0].trim().split(/\s+/);
+        
+        // Parse data rows
+        const parsedData = lines.slice(1).map(line => {
+            const values = line.trim().split(/\s+/);
+            const item: any = {};
+            
+            // Map each value to its column name
+            columns.forEach((col, index) => {
+                item[col] = index < values.length ? parseFloat(values[index]) : null;
+            });
+            
+            return item as DataItem;
+        });
+        
+        return {
+            data: parsedData,
+            columns: columns
+        };
+    }
     
     // Create scaled data for C2H6
     let scaledDataResource = $derived({
@@ -205,21 +211,23 @@
 
 <div class="tests-container">
 	<div class="page-header">
-		<!-- <h1>{t('tests.title', $language)}</h1>
-		<p class="description">{t('tests.description', $language)}</p> -->
-		
-		<!-- Add the data selector component -->
-		<div class="data-selector-wrapper">
-			<DataSelector />
+		<div>
+			<h1>Data Visualizations</h1>
+			<p class="description">Interactive charts and visualizations for survey data</p>
 		</div>
 		
-		<!-- Display loading or error state -->
-		{#if dataResource.loading}
-			<div class="loading-state">Loading data file... Please wait.</div>
-		{:else if dataResource.error}
-			<div class="error-state">Error: {dataResource.error.message}</div>
-		{/if}
+		<div class="page-actions">
+			<DataSelector />
+			<a href="/survey-viewer" class="btn btn-primary survey-btn">Survey Viewer</a>
+		</div>
 	</div>
+		
+	<!-- Display loading or error state -->
+	{#if dataResource.loading}
+		<div class="loading-state">Loading data file... Please wait.</div>
+	{:else if dataResource.error}
+		<div class="error-state">Error: {dataResource.error.message}</div>
+	{/if}
 
 	<!-- Vertical split for top and bottom sections -->
 	<div class="main-split-container">
@@ -243,7 +251,7 @@
 									<h2>{t('tests.chart.methaneOnly', $language)}</h2>
 									<div class="chart-wrapper">
 										<LineChart 
-											dataFile={dataFilePath}
+											dataSource={dataResource.current.data}
 											yColumn="CH4"
 											xAxisLabel={t('tests.chart.timeLabel', $language)}
 											yAxisLabel="ppm"
@@ -274,7 +282,7 @@
 									<div class="chart-wrapper">
 										<!-- Scatter Chart with integrated Wind Rose -->
 										<ScatterChart 
-											dataFile={dataFilePath}
+											dataSource={dataResource.current.data}
 											xColumn="GPS_ABS_LONG"
 											yColumn="GPS_ABS_LAT"
 											xAxisLabel={t('tests.chart.longitudeLabel', $language)} 
@@ -503,41 +511,21 @@
 		color: #e2e8f0;  /* Lighter text for dark background */
 	}
 
-	.page-header {
-		margin-bottom: 0.75rem;
-	}
-
-	.page-header h1 {
-		margin: 0 0 0.25rem 0;
-		font-size: 1.8rem;
-		font-weight: 600;
-		color: #e2e8f0;  /* Light text color for dark background */
-	}
-
-	.description {
-		color: #9ca3af;  /* Muted gray text */
-		font-size: 1rem;
-		margin: 0 0 0.75rem 0;
-	}
-	
-	.data-selector-wrapper {
-		margin-top: 0.75rem;
-	}
-	
+	/* Loading and error states */
 	.loading-state, .error-state {
-		margin-top: 0.5rem;
-		padding: 0.5rem;
-		border-radius: 0.25rem;
-		font-size: 0.875rem;
+		padding: 1rem;
+		margin-bottom: 1rem;
+		border-radius: 0.375rem;
+		text-align: center;
 	}
 	
 	.loading-state {
-		background-color: #1e3a5f;  /* Darker blue background */
-		color: #7dd3fc;  /* Light blue text */
+		background-color: rgba(59, 130, 246, 0.1);  /* Blue with opacity */
+		color: #93c5fd;  /* Light blue text */
 	}
 	
 	.error-state {
-		background-color: #4c2333;  /* Darker red background */
+		background-color: rgba(239, 68, 68, 0.1);  /* Red with opacity */
 		color: #fca5a5;  /* Light red text */
 	}
 
@@ -936,5 +924,52 @@
 		font-size: 0.8rem;
 		line-height: 1.4;
 		color: #9ca3af;  /* Muted gray text */
+	}
+
+	/* Add styles for the new header structure */
+	.header-content {
+		margin-bottom: 1rem;
+	}
+	
+	.header-content h1 {
+		margin: 0 0 0.5rem 0;
+		font-size: 1.8rem;
+		font-weight: 600;
+		color: #e2e8f0;
+	}
+	
+	.header-content .description {
+		margin: 0;
+		color: #9ca3af;
+	}
+	
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+	
+	.survey-btn {
+		padding: 0.4rem 0.8rem;
+		font-size: 0.85rem;
+		white-space: nowrap;
+		min-width: auto;
+	}
+	
+	.nav-link {
+		display: inline-block;
+		padding: 0.4rem 0.8rem;
+		background-color: #2563eb;
+		color: white;
+		text-decoration: none;
+		border-radius: 0.375rem;
+		font-size: 0.85rem;
+		transition: background-color 0.2s;
+		white-space: nowrap;
+	}
+	
+	.nav-link:hover {
+		background-color: #1d4ed8;
 	}
 </style> 

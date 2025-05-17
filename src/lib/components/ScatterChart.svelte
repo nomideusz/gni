@@ -14,6 +14,7 @@
     // Props
     const { 
       dataFile,
+      dataSource,
       xColumn = 'WIND_E', 
       yColumn = 'CH4',
       title = '',
@@ -47,7 +48,8 @@
       // External hover state for chart synchronization
       hoveredPoint: externalHoveredPoint = null
     } = $props<{
-      dataFile: string;
+      dataFile?: string;
+      dataSource?: DataItem[];
       xColumn?: string;
       yColumn?: string;
       title?: string;
@@ -116,33 +118,86 @@
         : data
     );
   
-    // Function to parse DAT file
-    async function loadDatFile(filePath: string) {
-      debugInfo = `Attempting to load: ${filePath}`;
-      console.log(`Attempting to load data file: ${filePath}`);
+    // Initialize component
+    onMount(() => {
+      // Create a resize observer to detect container size changes
+      const resizeObserver = new ResizeObserver(entries => {
+        for (const entry of entries) {
+          // Update width and height
+          width = entry.contentRect.width;
+          height = entry.contentRect.height;
+        }
+      });
+      
+      // Start observing the container element
+      if (containerElement) {
+        resizeObserver.observe(containerElement);
+      }
+      
+      // Initialize with data
+      console.log(`ScatterChart mounted, dataSource:`, dataSource ? `${dataSource.length} items` : 'none', `dataFile:`, dataFile || 'none');
+      debugInfo = `Component mounted, checking data source`;
+      
+      // If dataSource is provided directly, use it
+      if (dataSource && dataSource.length > 0) {
+        data = dataSource;
+        columns = Object.keys(dataSource[0] || {});
+        loading = false;
+        debugInfo = `Using provided dataSource with ${data.length} items`;
+      }
+      // Otherwise try to load from file
+      else if (dataFile) {
+        loadDataFromFile(dataFile);
+      } else {
+        error = 'No data source provided';
+        loading = false;
+        debugInfo = 'No data source or file provided';
+      }
+      
+      // Cleanup: stop observing on component destruction
+      return () => {
+        resizeObserver.disconnect();
+      };
+    });
+    
+    // Listen for changes in dataSource
+    $effect(() => {
+      if (dataSource && dataSource.length > 0) {
+        data = dataSource;
+        columns = Object.keys(dataSource[0] || {});
+        loading = false;
+        error = null;
+        debugInfo = `Data updated from dataSource prop, ${data.length} items`;
+      }
+    });
+    
+    // Listen for changes in dataFile
+    $effect(() => {
+      if (dataFile && !dataSource) {
+        loadDataFromFile(dataFile);
+      }
+    });
+  
+    // Function to load data from file
+    async function loadDataFromFile(filePath: string) {
+      loading = true;
+      error = null;
+      debugInfo = `Loading file: ${filePath}`;
       
       try {
-        loading = true;
-        error = null;
-        
         const response = await fetch(filePath);
-        debugInfo = `Fetch response status: ${response.status}`;
-        console.log(`Fetch response:`, response);
         
         if (!response.ok) {
           throw new Error(`Failed to load data file: ${response.status} ${response.statusText}`);
         }
         
         const text = await response.text();
-        debugInfo = `Data received: ${text.substring(0, 100)}...`;
-        console.log(`Data length: ${text.length} characters`);
         
         if (!text || text.trim() === '') {
           throw new Error('File is empty or contains no data');
         }
         
         const lines = text.trim().split('\n');
-        console.log(`Parsed ${lines.length} lines of data`);
         
         if (lines.length < 2) {
           throw new Error('File does not contain enough data (needs header + at least one row)');
@@ -150,11 +205,9 @@
         
         // Parse header row to get column names
         columns = lines[0].trim().split(/\s+/);
-        debugInfo = `Columns found: ${columns.join(', ')}`;
-        console.log(`Columns found:`, columns);
         
         // Parse data rows
-        const parsedData = lines.slice(1).map(line => {
+        data = lines.slice(1).map(line => {
           const values = line.trim().split(/\s+/);
           const item: any = {};
           
@@ -166,9 +219,7 @@
           return item as DataItem;
         });
         
-        data = parsedData;
-        debugInfo = `Processed ${data.length} data points`;
-        console.log(`Successfully processed ${data.length} data points`);
+        debugInfo = `Loaded ${data.length} data points`;
         loading = false;
       } catch (err) {
         console.error('Error loading data file:', err);
@@ -177,40 +228,6 @@
         loading = false;
       }
     }
-    
-    onMount(() => {
-      // Create a resize observer to detect container size changes
-      const resizeObserver = new ResizeObserver(entries => {
-        for (const entry of entries) {
-          if (entry.target === containerElement) {
-            width = entry.contentRect.width;
-            height = entry.contentRect.height;
-            console.log(`ScatterChart dimensions updated to: ${width}x${height}`);
-          }
-        }
-      });
-      
-      // Start observing the container for size changes
-      if (containerElement) {
-        resizeObserver.observe(containerElement);
-      }
-      
-      // Load data file
-      console.log(`Component mounted, dataFile:`, dataFile);
-      debugInfo = `Component mounted, dataFile: ${dataFile || 'none provided'}`;
-      
-      if (dataFile) {
-        loadDatFile(dataFile);
-      } else {
-        error = 'No data file provided';
-        loading = false;
-      }
-      
-      // Cleanup observer on component unmount
-      return () => {
-        resizeObserver.disconnect();
-      };
-    });
   
     // Log dimension changes to help debug
     $effect(() => {

@@ -5,7 +5,14 @@ import { currentUser, pb } from '$lib';
 export const load: LayoutLoad = async ({ data }) => {
   // Update the currentUser store with the user data from the server
   if (browser && data.user) {
-    currentUser.set(data.user);
+    // Add required RecordModel properties to user object
+    const userWithRequiredProps = {
+      ...data.user,
+      collectionId: 'users',
+      collectionName: 'users',
+      expand: {}
+    };
+    currentUser.set(userWithRequiredProps);
     
     // Sync client-side PocketBase auth store with server
     if (pb && data.user) {
@@ -26,7 +33,9 @@ export const load: LayoutLoad = async ({ data }) => {
     }
   }
   
+  // Pass through all server data including isAuthenticated flag
   return {
-    user: data.user
+    user: data.user,
+    isAuthenticated: data.isAuthenticated
   };
 }; 

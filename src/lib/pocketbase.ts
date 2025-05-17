@@ -21,16 +21,27 @@ export const initialUserValue = browser ? pb?.authStore.record : null;
 // Create a writable store for currentUser
 export const currentUser = writable(initialUserValue);
 
-// We'll pass this function to components to update user state when auth changes
+// Enhanced version to properly handle auth state changes
 export function setupAuthListener(setCurrentUser: (user: any) => void) {
   if (browser && pb) {
-    pb.authStore.onChange(() => {
-      setCurrentUser(pb.authStore.record);
-      currentUser.set(pb.authStore.record);
+    // Set the initial state immediately
+    console.log('Setting up auth listener, initial auth state:', pb.authStore.isValid ? 'Logged in' : 'Logged out');
+    
+    // Immediate call to set the current user
+    setCurrentUser(pb.authStore.record);
+    currentUser.set(pb.authStore.record);
+    
+    // Set up the onChange listener
+    const unsubscribe = pb.authStore.onChange((token, model) => {
+      console.log('Auth store changed:', model ? 'User authenticated' : 'No user', 'Token valid:', !!token);
+      setCurrentUser(model);
+      currentUser.set(model);
     });
+    
+    // Return cleanup function
     return () => {
-      // Return cleanup function
-      pb.authStore.onChange(() => {});
+      console.log('Cleaning up auth listener');
+      unsubscribe();
     };
   }
   return () => {};
@@ -118,4 +129,120 @@ export const gasReportsApi = {
 export function formatDate(dateString: string): string {
   if (!dateString) return '';
   return new Date(dateString).toLocaleDateString();
-} 
+}
+
+// Format date with time for display
+export function formatDateTime(dateString: string): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return `${date.toLocaleDateString()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+}
+
+// ========= Reports API =========
+
+// Interface for API response
+interface ApiResponse<T> {
+  reports: T[];
+  stats: {
+    totalReports: number;
+    calculationReportsCount: number;
+    reportCounts: {
+      all: number;
+      withSurveys: number;
+      final: number;
+      finalWithSurveys: number;
+    };
+    [key: string]: any;
+  };
+  meta: {
+    page: number;
+    totalPages: number;
+    totalItems: number;
+    perPage: number;
+    calculationReportsCount?: number;
+    note?: string;
+  };
+}
+
+// API functions for reports using the server endpoint
+export const reportsApi = {
+  /**
+   * Get all reports
+   * @param options Optional query parameters
+   * @returns Promise with array of reports and metadata
+   */
+  getAll: async (options: {
+    limit?: number;
+    page?: number;
+    sort?: string;
+    finalOnly?: boolean;
+    includeUnitDesc?: boolean;
+    withSurveys?: boolean;
+  } = {}): Promise<ApiResponse<any>> => {
+    if (!browser) {
+      console.warn('Reports API not available on server side');
+      return { 
+        reports: [], 
+        stats: {
+          totalReports: 0,
+          calculationReportsCount: 0,
+          reportCounts: {
+            all: 0,
+            withSurveys: 0,
+            final: 0,
+            finalWithSurveys: 0
+          }
+        },
+        meta: { 
+          page: 1, 
+          totalPages: 0, 
+          totalItems: 0, 
+          perPage: 0 
+        } 
+      };
+    }
+    
+    try {
+      // Build URL with query parameters
+      const url = new URL('/api/v1/reports', window.location.origin);
+      
+      if (options.limit) url.searchParams.set('limit', String(options.limit));
+      if (options.page) url.searchParams.set('page', String(options.page));
+      if (options.sort) url.searchParams.set('sort', options.sort);
+      if (options.finalOnly !== undefined) url.searchParams.set('finalOnly', String(options.finalOnly));
+      if (options.includeUnitDesc) url.searchParams.set('includeUnitDesc', String(options.includeUnitDesc));
+      if (options.withSurveys !== undefined) url.searchParams.set('withSurveys', String(options.withSurveys));
+      
+      const response = await fetch(url.toString());
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Get reports with a specific filter
+   * @param filter Filter to apply
+   * @param options Optional query parameters
+   * @returns Promise with filtered reports and metadata
+   */
+  getFiltered: async (filter: string, options: {
+    limit?: number;
+    page?: number;
+    sort?: string;
+    includeUnitDesc?: boolean;
+    withSurveys?: boolean;
+  } = {}): Promise<ApiResponse<any>> => {
+    // For client-side filtering, we could implement this by 
+    // calling the server endpoint and then filtering the results
+    // This is a placeholder for future implementation
+    console.warn('Client-side filtering not yet implemented');
+    return reportsApi.getAll(options);
+  }
+}; 

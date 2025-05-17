@@ -20,6 +20,7 @@
     // Props
     const { 
       dataFile,
+      dataSource,
       yColumn = 'CH4', 
       title = '', 
       color = '#fcd34d',
@@ -39,7 +40,8 @@
       // External hover state for chart synchronization
       hoveredPoint: externalHoveredPoint = null
     } = $props<{
-      dataFile: string;
+      dataFile?: string;
+      dataSource?: DataItem[];
       yColumn?: string;
       title?: string;
       color?: string;
@@ -102,15 +104,24 @@
         resizeObserver.observe(containerElement);
       }
       
-      // Load data on mount
-      console.log(`Component mounted, dataFile:`, dataFile);
-      debugInfo = `Component mounted, dataFile: ${dataFile || 'none provided'}`;
+      // Initialize with data
+      console.log(`Component mounted, dataSource:`, dataSource ? `${dataSource.length} items` : 'none', `dataFile:`, dataFile || 'none');
+      debugInfo = `Component mounted, checking data source`;
       
-      if (dataFile) {
+      // If dataSource is provided directly, use it
+      if (dataSource && dataSource.length > 0) {
+        data = dataSource;
+        columns = Object.keys(dataSource[0] || {});
+        loading = false;
+        debugInfo = `Using provided dataSource with ${data.length} items`;
+      }
+      // Otherwise try to load from file
+      else if (dataFile) {
         loadDatFile(dataFile);
       } else {
-        error = 'No data file provided';
+        error = 'No data source provided';
         loading = false;
+        debugInfo = 'No data source or file provided';
       }
       
       // Cleanup observer on component unmount
@@ -198,6 +209,24 @@
         loading = false;
       }
     }
+    
+    // Effect to update data when dataSource changes
+    $effect(() => {
+      if (dataSource && dataSource.length > 0) {
+        data = dataSource;
+        columns = Object.keys(dataSource[0] || {});
+        loading = false;
+        error = null;
+        debugInfo = `Data updated from dataSource prop, ${data.length} items`;
+      }
+    });
+    
+    // Effect to update data when dataFile changes
+    $effect(() => {
+      if (dataFile && !dataSource) {
+        loadDatFile(dataFile);
+      }
+    });
     
     // Log dimension changes to help debug
     $effect(() => {

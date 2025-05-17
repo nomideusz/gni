@@ -19,7 +19,7 @@ export interface TranslationContent {
     reports: string;
     users: string;
     settings: string;
-    recent: string;
+    tools: string;
   };
   dashboard: {
     overview: string;
@@ -138,7 +138,7 @@ export const translations: Translations = {
       reports: 'Reports',
       users: 'Users',
       settings: 'Settings',
-      recent: 'Recent'
+      tools: 'Tools'
     },
     
     // Dashboard
@@ -244,10 +244,7 @@ export const translations: Translations = {
     },
     
     // Footer
-    footer: {
-      copyright: '© {year} PSG Dashboard',
-      version: 'Version 1.0.0'
-    }
+        footer: {      copyright: '© {year} PSG Dashboard',      version: 'Version 0.2.0'    }
   },
   
   pl: {
@@ -263,7 +260,7 @@ export const translations: Translations = {
       reports: 'Raporty',
       users: 'Użytkownicy',
       settings: 'Ustawienia',
-      recent: 'Ostatnie'
+      tools: 'Narzędzia'
     },
     
     // Dashboard

@@ -1,0 +1,423 @@
+/* LAYOUT.CSS */
+/* Combined layout and navigation styles */
+
+/*---------------------------------------*/
+/* LAYOUT STYLES                         */
+/*---------------------------------------*/
+
+/* Main layout container */
+.layout {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.layout__content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Header styling */
+.header {
+    padding: 0.6rem 1.2rem;
+    background-color: var(--bg-tertiary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 3.5rem;
+}
+
+/* Logo and brand */
+.header__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.header__logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ff5722;
+    color: white;
+    padding: 0.4rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.header__brand-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.header__brand-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.header__brand-description {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    line-height: 1.2;
+}
+
+/* Header controls area */
+.header__controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header__login-area {
+    min-width: 200px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.header__loading {
+    color: var(--text-secondary);
+}
+
+/* Main content area */
+.main {
+    flex: 1;
+    overflow: auto;
+    background-color: var(--bg-primary);
+    scrollbar-width: thin;
+    -ms-overflow-style: auto;
+}
+
+.main::-webkit-scrollbar {
+    width: 8px;
+}
+
+.main::-webkit-scrollbar-thumb {
+    background-color: var(--border-primary);
+    border-radius: 4px;
+}
+
+.main::-webkit-scrollbar-track {
+    background-color: var(--bg-primary);
+}
+
+/* Footer styling */
+.footer {
+    background-color: var(--bg-tertiary);
+    border-top: 1px solid var(--border-primary);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    z-index: 10;
+}
+
+.footer__content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer__text {
+    margin: 0;
+}
+
+/* Language switcher */
+.lang-switcher {
+    display: flex;
+    gap: 0.3rem;
+    border-left: 1px solid var(--border-primary);
+    padding-left: 0.8rem;
+}
+
+.lang-switcher__button {
+    background: none;
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+}
+
+.lang-switcher__button:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.lang-switcher__button--active {
+    background-color: #0f3460;
+    border-color: var(--accent-primary);
+    color: var(--accent-secondary);
+    font-weight: 500;
+}
+
+/* Auth section container */
+.auth-section {
+    display: flex;
+    align-items: center;
+}
+
+/* Auth element blocks */
+.auth__user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+    border: none;
+}
+
+.auth__user-info form {
+    margin: 0;
+}
+
+.auth__welcome-text {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-right: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+.auth__state-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Navigation loader */
+.navigation-loader {
+    position: fixed;
+    top: 3.5rem; /* Below header */
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* Minimal variant for the loader - more subtle design */
+.navigation-loader--minimal {
+    top: auto;
+    bottom: 1rem;
+    right: 1rem;
+    left: auto;
+    justify-content: flex-end;
+}
+
+.navigation-loader__spinner {
+    background-color: var(--accent-primary);
+    color: var(--bg-tertiary);
+    border-radius: 0 0 8px 8px;
+    padding: 0.5rem 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: pulse 1.5s infinite;
+}
+
+/* Minimal variant for the spinner */
+.navigation-loader--minimal .navigation-loader__spinner {
+    border-radius: 20px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+    background-color: rgba(56, 189, 248, 0.9); /* Semi-transparent */
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: subtle-pulse 2s infinite;
+}
+
+.navigation-loader__text {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.navigation-loader__spinner svg {
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.8;
+    }
+}
+
+/* More subtle pulsing for minimal variant */
+@keyframes subtle-pulse {
+    0% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Loading indicator for content areas */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    height: 100%;
+}
+
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.loading-bar {
+    width: 4px;
+    height: 24px;
+    background-color: var(--accent-primary);
+    border-radius: 2px;
+    animation: loading-bar-animation 1.2s ease-in-out infinite;
+}
+
+.loading-bar:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-bar:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes loading-bar-animation {
+    0% {
+        transform: scaleY(0.5);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scaleY(0.5);
+        opacity: 0.5;
+    }
+}
+
+.loading-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/*---------------------------------------*/
+/* NAVIGATION STYLES                     */
+/*---------------------------------------*/
+
+/* Navigation block */
+.nav {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+    width: 280px;
+    height: 100%;
+    padding: 1.5rem 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    -ms-overflow-style: auto;
+}
+
+.nav::-webkit-scrollbar {
+    width: 8px;
+}
+
+.nav::-webkit-scrollbar-thumb {
+    background-color: var(--border-primary);
+    border-radius: 4px;
+}
+
+.nav::-webkit-scrollbar-track {
+    background-color: var(--bg-secondary);
+}
+
+.nav__section {
+    margin-bottom: 2rem;
+    padding: 0 1.5rem;
+}
+
+.nav__heading {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+}
+
+.nav__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav__item {
+    margin-bottom: 0.5rem;
+}
+
+.nav__item--active .nav__link {
+    background: var(--accent-primary);
+    color: var(--bg-tertiary);
+}
+
+/* Note: .nav__link is defined in button-styles.css */
+
+.nav__text {
+    font-size: 0.9rem;
+}
+
+.nav__icon {
+    opacity: 0.8;
+    margin-right: 0.5rem;
+} 
