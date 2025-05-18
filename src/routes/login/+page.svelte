@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { authState } from '$lib/auth';
-	import Loader from 'lucide-svelte/icons/loader';	
+	import Loader from 'lucide-svelte/icons/loader';
+	import { t, language } from '$lib';
+	
 	// Define the type for our form data
 	type LoginForm = {
 		email?: string;
@@ -33,16 +35,16 @@
 		
 		// Email validation
 		if (!email) {
-			emailError = 'Email is required';
+			emailError = t('loginPage.validation.emailRequired', $language);
 			isValid = false;
 		} else if (!/^\S+@\S+\.\S+$/.test(email)) {
-			emailError = 'Please enter a valid email address';
+			emailError = t('loginPage.validation.emailInvalid', $language);
 			isValid = false;
 		}
 		
 		// Password validation
 		if (!password) {
-			passwordError = 'Password is required';
+			passwordError = t('loginPage.validation.passwordRequired', $language);
 			isValid = false;
 		}
 		
@@ -58,7 +60,7 @@
 
 <div class="fullscreen">
 	<div class="auth__card {isLoggingIn || manualLoading ? 'is-loading' : ''}">
-		<h1 class="auth__title">Login</h1>
+		<h1 class="auth__title">{t('loginPage.title', $language)}</h1>
 
 		{#if form?.error}
 			<div class="error">
@@ -97,18 +99,18 @@
 			class="form"
 		>
 			<div class="form__group">
-				<label for="email" class="form__label">Email</label>
+				<label for="email" class="form__label">{t('loginPage.email', $language)}</label>
 				<input
 					type="email"
 					id="email"
 					name="email"
 					bind:value={email}
 					class="form__input {emailError ? 'form__input--error' : ''}"
-					placeholder="your@email.com"
+					placeholder={t('loginPage.emailPlaceholder', $language)}
 					disabled={isLoggingIn || manualLoading}
 					onblur={() => {
-						if (!email) emailError = 'Email is required';
-						else if (!/^\S+@\S+\.\S+$/.test(email)) emailError = 'Please enter a valid email address';
+						if (!email) emailError = t('loginPage.validation.emailRequired', $language);
+						else if (!/^\S+@\S+\.\S+$/.test(email)) emailError = t('loginPage.validation.emailInvalid', $language);
 						else emailError = '';
 					}}
 				/>
@@ -118,17 +120,17 @@
 			</div>
 
 			<div class="form__group">
-				<label for="password" class="form__label">Password</label>
+				<label for="password" class="form__label">{t('loginPage.password', $language)}</label>
 				<input
 					type="password"
 					id="password"
 					name="password"
 					bind:value={password}
 					class="form__input {passwordError ? 'form__input--error' : ''}"
-					placeholder="Your password"
+					placeholder={t('loginPage.passwordPlaceholder', $language)}
 					disabled={isLoggingIn || manualLoading}
 					onblur={() => {
-						if (!password) passwordError = 'Password is required';
+						if (!password) passwordError = t('loginPage.validation.passwordRequired', $language);
 						else passwordError = '';
 					}}
 				/>
@@ -149,21 +151,21 @@
 			>
 				{#if isLoggingIn || manualLoading}
 					<span class="button__spinner"><Loader size={16} /></span>
-					<span>Logging in...</span>
+					<span>{t('loginPage.loggingIn', $language)}</span>
 				{:else}
-					Login
+					{t('loginPage.loginButton', $language)}
 				{/if}
 			</button>
 		</form>
 
 		<div class="links">
-			<a href="/forgot-password" class="links__item">Forgot password?</a>
+			<a href="/forgot-password" class="links__item">{t('loginPage.forgotPassword', $language)}</a>
 		</div>
 		
 		{#if isLoggingIn || manualLoading}
 			<div class="loader-container">
 				<Loader size={28} class="loader-icon" />
-				<span class="loader-text">Please wait...</span>
+				<span class="loader-text">{t('loginPage.pleaseWait', $language)}</span>
 			</div>
 		{/if}
 	</div>

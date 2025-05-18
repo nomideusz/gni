@@ -17,6 +17,7 @@
 	import { IsMounted } from 'runed';
 	import AuthStatus from './AuthStatus.svelte';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
+	import { APP_VERSION } from '$lib/version';
 	
 	interface LayoutData {
 		user: any;
@@ -303,7 +304,7 @@
 			<!-- Login button or logout button based on auth state -->
 			<div class="header__login-area">
 				{#if !isMounted.current}
-					<div class="header__loading">Loading...</div>
+					<div class="header__loading">{t('auth.loading', $language)}</div>
 				{:else}
 					<div class="auth-section">
 						<!-- Fix login button checks -->
@@ -314,9 +315,9 @@
 									<button type="submit" class="button button--logout" disabled={isLoggingOut}>
 										{#if isLoggingOut}
 											<span class="button__spinner"><Loader size={14} /></span>
-											<span>Logging out...</span>
+											<span>{t('auth.loggingOut', $language)}</span>
 										{:else}
-											<span>Logout</span>
+											<span>{t('auth.logout', $language)}</span>
 										{/if}
 									</button>
 								</form>
@@ -324,10 +325,10 @@
 						{:else if isAuthState(authState, 'loggingIn') || isAuthState(authState, 'loading')}
 							<span class="auth__state-indicator">
 								<span class="button__spinner"><Loader size={14} /></span>
-								Loading...
+								{t('auth.loading', $language)}
 							</span>
 						{:else}
-							<a href="/login" class="button button--login">Login</a>
+							<a href="/login" class="button button--login">{t('auth.login', $language)}</a>
 						{/if}
 					</div>
 				{/if}
@@ -392,9 +393,9 @@
 				<h3 class="nav__heading">{t('nav.tools', $language)}</h3>
 				<ul class="nav__list">
 					<li class="nav__item" class:nav__item--active={isActive('/survey-viewer')}>
-						<a href="/survey-viewer" class="nav__link" title="Survey Viewer">
+						<a href="/survey-viewer" class="nav__link" title="{t('tools.surveyViewer', $language)}">
 							<Database size={20} class="nav__icon" />
-							<span class="nav__text">Survey Viewer</span>
+							<span class="nav__text">{t('tools.surveyViewer', $language)}</span>
 						</a>
 					</li>
 				</ul>
@@ -410,7 +411,7 @@
 			<div class="navigation-loader navigation-loader--minimal">
 				<div class="navigation-loader__spinner">
 					<Loader size={18} />
-					<span class="navigation-loader__text">Loading page...</span>
+					<span class="navigation-loader__text">{t('loading.pageLoading', $language)}</span>
 				</div>
 			</div>
 		{/if}
@@ -419,7 +420,7 @@
 	<footer class="footer">
 		<div class="footer__content">
 			<p class="footer__text">{t('footer.copyright', $language).replace('{year}', String(currentYear))}</p>
-			<p class="footer__text">{t('footer.version', $language)}</p>
+			<p class="footer__text">{t('footer.version', $language)} {APP_VERSION}</p>
 		</div>
 	</footer>
 	

@@ -176,7 +176,7 @@
 						<div class="card-grid">
 							<!-- Total Distance Card -->
 							<div class="card {statsLoading ? 'card--loading' : ''}">
-								<h3 class="card__title">Total Distance</h3>
+								<h3 class="card__title">{t('dashboard.totalDistance', $language)}</h3>
 								<div class="card__stat-value">
 									{#if statsLoading}
 										<div class="skeleton-text"></div>
@@ -188,15 +188,15 @@
 									{#if statsLoading}
 										<div class="skeleton-text skeleton-text--thin"></div>
 									{:else}
-										<span>LISA: {totalIndications}</span> •
-										<span>{totalLisaPerKm.toFixed(2)} LISA/km</span>
+										<span>{t('dashboard.lisa', $language)}: {totalIndications}</span> •
+										<span>{totalLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
 									{/if}
 								</div>
 							</div>
 
 							<!-- Jimny Card -->
 							<div class="card {statsLoading ? 'card--loading' : ''}">
-								<h3 class="card__title">Suzuki Jimny Distance</h3>
+								<h3 class="card__title">{t('dashboard.jimnyDistance', $language)}</h3>
 								<div class="card__stat-value">
 									{#if statsLoading}
 										<div class="skeleton-text"></div>
@@ -208,15 +208,15 @@
 									{#if statsLoading}
 										<div class="skeleton-text skeleton-text--thin"></div>
 									{:else}
-										<span>LISA: {jimnyLisaCount}</span> •
-										<span>{jimnyLisaPerKm.toFixed(2)} LISA/km</span>
+										<span>{t('dashboard.lisa', $language)}: {jimnyLisaCount}</span> •
+										<span>{jimnyLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
 									{/if}
 								</div>
 							</div>
 
 							<!-- Torres Card -->
 							<div class="card {statsLoading ? 'card--loading' : ''}">
-								<h3 class="card__title">Ssanyong Torres Distance</h3>
+								<h3 class="card__title">{t('dashboard.torresDistance', $language)}</h3>
 								<div class="card__stat-value">
 									{#if statsLoading}
 										<div class="skeleton-text"></div>
@@ -228,8 +228,8 @@
 									{#if statsLoading}
 										<div class="skeleton-text skeleton-text--thin"></div>
 									{:else}
-										<span>LISA: {torresLisaCount}</span> •
-										<span>{torresLisaPerKm.toFixed(2)} LISA/km</span>
+										<span>{t('dashboard.lisa', $language)}: {torresLisaCount}</span> •
+										<span>{torresLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
 									{/if}
 								</div>
 							</div>
@@ -242,18 +242,18 @@
 					<div class="panel-container">
 						<div class="page-subheader">
 							<h2 class="page-subheader__title">
-								Recent Reports
+								{t('dashboard.recentReports', $language)}
 								{#if !loading && !error}
 									<span class="page-subheader__status-counts">
-										Final: {finalReports} • Total: {totalReports} • Draft: {draftReports}
+										{t('dashboard.final', $language)}: {finalReports} • {t('dashboard.total', $language)}: {totalReports} • {t('dashboard.draft', $language)}: {draftReports}
 									</span>
 								{/if}
 							</h2>
 							<div class="page-subheader__actions">
-								<a href="/reports" class="nav__link">View All Reports</a>
+								<a href="/reports" class="nav__link">{t('dashboard.viewAllReports', $language)}</a>
 								{#if syncInfo}
 									<div class="sync">
-										Last synced: {syncInfo.last_sync
+										{t('dashboard.lastSynced', $language)}: {syncInfo.last_sync
 											? formatDateTime(syncInfo.last_sync)
 											: syncInfo.last_sync_success
 												? formatDateTime(syncInfo.last_sync_success)
@@ -264,7 +264,7 @@
 									</div>
 								{:else}
 									<div class="sync">
-										<span>Sync status unavailable</span>
+										<span>{t('dashboard.syncUnavailable', $language)}</span>
 									</div>
 								{/if}
 							</div>
@@ -279,7 +279,7 @@
 											<div class="loading-bar"></div>
 											<div class="loading-bar"></div>
 										</div>
-										<p class="loading-text">Loading recent reports...</p>
+										<p class="loading-text">{t('dashboard.loadingReports', $language)}</p>
 									</div>
 								{:else if error}
 									<p class="error">{error}</p>
@@ -289,13 +289,13 @@
 										<table class="table__element">
 											<thead>
 												<tr>
-													<th class="table__header">Report Name</th>
-													<th class="table__header">Report Title</th>
-													<th class="table__header">Date</th>
-													<th class="table__header">Assets Covered</th>
-													<th class="table__header">Surveyor Unit</th>
-													<th class="table__header">LISA</th>
-													<th class="table__header table__header--status">Status</th>
+													<th class="table__header">{t('dashboard.reportName', $language)}</th>
+													<th class="table__header">{t('dashboard.reportTitle', $language)}</th>
+													<th class="table__header">{t('dashboard.date', $language)}</th>
+													<th class="table__header">{t('dashboard.assetsCovered', $language)}</th>
+													<th class="table__header">{t('dashboard.surveyorUnit', $language)}</th>
+													<th class="table__header">{t('dashboard.lisa', $language)}</th>
+													<th class="table__header table__header--status">{t('dashboard.status', $language)}</th>
 												</tr>
 											</thead>
 											<tbody>
@@ -353,7 +353,7 @@
 													{/each}
 												{:else}
 													<tr class="table__row">
-														<td class="table__cell" colspan="7">No recent reports found</td>
+														<td class="table__cell" colspan="7">{t('dashboard.noReportsFound', $language)}</td>
 													</tr>
 												{/if}
 											</tbody>

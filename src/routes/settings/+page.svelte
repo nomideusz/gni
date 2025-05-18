@@ -1,6 +1,7 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
     import type { SubmitFunction } from '@sveltejs/kit';
+    import { t, language } from '$lib';
     
     // Access page data from server
     let { data } = $props();
@@ -30,9 +31,9 @@
             profileFormLoading = false;
             
             if (result.type === 'failure') {
-                profileError = result.data?.message || 'Failed to update profile';
+                profileError = result.data?.message || t('settings.profile.error', $language);
             } else if (result.type === 'success') {
-                profileSuccess = 'Profile updated successfully';
+                profileSuccess = t('settings.profile.success', $language);
             }
         };
     };
@@ -41,7 +42,7 @@
     const handlePasswordChange: SubmitFunction = () => {
         // Form validation
         if (newPassword !== confirmPassword) {
-            passwordError = 'New passwords do not match';
+            passwordError = t('settings.password.validationError', $language);
             return;
         }
         
@@ -53,9 +54,9 @@
             passwordFormLoading = false;
             
             if (result.type === 'failure') {
-                passwordError = result.data?.message || 'Failed to change password';
+                passwordError = result.data?.message || t('settings.password.error', $language);
             } else if (result.type === 'success') {
-                passwordSuccess = 'Password changed successfully';
+                passwordSuccess = t('settings.password.success', $language);
                 currentPassword = '';
                 newPassword = '';
                 confirmPassword = '';
@@ -66,18 +67,18 @@
 
 <div class="settings-container">
     <div class="settings-card">
-        <h1>Account Settings</h1>
+        <h1>{t('settings.title', $language)}</h1>
         
         {#if !data.user}
             <div class="auth-required">
-                <p>You must be logged in to access this page.</p>
-                <a href="/login" class="btn primary">Login</a>
+                <p>{t('settings.authRequired', $language)}</p>
+                <a href="/login" class="btn primary">{t('settings.login', $language)}</a>
             </div>
         {:else}
             <div class="settings-sections">
                 <!-- Profile Information Section -->
                 <section class="settings-section">
-                    <h2>Profile Information</h2>
+                    <h2>{t('settings.profile.title', $language)}</h2>
                     
                     {#if profileSuccess}
                         <div class="success-message">
@@ -93,7 +94,7 @@
                     
                     <form method="POST" action="?/updateProfile" use:enhance={handleProfileUpdate}>
                         <div class="form-group">
-                            <label for="username">Username</label>
+                            <label for="username">{t('settings.profile.username', $language)}</label>
                             <input 
                                 type="text" 
                                 id="username" 
@@ -105,7 +106,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="email">Email Address</label>
+                            <label for="email">{t('settings.profile.email', $language)}</label>
                             <input 
                                 type="email" 
                                 id="email" 
@@ -115,18 +116,18 @@
                                 disabled={profileFormLoading}
                                 readonly
                             />
-                            <div class="field-note">Email address cannot be changed.</div>
+                            <div class="field-note">{t('settings.profile.emailNote', $language)}</div>
                         </div>
                         
                         <button type="submit" class="btn primary" disabled={profileFormLoading}>
-                            {profileFormLoading ? 'Updating...' : 'Update Profile'}
+                            {profileFormLoading ? t('settings.profile.updating', $language) : t('settings.profile.updateButton', $language)}
                         </button>
                     </form>
                 </section>
                 
                 <!-- Change Password Section -->
                 <section class="settings-section">
-                    <h2>Change Password</h2>
+                    <h2>{t('settings.password.title', $language)}</h2>
                     
                     {#if passwordSuccess}
                         <div class="success-message">
@@ -142,7 +143,7 @@
                     
                     <form method="POST" action="?/changePassword" use:enhance={handlePasswordChange}>
                         <div class="form-group">
-                            <label for="currentPassword">Current Password</label>
+                            <label for="currentPassword">{t('settings.password.current', $language)}</label>
                             <input 
                                 type="password" 
                                 id="currentPassword" 
@@ -155,7 +156,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="newPassword">New Password</label>
+                            <label for="newPassword">{t('settings.password.new', $language)}</label>
                             <input 
                                 type="password" 
                                 id="newPassword" 
@@ -166,11 +167,11 @@
                                 minlength="8"
                                 disabled={passwordFormLoading}
                             />
-                            <div class="field-note">Must be at least 8 characters long.</div>
+                            <div class="field-note">{t('settings.password.passwordNote', $language)}</div>
                         </div>
                         
                         <div class="form-group">
-                            <label for="confirmPassword">Confirm New Password</label>
+                            <label for="confirmPassword">{t('settings.password.confirm', $language)}</label>
                             <input 
                                 type="password" 
                                 id="confirmPassword" 
@@ -183,15 +184,10 @@
                         </div>
                         
                         <button type="submit" class="btn primary" disabled={passwordFormLoading}>
-                            {passwordFormLoading ? 'Changing...' : 'Change Password'}
+                            {passwordFormLoading ? t('settings.password.changing', $language) : t('settings.password.changeButton', $language)}
                         </button>
                     </form>
                 </section>
-                
-                <div class="actions">
-                    <a href="/" class="btn">Back to Dashboard</a>
-                    <a href="/auth-status" class="btn">View Auth Status</a>
-                </div>
             </div>
         {/if}
     </div>

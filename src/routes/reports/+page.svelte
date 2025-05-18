@@ -129,7 +129,7 @@
 			console.log(`Loaded ${reports.length} reports with driving sessions (calculation reports: ${result.meta.calculationReportsCount})`);
 		} catch (err) {
 			console.error('Error fetching reports:', err);
-			error = 'Failed to load reports';
+			error = t('reports.error', $language);
 		} finally {
 			loading = false;
 			reportsLoading = false;
@@ -141,17 +141,17 @@
 	<div class="page-layout__container">
 		<div class="page-content">
 			<div class="page-header">
-				<h1 class="page-header__title">{t('reports.title', $language) || 'Reports'}</h1>
-				<p class="page-header__description">View all reports with driving sessions</p>
+				<h1 class="page-header__title">{t('reports.title', $language)}</h1>
+				<p class="page-header__description">{t('reports.description', $language)}</p>
 			</div>
 
 			<div class="panel-container">
 				<div class="page-subheader">
 					<h2 class="page-subheader__title">
-						Reports
+						{t('reports.title', $language)}
 						{#if !loading && !error}
 							<span class="page-subheader__status-counts">
-								Final: {finalReports} • Total: {totalReports} • Draft: {draftReports}
+								{t('reports.status.final', $language)}: {finalReports} • {t('reports.status.total', $language)}: {totalReports} • {t('reports.status.draft', $language)}: {draftReports}
 							</span>
 						{/if}
 					</h2>
@@ -159,16 +159,16 @@
 					<div class="page-subheader__actions">
 						{#if syncInfo}
 							<div class="sync">
-								Last synced: {syncInfo.last_sync 
+								{t('reports.sync.lastSynced', $language)}: {syncInfo.last_sync 
 									? formatDateTime(syncInfo.last_sync) 
 									: (syncInfo.last_sync_success 
 										? formatDateTime(syncInfo.last_sync_success) 
-										: 'Never')}
-								<span class="sync__status sync__status--{syncInfo.sync_status || 'pending'}">{syncInfo.sync_status || 'Unknown'}</span>
+										: t('reports.sync.never', $language))}
+								<span class="sync__status sync__status--{syncInfo.sync_status || 'pending'}">{syncInfo.sync_status || t('reports.sync.unknown', $language)}</span>
 							</div>
 						{:else}
 							<div class="sync">
-								<span>Sync status unavailable</span>
+								<span>{t('reports.sync.unavailable', $language)}</span>
 							</div>
 						{/if}
 					</div>
@@ -183,7 +183,7 @@
 									<div class="loading-bar"></div>
 									<div class="loading-bar"></div>
 								</div>
-								<p class="loading-text">Loading reports...</p>
+								<p class="loading-text">{t('reports.loading', $language)}</p>
 							</div>
 						{:else if error}
 							<p class="error">{error}</p>
@@ -192,13 +192,13 @@
 								<table class="table__element">
 									<thead>
 										<tr>
-											<th class="table__header table__header--sortable">Report Name</th>
-											<th class="table__header table__header--sortable">Report Title</th>
-											<th class="table__header table__header--sortable">Date</th>
-											<th class="table__header table__header--sortable">Assets Covered</th>
-											<th class="table__header table__header--sortable">Surveyor Unit</th>
-											<th class="table__header table__header--sortable">LISA</th>
-											<th class="table__header table__header--sortable table__header--status">Status</th>
+											<th class="table__header table__header--sortable">{t('reports.table.reportName', $language)}</th>
+											<th class="table__header table__header--sortable">{t('reports.table.reportTitle', $language)}</th>
+											<th class="table__header table__header--sortable">{t('reports.table.date', $language)}</th>
+											<th class="table__header table__header--sortable">{t('reports.table.assetsCovered', $language)}</th>
+											<th class="table__header table__header--sortable">{t('reports.table.surveyorUnit', $language)}</th>
+											<th class="table__header table__header--sortable">{t('reports.table.lisa', $language)}</th>
+											<th class="table__header table__header--sortable table__header--status">{t('reports.table.status', $language)}</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -225,31 +225,31 @@
 									<thead>
 										<tr>
 											<th class="table__header table__header--sortable" onclick={() => handleSort('report_name')}>
-												Report Name
+												{t('reports.table.reportName', $language)}
 												<span class="table__sort-icon">{sortColumn === 'report_name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
 											</th> 
 											<th class="table__header table__header--sortable" onclick={() => handleSort('report_title')}>
-												Report Title
+												{t('reports.table.reportTitle', $language)}
 												<span class="table__sort-icon">{sortColumn === 'report_title' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
 											</th> 
 											<th class="table__header table__header--sortable" onclick={() => handleSort('report_date')}>
-												Date
+												{t('reports.table.date', $language)}
 												<span class="table__sort-icon">{sortColumn === 'report_date' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
 											</th> 
 											<th class="table__header table__header--sortable" onclick={() => handleSort('linear_asset_covered_length')}>
-												Assets Covered
+												{t('reports.table.assetsCovered', $language)}
 												<span class="table__sort-icon">{sortColumn === 'linear_asset_covered_length' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
 											</th>
 											<th class="table__header table__header--sortable" onclick={() => handleSort('surveyor_unit_desc')}>
-												Surveyor Unit
+												{t('reports.table.surveyorUnit', $language)}
 												<span class="table__sort-icon">{sortColumn === 'surveyor_unit_desc' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
 											</th> 
 											<th class="table__header table__header--sortable" onclick={() => handleSort('indicationsCount')}>
-												LISA
+												{t('reports.table.lisa', $language)}
 												<span class="table__sort-icon">{sortColumn === 'indicationsCount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
 											</th> 
 											<th class="table__header table__header--sortable table__header--status" onclick={() => handleSort('report_final')}>
-												Status
+												{t('reports.table.status', $language)}
 												<span class="table__sort-icon">{sortColumn === 'report_final' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
 											</th> 
 										</tr>
@@ -272,14 +272,14 @@
 														}">
 															{report.report_final === true || 
 															report.report_final === 1 || 
-															report.report_final === '1' ? 'Final' : 'Draft'}
+															report.report_final === '1' ? t('reports.status.final', $language) : t('reports.status.draft', $language)}
 														</span>
 													</td>
 												</tr>
 											{/each}
 										{:else}
 											<tr class="table__row">
-												<td class="table__cell" colspan="7">No reports found</td>
+												<td class="table__cell" colspan="7">{t('reports.table.noReportsFound', $language)}</td>
 											</tr>
 										{/if}
 									</tbody>
