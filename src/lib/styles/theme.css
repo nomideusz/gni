@@ -8,17 +8,17 @@
   
   /* Border colors */
   --border-primary: #2d2d42;
-  --border-secondary: #3a3a4f;
-  --border-hover: #38bdf8;
+  --border-secondary: #334155;
+  --border-hover: #3b82f6;
   
   /* Text colors */
   --text-primary: #e2e8f0;
   --text-secondary: #9ca3af;
   
   /* Accent colors */
-  --accent-primary: #38bdf8;
-  --accent-secondary: #7dd3fc;
-  --accent-hover: rgba(56, 189, 248, 0.15);
+  --accent-primary: #2563eb;
+  --accent-secondary: #60a5fa;
+  --accent-hover: #1d4ed8;
   
   /* Status colors */
   --error: #f87171;

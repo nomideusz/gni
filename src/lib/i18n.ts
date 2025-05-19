@@ -716,7 +716,7 @@ export const translations: Translations = {
     
     // Tools
     tools: {
-      surveyViewer: 'Podgląd pomiarów'
+      surveyViewer: 'Przeglądarka pomiarów'
     },
     
     // Login Page

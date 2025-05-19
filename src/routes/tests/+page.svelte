@@ -210,15 +210,15 @@
 </script>
 
 <div class="tests-container">
-	<div class="page-header">
-		<div>
-			<h1>Data Visualizations</h1>
-			<p class="description">Interactive charts and visualizations for survey data</p>
+	<div class="tests-header">
+		<div class="tests-header__content">
+			<h1 class="tests-header__title">Data Visualizations</h1>
+			<p class="tests-header__description">Interactive charts and visualizations for survey data</p>
 		</div>
 		
-		<div class="page-actions">
+		<div class="tests-header__actions">
 			<DataSelector />
-			<a href="/survey-viewer" class="btn btn-primary survey-btn">Survey Viewer</a>
+			<a href="/survey-viewer" class="button button--primary">{t('tools.surveyViewer', $language) || 'Survey Viewer'}</a>
 		</div>
 	</div>
 		
@@ -506,27 +506,86 @@
 		height: 100%;
 		display: flex;
 		flex-direction: column;
-		background-color: #1e1e2e;  /* Dark background */
-		overflow: hidden; /* Ensure no scrollbars at container level */
-		color: #e2e8f0;  /* Lighter text for dark background */
+		background-color: var(--bg-primary);
+		overflow: hidden; 
+		color: var(--text-primary);
+	}
+
+	/* Component-specific header styles to avoid global conflicts */
+	.tests-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 1.5rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	
+	.tests-header__content {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		text-align: left;
+	}
+	
+	.tests-header__title {
+		margin: 0 0 0.5rem 0;
+		font-size: 1.8rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	
+	.tests-header__description {
+		margin: 0;
+		color: var(--text-secondary);
+		max-width: 36rem;
+	}
+	
+	.tests-header__actions {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	/* Button styles using global variables */
+	:global(.tests-header__actions .button) {
+		padding: 0.5rem 1rem;
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+	
+	:global(.select-wrapper .button) {
+		background-color: var(--bg-secondary);
+		color: var(--text-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-md);
+		padding: 0.5rem 1rem;
+		font-size: 0.9rem;
+		font-weight: 500;
+		cursor: pointer;
+	}
+	
+	:global(.select-wrapper .button:hover) {
+		background-color: var(--bg-tertiary);
+		border-color: var(--border-hover);
 	}
 
 	/* Loading and error states */
 	.loading-state, .error-state {
 		padding: 1rem;
 		margin-bottom: 1rem;
-		border-radius: 0.375rem;
+		border-radius: var(--radius-md);
 		text-align: center;
 	}
 	
 	.loading-state {
-		background-color: rgba(59, 130, 246, 0.1);  /* Blue with opacity */
-		color: #93c5fd;  /* Light blue text */
+		background-color: rgba(59, 130, 246, 0.1);
+		color: var(--info);
 	}
 	
 	.error-state {
-		background-color: rgba(239, 68, 68, 0.1);  /* Red with opacity */
-		color: #fca5a5;  /* Light red text */
+		background-color: rgba(239, 68, 68, 0.1);
+		color: var(--error);
 	}
 
 	.main-split-container {

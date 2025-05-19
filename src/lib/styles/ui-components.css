@@ -8,18 +8,23 @@
 /* Card block */
 .card {
     background-color: var(--bg-card);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    padding: 1rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 2rem 2.5rem;
     display: flex;
     flex-direction: column;
     border: 1px solid var(--border-primary);
+    max-width: 420px;
+    min-width: 340px;
+    width: 100%;
+    text-align: center;
+    margin: 0 1rem;
 }
 
 .card__title {
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
+    margin: 0 0 2rem 0;
+    font-size: 2rem;
+    font-weight: 600;
     color: var(--text-primary);
 }
 
@@ -31,8 +36,8 @@
 /* Chart card block */
 .chart-card {
     background-color: var(--bg-secondary);
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
     padding: 0.75rem;
     height: 100%;
     display: flex;
@@ -61,8 +66,8 @@
 /* Info card block */
 .info-card {
     background-color: var(--bg-secondary);
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
     padding: 0.75rem;
     height: 100%;
     display: flex;
@@ -79,7 +84,7 @@
 /* Info note block */
 .info-note {
     background-color: var(--bg-secondary);
-    border-radius: 0.375rem;
+    border-radius: var(--radius-md);
     padding: 0.6rem;
     border-left: 3px solid var(--border-primary);
     margin-bottom: 0.5rem;
@@ -114,12 +119,37 @@
     background-color: var(--bg-card);
     padding: 0.5rem 1rem;
     margin-bottom: 1rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-size: 0.85rem;
     color: var(--text-secondary);
     border-left: 3px solid var(--accent-primary);
     display: inline-block;
     max-width: fit-content;
+}
+
+/*---------------------------------------*/
+/* DASHBOARD CARD STYLES                 */
+/*---------------------------------------*/
+
+/* Dashboard card block */
+.dashboard-card {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-primary);
+    width: 100%;
+    min-width: 280px;
+}
+
+.dashboard-card__title {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    font-weight: 600;
 }
 
 /* Dashboard card elements */
@@ -148,7 +178,7 @@
 /* Skeleton loading animations */
 .skeleton-text {
     height: 2.5rem;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     background: linear-gradient(
         90deg, 
         rgba(200, 200, 200, 0.2) 25%, 
@@ -292,7 +322,7 @@
     margin: 0;
     font-size: 1.2rem;
     font-weight: 500;
-    color: #e2e8f0;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
 }
@@ -315,23 +345,23 @@
 .page-actions .nav__link {
     display: inline-block;
     padding: 0.4rem 1rem;
-    background-color: #2a2a3c;
-    color: #e2e8f0;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
     text-decoration: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-size: 0.9rem;
     transition: background-color 0.2s;
 }
 
 .page-actions .nav__link:hover {
-    background-color: #3a3a4c;
+    background-color: var(--accent-hover);
 }
 
 /* Subheader block */
 .page-subheader {
     padding: 0.8rem 1.2rem;
-    background-color: #1c1c2c;
-    border-bottom: 1px solid #2d2d42;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -384,6 +414,11 @@
 /* Page section block */
 .page-section {
     margin-bottom: 2rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-secondary);
+    padding: 1.5rem;
 }
 
 .page-section__header {
@@ -402,8 +437,8 @@
 
 .page-section__content {
     background-color: var(--bg-card);
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
 }
 
@@ -418,13 +453,13 @@
     justify-content: center;
     padding: 0.75rem 1.5rem;
     border: 1px solid var(--border-primary);
-    border-radius: 0.375rem;
+    border-radius: var(--radius-md);
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
     text-decoration: none;
-    background-color: var(--bg-secondary);
+    background-color: var(--accent-secondary);
     color: var(--text-primary);
     font-family: inherit;
     line-height: 1;
@@ -448,41 +483,47 @@
 }
 
 .button:hover:not(:disabled) {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-primary);
+    background-color: var(--accent-hover);
+    border-color: var(--border-hover);
+    color: var(--text-primary);
     transform: translateY(-1px);
 }
 
 /* Button modifiers for different types */
 .button--primary {
-    background-color: var(--accent-primary, #38bdf8);
-    color: var(--bg-tertiary, #0f172a);
+    background-color: var(--accent-primary);
+    color: #fff;
     border: none;
 }
 
 .button--primary:hover:not(:disabled) {
-    background-color: var(--accent-secondary, #0ea5e9);
+    background-color: var(--accent-hover);
+    color: #fff;
+    border: none;
     transform: translateY(-1px);
 }
 
 .button--secondary {
-    background-color: var(--bg-secondary);
+    background-color: var(--accent-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border-primary);
 }
 
 .button--secondary:hover:not(:disabled) {
-    background-color: var(--bg-tertiary);
+    background-color: var(--accent-hover);
+    color: var(--text-primary);
+    border: 1px solid var(--border-hover);
     transform: translateY(-1px);
 }
 
 .button--danger {
-    background-color: #dc2626;
-    color: white;
+    background-color: var(--error);
+    color: #fff;
 }
 
 .button--danger:hover:not(:disabled) {
     background-color: #b91c1c;
+    color: #fff;
     transform: translateY(-1px);
 }
 
@@ -500,9 +541,9 @@
     font-weight: 500;
     transition: all 0.2s;
     text-decoration: none;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-md);
     background-color: var(--accent-primary);
-    color: var(--bg-tertiary);
+    color: #fff;
 }
 
 .button--logout {
@@ -510,7 +551,7 @@
     border: 1px solid var(--border-primary);
     color: var(--text-primary);
     padding: 0.3rem 0.7rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-size: 0.8rem;
     display: flex;
     align-items: center;
@@ -534,7 +575,7 @@
     display: flex;
     align-items: center;
     padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     color: var(--text-primary);
     font-weight: 500;
     text-decoration: none;
@@ -548,11 +589,11 @@
 
 .nav__link--primary {
     background-color: var(--accent-primary);
-    color: var(--bg-tertiary);
+    color: #fff;
 }
 
 .nav__link--primary:hover {
-    background-color: var(--accent-secondary);
+    background-color: var(--accent-hover);
 }
 
 /* Ensure consistent button heights in action containers */
@@ -952,4 +993,135 @@
 /* Stats table row last child */
 .table--stats .table__row:last-child .table__cell {
     border-bottom: none;
+}
+
+/*---------------------------------------*/
+/* FORM STYLES                           */
+/*---------------------------------------*/
+
+.form {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.form__group {
+    margin-bottom: 1.25rem;
+    text-align: left;
+}
+
+.form__label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.form__input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.form__input:focus {
+    border-color: var(--border-hover);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--border-hover);
+}
+
+.form__input--error {
+    border-color: var(--error);
+    box-shadow: 0 0 0 1px var(--error);
+}
+
+.form__input--error:focus {
+    border-color: var(--error);
+    box-shadow: 0 0 0 2px var(--error);
+}
+
+.form__input::placeholder {
+    color: var(--text-secondary);
+}
+
+.form__input:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.form__error {
+    color: var(--error);
+    font-size: 0.8rem;
+    margin: 6px 0 0 0;
+    padding: 0;
+}
+
+.form__note, .description {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
+/*---------------------------------------*/
+/* MESSAGE STYLES                        */
+/*---------------------------------------*/
+
+.message {
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+}
+
+.message--error {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: var(--error);
+    color: var(--error);
+}
+
+.message--success {
+    background-color: rgba(22, 163, 74, 0.1);
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.message--warning {
+    background-color: rgba(202, 138, 4, 0.1);
+    border-color: var(--warning);
+    color: var(--warning);
+}
+
+.message--info {
+    background-color: rgba(2, 132, 199, 0.1);
+    border-color: var(--info);
+    color: var(--info);
+}
+
+.message p {
+    margin: 0 0 1rem 0;
+}
+
+.message p:last-child {
+    margin-bottom: 0;
+}
+
+/* Links items */
+.links__item, .nav__link {
+    color: var(--accent-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color var(--transition-fast) ease;
+}
+
+.links__item:hover, .nav__link:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
 } 
