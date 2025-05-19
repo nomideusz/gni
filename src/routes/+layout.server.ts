@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 
 // Define public routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/forgot-password', '/register'];
+const PUBLIC_ROUTES = ['/login', '/forgot-password', '/register', '/reset-password'];
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
   // Use locals directly since hooks.server.ts already processed auth
