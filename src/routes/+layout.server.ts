@@ -20,6 +20,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   
   // Return authenticated user data from locals
   let user = null;
+  let isAdmin = false;
+  
   if (isAuthenticated && locals.user) {
     // Map user data to the expected format
     const userData = locals.user;
@@ -31,11 +33,16 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
       created: userData.created,
       updated: userData.updated
     };
+    
+    // Pass the admin status to the client
+    isAdmin = locals.isAdmin;
+    
     console.log('Server sending authenticated user:', user.email);
   }
   
   return { 
     isAuthenticated,
+    isAdmin,
     user
   };
 }; 

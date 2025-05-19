@@ -388,18 +388,20 @@
 					</li>
 				</ul>
 			</div>
-			
+			{#if data.isAuthenticated && data.isAdmin}
+
 			<div class="nav__section">
 				<h3 class="nav__heading">{t('nav.tools', $language)}</h3>
 				<ul class="nav__list">
-					<li class="nav__item" class:nav__item--active={isActive('/survey-viewer')}>
-						<a href="/survey-viewer" class="nav__link" title="{t('tools.surveyViewer', $language)}">
-							<Database size={20} class="nav__icon" />
-							<span class="nav__text">{t('tools.surveyViewer', $language)}</span>
-						</a>
-					</li>
-				</ul>
-			</div>
+						<li class="nav__item" class:nav__item--active={isActive('/survey-viewer')}>
+							<a href="/survey-viewer" class="nav__link" title="{t('tools.surveyViewer', $language)}">
+								<Database size={20} class="nav__icon" />
+								<span class="nav__text">{t('tools.surveyViewer', $language)}</span>
+							</a>
+						</li>
+					</ul>
+				</div>
+			{/if}
 		</nav>
 
 		<!-- Main content area -->

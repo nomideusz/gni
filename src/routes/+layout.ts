@@ -33,9 +33,10 @@ export const load: LayoutLoad = async ({ data }) => {
     }
   }
   
-  // Pass through all server data including isAuthenticated flag
+  // Pass through all server data including isAuthenticated flag and isAdmin
   return {
     user: data.user,
-    isAuthenticated: data.isAuthenticated
+    isAuthenticated: data.isAuthenticated,
+    isAdmin: data.isAdmin
   };
 }; 
