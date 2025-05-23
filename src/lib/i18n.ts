@@ -138,6 +138,7 @@ export interface TranslationContent {
     logout: string;
     loggingOut: string;
     loading: string;
+    title: string;
   };
   loading: {
     pageLoading: string;
@@ -404,7 +405,8 @@ export const translations: Translations = {
       login: 'Login',
       logout: 'Logout',
       loggingOut: 'Logging out...',
-      loading: 'Loading...'
+      loading: 'Loading...',
+      title: 'PSG Dashboard'
     },
     
     // Loading
@@ -685,7 +687,8 @@ export const translations: Translations = {
       login: 'Zaloguj',
       logout: 'Wyloguj',
       loggingOut: 'Wylogowywanie...',
-      loading: 'Ładowanie...'
+      loading: 'Ładowanie...',
+      title: 'PSG Dashboard'
     },
     
     // Loading
