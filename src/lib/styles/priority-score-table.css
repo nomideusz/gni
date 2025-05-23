@@ -1,0 +1,347 @@
+/* Priority Score Table - Dedicated styles to override globals */
+
+/* Page layout overrides */
+.priority-score-page {
+  overflow-x: hidden !important; /* Prevent horizontal scroll at root */
+}
+
+.priority-score-page.page-layout,
+.priority-score-page .page-layout__container {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important; /* Prevent horizontal scroll */
+}
+
+.priority-score-page .page-content {
+  max-width: 100% !important;
+  padding: 0.5rem !important;
+  overflow: hidden !important; /* Prevent all scrollbars at page level */
+}
+
+.priority-score-page .page-section {
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.priority-score-page .page-section__content {
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.priority-score-page .page-section__header {
+  padding: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Page section subtitle */
+.priority-score-page .page-section__subtitle {
+  font-size: 0.85rem !important;
+  color: var(--text-secondary) !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Table container - main scrollable element */
+.priority-score-page .table-container {
+  width: 100% !important;
+  height: calc(100vh - 180px) !important;
+  min-height: 500px !important; /* Prevent layout jumps */
+  overflow: auto !important;
+  margin-bottom: 8px !important;
+  position: relative !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-sm) !important;
+  flex: 1 !important;
+}
+
+/* Remove nested scrollable containers */
+.priority-score-page .table--scrollable {
+  position: relative !important;
+  overflow: visible !important; /* Remove inner scrollbars */
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Table basic structure */
+.priority-score-page .table__element {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+}
+
+/* Simple sticky header approach */
+.priority-score-page .table__element thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background-color: var(--bg-secondary) !important;
+}
+
+.priority-score-page .table__header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background-color: var(--bg-secondary) !important;
+  padding: 0.5rem 0.3rem !important;
+  border-bottom: 2px solid var(--border-primary) !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 0.7rem !important;
+  line-height: 1.1 !important;
+}
+
+/* Cell styles */
+.priority-score-page .table__cell {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  padding: 0.3rem !important;
+  font-size: 0.7rem !important;
+  line-height: 1.1 !important;
+  border-bottom: 1px solid var(--border-primary) !important;
+}
+
+/* Table rows */
+.priority-score-page .table__row:hover {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Reset tbody display */
+.priority-score-page .table__element tbody {
+  display: table-row-group !important;
+}
+
+/* Improve sorting experience */
+.priority-score-page .table__header--sortable {
+  cursor: pointer !important;
+}
+
+.priority-score-page .table__header--sortable:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Scrollbar styles - just for the main container */
+.priority-score-page .table-container::-webkit-scrollbar {
+  height: 8px !important;
+  width: 8px !important;
+}
+
+.priority-score-page .table-container::-webkit-scrollbar-track {
+  background: var(--bg-tertiary) !important;
+}
+
+.priority-score-page .table-container::-webkit-scrollbar-thumb {
+  background: var(--border-secondary) !important;
+  border-radius: 4px !important;
+}
+
+.priority-score-page .table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary) !important;
+}
+
+/* For Firefox */
+.priority-score-page .table-container {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--border-secondary) var(--bg-tertiary) !important;
+}
+
+/* Define column widths for this specific table - more compact */
+.priority-score-page .table__header:nth-child(1), 
+.priority-score-page .table__cell:nth-child(1) { width: 9% !important; } /* Report Title */
+.priority-score-page .table__header:nth-child(2), 
+.priority-score-page .table__cell:nth-child(2) { width: 8% !important; } /* Unique ID */
+.priority-score-page .table__header:nth-child(3), 
+.priority-score-page .table__cell:nth-child(3) { width: 6% !important; } /* CH4 */
+.priority-score-page .table__header:nth-child(4), 
+.priority-score-page .table__cell:nth-child(4) { width: 6% !important; } /* Confidence */
+.priority-score-page .table__header:nth-child(5), 
+.priority-score-page .table__cell:nth-child(5) { width: 6% !important; } /* Emission Rate */
+.priority-score-page .table__header:nth-child(6), 
+.priority-score-page .table__cell:nth-child(6) { width: 6% !important; } /* Ethane Ratio */
+.priority-score-page .table__header:nth-child(7), 
+.priority-score-page .table__cell:nth-child(7) { width: 6% !important; } /* Is Filtered */
+.priority-score-page .table__header:nth-child(8), 
+.priority-score-page .table__cell:nth-child(8) { width: 6% !important; } /* Max Amplitude */
+.priority-score-page .table__header:nth-child(9), 
+.priority-score-page .table__cell:nth-child(9) { width: 6% !important; } /* Passes */
+.priority-score-page .table__header:nth-child(10), 
+.priority-score-page .table__cell:nth-child(10) { width: 6% !important; } /* Peaks */
+.priority-score-page .table__header:nth-child(11), 
+.priority-score-page .table__cell:nth-child(11) { 
+  width: 7% !important; 
+  font-weight: bold !important; 
+  background-color: rgba(0, 0, 0, 0.03) !important; 
+} /* Priority Score */
+.priority-score-page .table__header:nth-child(12), 
+.priority-score-page .table__cell:nth-child(12) { width: 6% !important; } /* Ranking Group */
+.priority-score-page .table__header:nth-child(13), 
+.priority-score-page .table__cell:nth-child(13) { width: 7% !important; } /* Rep. Emission Rate */
+.priority-score-page .table__header:nth-child(14), 
+.priority-score-page .table__cell:nth-child(14) { width: 7% !important; } /* Rep. Bin Label */
+.priority-score-page .table__header:nth-child(15), 
+.priority-score-page .table__cell:nth-child(15) { width: 7% !important; } /* Priority Score 2 */
+
+/* Pagination styling */
+.priority-score-page .pagination {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin: 0 !important; /* Remove margin to prevent extra scrollbar */
+  padding: 0.5rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important; /* Prevent shrinking */
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: var(--radius-md) !important;
+  min-height: 50px !important; /* Ensure visibility */
+}
+
+.priority-score-page .pagination__stats {
+  font-size: 0.9rem !important;
+  color: var(--text-secondary) !important;
+}
+
+.priority-score-page .pagination__number {
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+}
+
+.priority-score-page .pagination__controls {
+  display: flex !important;
+  gap: 0.25rem !important;
+  align-items: center !important;
+}
+
+/* Pagination button styles moved to buttons.css */
+
+.priority-score-page .pagination__ellipsis {
+  padding: 0 0.25rem !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Add skeleton loading styles */
+.priority-score-page .table__row--loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.priority-score-page .skeleton-text {
+  height: 0.7rem !important;
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.priority-score-page .skeleton-text::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.4), 
+    transparent
+  ) !important;
+  animation: shine 1.5s infinite !important;
+  transform: translateX(-100%) !important;
+}
+
+@keyframes shine {
+  100% {
+    transform: translateX(100%) !important;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1 !important;
+  }
+  50% {
+    opacity: 0.7 !important;
+  }
+  100% {
+    opacity: 1 !important;
+  }
+}
+
+/* Optimize rendering performance */
+.priority-score-page .table__cell {
+  contain: content !important; /* Improve rendering performance */
+  will-change: transform !important; /* Hint for browser to optimize */
+}
+
+/* Reduce layout computations */
+.priority-score-page .table__element tbody tr {
+  contain: layout !important;
+  will-change: transform !important;
+}
+
+/* Sort icon - update for better appearance and to prevent layout shifts */
+.priority-score-page .table__sort-icon {
+  display: inline-block !important;
+  margin-left: 4px !important;
+  width: 12px !important;
+  height: 12px !important;
+  position: relative !important;
+  opacity: 0.5 !important;
+  text-align: center !important;
+  line-height: 1 !important;
+}
+
+/* Always show placeholders for sort icons to prevent layout shifts */
+.priority-score-page .table__sort-icon::before {
+  content: "▲" !important;
+  font-size: 8px !important;
+  position: absolute !important;
+  top: -2px !important;
+  left: 0 !important;
+  right: 0 !important;
+  opacity: 0 !important;
+  transition: opacity 0.1s ease !important;
+}
+
+.priority-score-page .table__sort-icon::after {
+  content: "▼" !important;
+  font-size: 8px !important;
+  position: absolute !important;
+  bottom: -2px !important; 
+  left: 0 !important;
+  right: 0 !important;
+  opacity: 0 !important;
+  transition: opacity 0.1s ease !important;
+}
+
+/* Show the right arrow for the active sort direction */
+.priority-score-page .table__sort-icon[data-direction="asc"]::before {
+  opacity: 1 !important;
+}
+
+.priority-score-page .table__sort-icon[data-direction="desc"]::after {
+  opacity: 1 !important;
+}
+
+/* Highlighted active sort header */
+.priority-score-page .table__header--active {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.priority-score-page .table__header--active .table__sort-icon {
+  opacity: 1 !important;
+} 

@@ -1,11 +1,11 @@
 /* LAYOUT.CSS */
-/* Combined layout and navigation styles */
+/* Combined layout styles for application structure, page layouts, and containers */
 
 /*---------------------------------------*/
-/* LAYOUT STYLES                         */
+/* CORE LAYOUT STRUCTURE                 */
 /*---------------------------------------*/
 
-/* Main layout container */
+/* Main application layout container */
 .layout {
     display: flex;
     flex-direction: column;
@@ -31,6 +31,7 @@
     justify-content: space-between;
     align-items: center;
     height: 3.5rem;
+    z-index: 10;
 }
 
 /* Logo and brand */
@@ -131,36 +132,7 @@
     margin: 0;
 }
 
-/* Language switcher */
-.lang-switcher {
-    display: flex;
-    gap: 0.3rem;
-    border-left: 1px solid var(--border-primary);
-    padding-left: 0.8rem;
-}
-
-.lang-switcher__button {
-    background: none;
-    border: 1px solid var(--border-primary);
-    border-radius: 4px;
-    padding: 0.2rem 0.5rem;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: var(--text-secondary);
-}
-
-.lang-switcher__button:hover {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-}
-
-.lang-switcher__button--active {
-    background-color: #0f3460;
-    border-color: var(--accent-primary);
-    color: var(--accent-secondary);
-    font-weight: 500;
-}
+/* Language switcher styles moved to buttons.css */
 
 /* Auth section container */
 .auth-section {
@@ -202,101 +174,7 @@
     color: var(--text-secondary);
 }
 
-/* Fade-in animation */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Navigation loader */
-.navigation-loader {
-    position: fixed;
-    top: 3.5rem; /* Below header */
-    left: 0;
-    right: 0;
-    z-index: 100;
-    display: flex;
-    justify-content: center;
-    pointer-events: none;
-    animation: fadeIn 0.2s ease-out;
-}
-
-/* Minimal variant for the loader - more subtle design */
-.navigation-loader--minimal {
-    top: auto;
-    bottom: 1rem;
-    right: 1rem;
-    left: auto;
-    justify-content: flex-end;
-}
-
-.navigation-loader__spinner {
-    background-color: var(--accent-primary);
-    color: var(--bg-tertiary);
-    border-radius: 0 0 8px 8px;
-    padding: 0.5rem 1.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    animation: pulse 1.5s infinite;
-}
-
-/* Minimal variant for the spinner */
-.navigation-loader--minimal .navigation-loader__spinner {
-    border-radius: 20px;
-    padding: 0.5rem 0.8rem;
-    font-size: 0.8rem;
-    background-color: rgba(56, 189, 248, 0.9); /* Semi-transparent */
-    backdrop-filter: blur(4px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    animation: subtle-pulse 2s infinite;
-}
-
-.navigation-loader__text {
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.navigation-loader__spinner svg {
-    animation: spin 1.5s linear infinite;
-}
-
-@keyframes pulse {
-    0% {
-        opacity: 0.8;
-    }
-    50% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0.8;
-    }
-}
-
-/* More subtle pulsing for minimal variant */
-@keyframes subtle-pulse {
-    0% {
-        opacity: 0.7;
-    }
-    50% {
-        opacity: 0.9;
-    }
-    100% {
-        opacity: 0.7;
-    }
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+/* Navigation loader and animation styles moved to navigation.css */
 
 /* Loading indicator for content areas */
 .loading-container {
@@ -353,71 +231,290 @@
     margin: 0;
 }
 
+/* Navigation styles moved to navigation.css */
+
 /*---------------------------------------*/
-/* NAVIGATION STYLES                     */
+/* PAGE LAYOUTS                          */
 /*---------------------------------------*/
 
-/* Navigation block */
-.nav {
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-primary);
-    width: 280px;
-    height: 100%;
-    padding: 1.5rem 0;
+/* Full-page layout block */
+.page-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+.page-layout__container {
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Content area */
+.page-content {
+    background-color: var(--bg-primary);
+    min-height: 100%;
     overflow-y: auto;
-    scrollbar-width: thin;
-    -ms-overflow-style: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 100%;
 }
 
-.nav::-webkit-scrollbar {
-    width: 8px;
+/* Panel layout management */
+.panel-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
-.nav::-webkit-scrollbar-thumb {
-    background-color: var(--border-primary);
-    border-radius: 4px;
+.panel-container .page-subheader {
+    flex-shrink: 0;
 }
 
-.nav::-webkit-scrollbar-track {
-    background-color: var(--bg-secondary);
+/* Content inside panel containers needs to scroll */
+.panel-container .content,
+.content-wrapper {
+    flex: 1;
+    overflow: auto;
+    min-height: 0; /* Critical for Firefox */
+    display: flex;
+    flex-direction: column;
 }
 
-.nav__section {
-    margin-bottom: 2rem;
-    padding: 0 1.5rem;
+/* Data display area */
+.data-display {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: auto;
+    position: relative;
 }
 
-.nav__heading {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
+/* Action buttons container */
+.actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/*---------------------------------------*/
+/* PAGE HEADERS                          */
+/*---------------------------------------*/
+
+/* Common page header styling for all routes */
+.page-header {
+    margin-bottom: 1.5rem;
+    padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Page titles */
+.page-header__title {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 1rem;
+    color: var(--text-primary);
+    line-height: 1.2;
+    text-align: left;
 }
 
-.nav__list {
-    list-style: none;
-    padding: 0;
+.page-header__subtitle {
     margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    text-align: left;
 }
 
-.nav__item {
-    margin-bottom: 0.5rem;
+/* Optional page description */
+.page-header__description {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 1rem;
+    max-width: 800px;
+    text-align: left;
 }
 
-.nav__item--active .nav__link {
-    background: var(--accent-primary);
-    color: var(--bg-tertiary);
+/* Actions block that can be used in page headers */
+.page-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
 }
 
-/* Note: .nav__link is defined in button-styles.css */
+/* Left-aligned variant of page actions */
+.page-actions--left {
+    justify-content: flex-start;
+    margin-top: 1rem;
+}
 
-.nav__text {
+.page-actions .nav__link {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
     font-size: 0.9rem;
+    transition: background-color 0.2s;
 }
 
-.nav__icon {
-    opacity: 0.8;
-    margin-right: 0.5rem;
+.page-actions .nav__link:hover {
+    background-color: var(--accent-hover);
+    color: var(--accent-primary);
+    text-decoration: none;
+}
+
+/* Subheader block */
+.page-subheader {
+    padding: 0.8rem 1.2rem;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    flex-wrap: wrap;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.page-subheader__title {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-subheader__status-counts {
+    font-size: 0.8rem;
+    font-weight: normal;
+    color: var(--text-secondary);
+    margin-left: 0.5rem;
+}
+
+.page-subheader__actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* Ensure no text decoration on any page action links */
+.page-subheader__actions .nav__link:hover,
+.page-actions .nav__link:hover {
+    text-decoration: none !important;
+}
+
+/* Page header modifier for horizontal layout */
+.page-header--horizontal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+    text-align: left;
+}
+
+.page-header--horizontal .page-header__title {
+    margin: 0;
+    font-size: 1.8rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: left;
+}
+
+/*---------------------------------------*/
+/* PAGE SECTIONS                         */
+/*---------------------------------------*/
+
+/* Page section block */
+.page-section {
+    margin-bottom: 2rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-secondary);
+    padding: 1.5rem;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+    align-self: flex-start;
+}
+
+/* Page section width variants */
+.page-section--narrow {
+    max-width: 600px;
+}
+
+.page-section--medium {
+    max-width: 900px;
+}
+
+.page-section--wide {
+    max-width: 1200px;
+}
+
+.page-section--full {
+    max-width: 100%;
+}
+
+.page-section__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.page-section__title {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.page-section__content {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    width: 100%;
+    min-width: 0; /* Ensures content can shrink */
+    box-sizing: border-box;
+}
+
+/* Responsive adjustments for page sections */
+@media (max-width: 767px) {
+    .page-section {
+        padding: 1rem;
+    }
+}
+
+/* Page footer for action buttons */
+.page-footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-primary);
+    width: 100%;
 } 

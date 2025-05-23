@@ -95,6 +95,31 @@ export const GET = async ({ url, locals }: RequestEvent) => {
                 }
             }
             
+            // Process total duration - convert to human readable format
+            if ('total_breadcrumb_duration_seconds' in convertedItem) {
+                const seconds = Number(convertedItem.total_breadcrumb_duration_seconds || 0);
+                // Ensure we keep the original value
+                convertedItem.total_duration_seconds = seconds;
+                // Format as hours and minutes
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                convertedItem.formatted_duration = hours > 0 
+                    ? `${hours}h ${minutes}m` 
+                    : `${minutes}m`;
+            } else {
+                convertedItem.total_duration_seconds = 0;
+                convertedItem.formatted_duration = '0m';
+            }
+            
+            // Process total distance - ensure it's a number
+            if ('total_breadcrumb_length_meters' in convertedItem) {
+                // Convert meters to kilometers and ensure it's a number
+                const meters = Number(convertedItem.total_breadcrumb_length_meters || 0);
+                convertedItem.total_distance_km = (meters / 1000).toFixed(2);
+            } else {
+                convertedItem.total_distance_km = '0.00';
+            }
+            
             // Check if report has driving sessions (surveys)
             const hasDrivingSessions = !!((convertedItem.expand?.driving_sessions && 
                                          Array.isArray(convertedItem.expand.driving_sessions) && 

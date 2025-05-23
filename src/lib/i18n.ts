@@ -23,15 +23,8 @@ export interface TranslationContent {
   };
   dashboard: {
     overview: string;
+    statistics: string;
     lastUpdated: string;
-    salesPerformance: string;
-    salesIncrease: string;
-    userActivity: string;
-    activeUsers: string;
-    inventoryStatus: string;
-    stockLevel: string;
-    systemHealth: string;
-    allOperational: string;
     totalDistance: string;
     jimnyDistance: string;
     torresDistance: string;
@@ -289,15 +282,8 @@ export const translations: Translations = {
     // Dashboard
     dashboard: {
       overview: 'Dashboard Overview',
+      statistics: 'Statistics',
       lastUpdated: 'Last updated',
-      salesPerformance: 'Sales Performance',
-      salesIncrease: 'Monthly sales have increased by 15% compared to previous quarter',
-      userActivity: 'User Activity',
-      activeUsers: '1,245 active users in the last 24 hours',
-      inventoryStatus: 'Inventory Status',
-      stockLevel: 'Current stock level: 85% of capacity',
-      systemHealth: 'System Health',
-      allOperational: 'All systems operational',
       totalDistance: 'Total Distance',
       jimnyDistance: 'Suzuki Jimny Distance',
       torresDistance: 'Ssanyong Torres Distance',
@@ -577,15 +563,8 @@ export const translations: Translations = {
     // Dashboard
     dashboard: {
       overview: 'Przegląd Pulpitu',
+      statistics: 'Statystyki',
       lastUpdated: 'Ostatnia aktualizacja',
-      salesPerformance: 'Wyniki sprzedaży',
-      salesIncrease: 'Miesięczna sprzedaż wzrosła o 15% w porównaniu do poprzedniego kwartału',
-      userActivity: 'Aktywność użytkowników',
-      activeUsers: '1 245 aktywnych użytkowników w ciągu ostatnich 24 godzin',
-      inventoryStatus: 'Stan magazynu',
-      stockLevel: 'Aktualny poziom zapasów: 85% pojemności',
-      systemHealth: 'Stan systemu',
-      allOperational: 'Wszystkie systemy działają',
       totalDistance: 'Całkowita odległość',
       jimnyDistance: 'Odległość Suzuki Jimny',
       torresDistance: 'Odległość Ssanyong Torres',

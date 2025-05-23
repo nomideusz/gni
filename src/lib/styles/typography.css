@@ -14,7 +14,7 @@
 }
 @font-face {
   font-family: 'Inter';
-  src: url('/fonts/inter-latin-variable-full-normal.woff2') format('woff2');
+  src: url('/fonts/inter-v18-latin-regular.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
   font-display: fallback;
@@ -119,6 +119,11 @@ em, i, .italic {
 .icon {
   width: 24px;
   height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 /* Layout helper classes */

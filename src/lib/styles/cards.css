@@ -1,0 +1,274 @@
+/* CARDS.CSS */
+/* Card component styles */
+
+/*---------------------------------------*/
+/* CARD STYLES                           */
+/*---------------------------------------*/
+
+/* Card block */
+.card {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 2rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-primary);
+    max-width: 100%;
+    min-width: 340px;
+    width: 100%;
+    text-align: center;
+    margin: 0 auto;
+    overflow: visible;
+}
+
+.card__title {
+    margin: 0 0 2rem 0;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Card modifiers */
+.card--dark {
+    background-color: var(--bg-tertiary);
+}
+
+/* Chart card block */
+.chart-card {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 0.75rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid var(--border-primary);
+}
+
+.chart-card__title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+
+.chart-card__wrapper {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Info card block */
+.info-card {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 0.75rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    border: 1px solid var(--border-primary);
+}
+
+.info-card__content {
+    flex: 1;
+    overflow: auto;
+}
+
+/* Info note block */
+.info-note {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 0.6rem;
+    border-left: 3px solid var(--border-primary);
+    margin-bottom: 0.5rem;
+}
+
+.info-note__header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+}
+
+.info-note__icon {
+    font-size: 0.9rem;
+}
+
+.info-note__title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.info-note__text {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+/* Info box block */
+.info-box {
+    background-color: var(--bg-card);
+    padding: 0.5rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    border-left: 3px solid var(--accent-primary);
+    display: inline-block;
+    max-width: fit-content;
+}
+
+/*---------------------------------------*/
+/* DASHBOARD CARD STYLES                 */
+/*---------------------------------------*/
+
+/* Dashboard card block */
+.dashboard-card {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-primary);
+    width: 100%;
+    min-width: 280px;
+}
+
+.dashboard-card__title {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Dashboard card elements */
+.card__stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0.8rem 0;
+    color: var(--text-primary);
+}
+
+.card__secondary-info {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+.card__secondary-info span:last-child {
+    color: #fcd34d;
+}
+
+/* Loading state for cards */
+.card--loading {
+    position: relative;
+}
+
+/* Card grid layout */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.2rem;
+    margin-top: 1rem;
+    overflow: visible;
+}
+
+/*---------------------------------------*/
+/* STAT CARD STYLES                      */
+/*---------------------------------------*/
+
+/* Dashboard stats layout */
+.dashboard-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 1.5rem 0 2.5rem 0;
+}
+
+/* Stat card component */
+.stat-card {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    background-color: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 1.5rem;
+    min-width: 280px;
+    max-width: 420px;
+    border: 1px solid var(--border-primary);
+    transition: box-shadow 0.2s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.stat-card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    margin-right: 1rem;
+    color: var(--accent-primary);
+    flex-shrink: 0;
+}
+
+.stat-card__content {
+    flex: 1;
+}
+
+.stat-card__title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.stat-card__value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.stat-card__details {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Responsive adjustments for stat cards */
+@media (max-width: 767px) {
+    .dashboard-stats {
+        flex-direction: column;
+    }
+    
+    .stat-card {
+        max-width: 100%;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .stat-card {
+        flex-basis: calc(50% - 1.5rem);
+        max-width: calc(50% - 1.5rem);
+    }
+} 

@@ -1,0 +1,201 @@
+/* NAVIGATION.CSS */
+/* Navigation component styles */
+
+/*---------------------------------------*/
+/* NAVIGATION STRUCTURE                  */
+/*---------------------------------------*/
+
+/* Navigation block */
+.nav {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+    width: 280px;
+    height: 100%;
+    padding: 1.5rem 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    -ms-overflow-style: auto;
+}
+
+.nav::-webkit-scrollbar {
+    width: 8px;
+}
+
+.nav::-webkit-scrollbar-thumb {
+    background-color: var(--border-primary);
+    border-radius: 4px;
+}
+
+.nav::-webkit-scrollbar-track {
+    background-color: var(--bg-secondary);
+}
+
+.nav__section {
+    margin-bottom: 2rem;
+    padding: 0 1.5rem;
+}
+
+.nav__heading {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+}
+
+.nav__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav__item {
+    margin-bottom: 0.5rem;
+}
+
+.nav__item--active .nav__link {
+    background: var(--accent-primary);
+    color: var(--bg-tertiary);
+}
+
+.nav__text {
+    font-size: 0.9rem;
+}
+
+.nav__icon {
+    opacity: 0.8;
+    margin-right: 0.5rem;
+}
+
+/* Navigation link styling */
+.nav__link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.nav__link:hover {
+    background: var(--accent-hover);
+    color: var(--accent-primary);
+    text-decoration: none;
+}
+
+.nav__link--primary {
+    background-color: var(--accent-primary);
+    color: #fff;
+}
+
+.nav__link--primary:hover {
+    background-color: var(--accent-hover);
+    text-decoration: none;
+}
+
+/* More specific selector to always override other styles */
+.nav .nav__item .nav__link:hover {
+    text-decoration: none !important;
+}
+
+/*---------------------------------------*/
+/* NAVIGATION LOADER                     */
+/*---------------------------------------*/
+
+/* Navigation loader */
+.navigation-loader {
+    position: fixed;
+    top: 3.5rem; /* Below header */
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* Minimal variant for the loader - more subtle design */
+.navigation-loader--minimal {
+    top: auto;
+    bottom: 1rem;
+    right: 1rem;
+    left: auto;
+    justify-content: flex-end;
+}
+
+.navigation-loader__spinner {
+    background-color: var(--accent-primary);
+    color: var(--bg-tertiary);
+    border-radius: 0 0 8px 8px;
+    padding: 0.5rem 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: pulse 1.5s infinite;
+}
+
+/* Minimal variant for the spinner */
+.navigation-loader--minimal .navigation-loader__spinner {
+    border-radius: 20px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+    background-color: rgba(56, 189, 248, 0.9); /* Semi-transparent */
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: subtle-pulse 2s infinite;
+}
+
+.navigation-loader__text {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.navigation-loader__spinner svg {
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.8;
+    }
+}
+
+/* More subtle pulsing for minimal variant */
+@keyframes subtle-pulse {
+    0% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+} 

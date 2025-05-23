@@ -59,26 +59,6 @@ body {
 main {
   background-color: var(--bg-primary);
 }
-/* Status message block with modifiers */
-.message {
-  /* Base message styles */
-}
-
-.message--error {
-  color: var(--error);
-}
-
-.message--success {
-  color: var(--success);
-}
-
-.message--warning {
-  color: var(--warning);
-}
-
-.message--info {
-  color: var(--info);
-}
 
 /* Custom Scrollbar Styles */
 /* For Webkit browsers (Chrome, Safari, newer Edge) */

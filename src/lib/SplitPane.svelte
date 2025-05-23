@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { Length } from './types';
+	import type { Length } from '$lib/types';
 
 	interface Props {
 		type: 'horizontal' | 'vertical';
