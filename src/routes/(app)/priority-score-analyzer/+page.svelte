@@ -20,16 +20,32 @@
     
     // Filtering thresholds - use default values from priorityScoreUtils.ts
     let maxAmplitudeThreshold = $state(2); // Default threshold for maxAmplitude
-    let emissionRateThreshold = $state(10); // Default threshold for emissionRate
+    let emissionRateThresholdLow = $state(0.885); // Default second threshold for emissionRate
+    let emissionRateThresholdHigh = $state(10); // Default main threshold for emissionRate
     let showFilterControls = $state(true);
     
-    // Ensure emission rate threshold never goes below 0.1
+    // Track if we're using default values
+    let isDefaultLowThreshold = $state(true);
+    
+    // Ensure emission rate thresholds never go below 0.1 and maintain order
     $effect(() => {
-        if (emissionRateThreshold < 0.1) {
-            emissionRateThreshold = 0.1;
+        console.log('$effect running - Low threshold:', emissionRateThresholdLow, 'Is default:', isDefaultLowThreshold);
+        
+        // Ensure minimums
+        if (emissionRateThresholdLow < 0.1) {
+            emissionRateThresholdLow = 0.1;
+            isDefaultLowThreshold = false;
         }
+        if (emissionRateThresholdHigh < 0.1) {
+            emissionRateThresholdHigh = 0.1;
+        }
+        
         // Round to avoid floating point precision issues
-        emissionRateThreshold = Math.round(emissionRateThreshold * 100) / 100;
+        // NEVER round the exact default value 0.885
+        if (emissionRateThresholdLow !== 0.885) {
+            emissionRateThresholdLow = Math.round(emissionRateThresholdLow * 1000) / 1000;
+        }
+        emissionRateThresholdHigh = Math.round(emissionRateThresholdHigh * 10) / 10;
     });
     
     // Pagination state
@@ -153,19 +169,8 @@
     function calculateCustomBemission(emissionRate: number | undefined | null): number {
         if (emissionRate === undefined || emissionRate === null) return 0;
         
-        if (emissionRate >= emissionRateThreshold) return 10;
-        
-        // Dynamic second threshold based on slider position
-        if (emissionRateThreshold >= 0.885) {
-            // Normal case: slider is at or above 0.885, use fixed 0.885 threshold
-            if (emissionRate >= 0.885) return 5;
-        } else if (emissionRateThreshold > 0.1) {
-            // Dynamic case: slider is below 0.885 but above 0.1, use dynamic threshold
-            const dynamicSecondThreshold = emissionRateThreshold * 0.9;
-            if (emissionRate >= dynamicSecondThreshold) return 5;
-        }
-        // When slider is at 0.1, skip the second threshold and use standard hierarchy
-        
+        if (emissionRate >= emissionRateThresholdHigh) return 10;
+        if (emissionRate >= emissionRateThresholdLow) return 5;
         if (emissionRate >= 0.1) return 1;
         return 0.01;
     }
@@ -218,7 +223,9 @@
     
     function resetThresholds() {
         maxAmplitudeThreshold = 2; // Reset to default from priorityScoreUtils
-        emissionRateThreshold = 10; // Reset to default from priorityScoreUtils
+        emissionRateThresholdLow = 0.885; // Reset to exact default value
+        emissionRateThresholdHigh = 10; // Reset to default from priorityScoreUtils
+        isDefaultLowThreshold = true; // Mark as default again
     }
     
     function toggleFilterControls() {
@@ -242,6 +249,15 @@
         if (currentPage > 1) {
             currentPage--;
         }
+    }
+    
+    // Helper function to format emission rate threshold display
+    function formatLowThreshold(value: number): string {
+        // Show 3 decimal places for exact default value 0.885, otherwise 1 decimal place
+        if (value === 0.885) {
+            return "0.885";
+        }
+        return value.toFixed(1);
     }
 </script>
 
@@ -309,43 +325,94 @@
                                 <div class="filter-group">
                                     <div class="slider-header">
                                         <label for="emission-rate">Emission Rate Threshold</label>
-                                        <div class="current-value">≥ {emissionRateThreshold.toFixed(1)}</div>
+                                        <div class="current-value">≥ {formatLowThreshold(emissionRateThresholdLow)} - {emissionRateThresholdHigh.toFixed(1)}</div>
                                     </div>
                                     <div class="slider-container">
-                                        <input 
-                                            type="range" 
-                                            id="emission-rate" 
-                                            min="0.1" 
-                                            max={maxEmissionRateValue} 
-                                            step="0.1" 
-                                            bind:value={emissionRateThreshold}
-                                            oninput={(e) => {
-                                                if (!e.target) return;
-                                                const target = e.target as HTMLInputElement;
-                                                const value = parseFloat(target.value);
-                                                if (value < 0.1) {
-                                                    target.value = '0.1';
-                                                    emissionRateThreshold = 0.1;
-                                                }
-                                            }}
-                                        />
+                                        <div class="double-range-wrapper">
+                                            <div class="range-track-bg"></div>
+                                            <input 
+                                                type="range" 
+                                                id="emission-rate-low" 
+                                                min="0.1" 
+                                                max={maxEmissionRateValue} 
+                                                step="0.001" 
+                                                bind:value={emissionRateThresholdLow}
+                                                class="range-slider range-slider--low"
+                                                oninput={(e) => {
+                                                    if (!e.target) return;
+                                                    const target = e.target as HTMLInputElement;
+                                                    const value = parseFloat(target.value);
+                                                    console.log('Low slider moved to:', value, 'High is at:', emissionRateThresholdHigh);
+                                                    
+                                                    // Mark as no longer default when user interacts
+                                                    if (value !== 0.885) {
+                                                        isDefaultLowThreshold = false;
+                                                    }
+                                                    
+                                                    // Ensure minimum value
+                                                    if (value < 0.1) {
+                                                        emissionRateThresholdLow = 0.1;
+                                                        isDefaultLowThreshold = false;
+                                                        return;
+                                                    }
+                                                    // Ensure proper gap from high threshold (minimum 0.1 gap)
+                                                    // If the gap would be less than 0.1, push the high threshold up
+                                                    if (emissionRateThresholdHigh - value < 0.1) {
+                                                        console.log('Pushing high slider up from', emissionRateThresholdHigh, 'to', value + 0.1);
+                                                        emissionRateThresholdHigh = Math.min(maxEmissionRateValue, value + 0.1);
+                                                    }
+                                                }}
+                                            />
+                                            <input 
+                                                type="range" 
+                                                id="emission-rate-high" 
+                                                min="0.1" 
+                                                max={maxEmissionRateValue} 
+                                                step="0.001" 
+                                                bind:value={emissionRateThresholdHigh}
+                                                class="range-slider range-slider--high"
+                                                oninput={(e) => {
+                                                    if (!e.target) return;
+                                                    const target = e.target as HTMLInputElement;
+                                                    const value = parseFloat(target.value);
+                                                    console.log('High slider moved to:', value, 'Low is at:', emissionRateThresholdLow);
+                                                    
+                                                    // Ensure minimum value
+                                                    if (value < 0.1) {
+                                                        emissionRateThresholdHigh = 0.1;
+                                                        return;
+                                                    }
+                                                    // Ensure proper gap from low threshold (minimum 0.1 gap)
+                                                    // If the gap would be less than 0.1, push the low threshold down
+                                                    if (value - emissionRateThresholdLow < 0.1) {
+                                                        console.log('Pushing low slider down from', emissionRateThresholdLow, 'to', value - 0.1);
+                                                        emissionRateThresholdLow = Math.max(0.1, value - 0.1);
+                                                        isDefaultLowThreshold = false; // No longer default when pushed
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                         <div class="slider-labels">
                                             <span>0.1</span>
                                             <span>{(maxEmissionRateValue/2).toFixed(1)}</span>
                                             <span>{maxEmissionRateValue.toFixed(1)}</span>
                                         </div>
+                                        <div class="slider-legend">
+                                            <div class="legend-item">
+                                                <div class="legend-color" style="background: #38bdf8;"></div>
+                                                <span>5x Threshold: {formatLowThreshold(emissionRateThresholdLow)}</span>
+                                            </div>
+                                            <div class="legend-item">
+                                                <div class="legend-color" style="background: var(--accent-primary);"></div>
+                                                <span>10x Threshold: {emissionRateThresholdHigh.toFixed(1)}</span>
+                                            </div>
+                                        </div>
                                         <div class="threshold-indicator">
                                             <div class="threshold-effect">
                                                 <span>&lt; 0.1: <strong>Bemission = 0.01</strong></span>
-                                                {#if emissionRateThreshold > 0.1}
-                                                    <span>≥ 0.1: <strong>Bemission = 1</strong></span>
-                                                    {#if emissionRateThreshold >= 0.885}
-                                                        <span>≥ 0.885: <strong>Bemission = 5</strong></span>
-                                                    {:else}
-                                                        <span>≥ {(emissionRateThreshold * 0.9).toFixed(2)}: <strong>Bemission = 5</strong></span>
-                                                    {/if}
-                                                {/if}
-                                                <span>≥ {emissionRateThreshold.toFixed(1)}: <strong>Bemission = 10</strong></span>
+                                                <span>≥ 0.1: <strong>Bemission = 1</strong></span>
+                                                <span>≥ {formatLowThreshold(emissionRateThresholdLow)}: <strong>Bemission = 5</strong></span>
+                                                <span>≥ {emissionRateThresholdHigh.toFixed(1)}: <strong>Bemission = 10</strong></span>
                                             </div>
                                         </div>
                                     </div>
@@ -365,7 +432,7 @@
                                     <p><strong>Where:</strong></p>
                                     <ul>
                                         <li><strong>BCH4</strong>: Based on CH4 max amplitude (1000 if ≥ {maxAmplitudeThreshold}, otherwise 1)</li>
-                                        <li><strong>Bemission</strong>: Based on emission rate (SCFH) (10 if ≥ {emissionRateThreshold.toFixed(1)}{#if emissionRateThreshold > 0.1}, {#if emissionRateThreshold >= 0.885}5 if ≥ 0.885{:else}5 if ≥ {(emissionRateThreshold * 0.9).toFixed(2)}{/if}, 1 if ≥ 0.1{/if}, otherwise 0.01)</li>
+                                        <li><strong>Bemission</strong>: Based on emission rate (SCFH) (10 if ≥ {emissionRateThresholdHigh.toFixed(1)}, 5 if ≥ {formatLowThreshold(emissionRateThresholdLow)}, 1 if ≥ 0.1, otherwise 0.01)</li>
                                         <li><strong>Persistence</strong>: Square root of detection probability</li>
                                         <li><strong>Cethane</strong>: Classification factor (1 for Natural Gas, 0.7 for Possible Natural Gas, 0 otherwise)</li>
                                     </ul>
@@ -773,6 +840,7 @@
         padding: 1rem;
         border-radius: 8px;
         border: 1px solid var(--border-primary);
+        margin: 0 0 1rem 0; /* Match the double-range-wrapper margin */
     }
     
     .slider-labels {
@@ -824,16 +892,29 @@
         border: 2px solid white;
         cursor: pointer;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        pointer-events: auto;
+        position: relative;
     }
     
     input[type="range"]::-moz-range-thumb {
         width: 20px;
         height: 20px;
         border-radius: 50%;
-        background: var(--accent-primary);
         border: 2px solid white;
         cursor: pointer;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        pointer-events: auto;
+        position: relative;
+        -moz-appearance: none;
+        background: var(--accent-primary);
+    }
+    
+    .range-slider--low::-moz-range-thumb {
+        background: #38bdf8;
+    }
+    
+    .range-slider--high::-moz-range-thumb {
+        background: var(--accent-primary);
     }
     
     .button--outline {
@@ -1139,5 +1220,130 @@
         font-weight: 500;
         margin-left: 0.25rem;
         opacity: 0.8;
+    }
+    
+    /* Double range slider styling */
+    .double-range-wrapper {
+        position: relative;
+        margin: 0.5rem 0; /* Match natural input margin */
+        height: 20px; /* Ensure container has proper height */
+    }
+    
+    .range-track-bg {
+        position: absolute;
+        width: 100%;
+        height: 8px;
+        background: var(--border-primary, #d1d5db);
+        border-radius: 4px;
+        border: none;
+        top: 50%; /* Center vertically in container */
+        transform: translateY(-50%); /* Perfect centering */
+        z-index: 1 !important; /* Track below sliders */
+    }
+    
+    .range-slider {
+        position: absolute;
+        width: 100%;
+        height: 20px;
+        -webkit-appearance: none !important;
+        background: transparent !important;
+        pointer-events: none;
+        top: 0;
+    }
+    
+    /* Aggressively remove all native track elements */
+    .range-slider::-webkit-slider-track {
+        background: transparent !important;
+        border: none !important;
+        height: 0 !important;
+        -webkit-appearance: none !important;
+    }
+    
+    .range-slider::-moz-range-track {
+        background: transparent !important;
+        border: none !important;
+        height: 0 !important;
+        -moz-appearance: none !important;
+    }
+    
+    .range-slider::-webkit-slider-runnable-track {
+        background: transparent !important;
+        border: none !important;
+        height: 0 !important;
+    }
+    
+    .range-slider--low {
+        z-index: 100 !important; /* Much higher above track */
+    }
+    
+    .range-slider--high {
+        z-index: 101 !important; /* Highest */
+    }
+    
+    /* Thumb styling for WebKit browsers */
+    .range-slider::-webkit-slider-thumb {
+        pointer-events: auto;
+        -webkit-appearance: none !important;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid white;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+        z-index: 1000 !important; /* Extremely high z-index */
+        transform: translateY(-60%); /* Move thumbs up more than center */
+    }
+    
+    .range-slider--low::-webkit-slider-thumb {
+        background: #38bdf8 !important; /* Light blue for low threshold */
+    }
+    
+    .range-slider--high::-webkit-slider-thumb {
+        background: var(--accent-primary) !important; /* Standard blue for high threshold */
+    }
+    
+    /* Thumb styling for Firefox */
+    .range-slider::-moz-range-thumb {
+        pointer-events: auto;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid white;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+        -moz-appearance: none !important;
+        z-index: 1000 !important; /* Extremely high z-index */
+        transform: translateY(-60%); /* Move thumbs up more than center */
+    }
+    
+    .range-slider--low::-moz-range-thumb {
+        background: #38bdf8 !important;
+    }
+    
+    .range-slider--high::-moz-range-thumb {
+        background: var(--accent-primary) !important;
+    }
+    
+    .slider-legend {
+        display: flex;
+        justify-content: space-between;
+        margin: 0.5rem 0;
+        font-size: 0.75rem;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1px solid white;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
 </style> 
