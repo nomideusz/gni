@@ -411,8 +411,12 @@
                                             <div class="threshold-effect">
                                                 <span>&lt; 0.1: <strong>Bemission = 0.01</strong></span>
                                                 <span>≥ 0.1: <strong>Bemission = 1</strong></span>
-                                                <span>≥ {formatLowThreshold(emissionRateThresholdLow)}: <strong>Bemission = 5</strong></span>
-                                                <span>≥ {emissionRateThresholdHigh.toFixed(1)}: <strong>Bemission = 10</strong></span>
+                                                {#if emissionRateThresholdLow >= 0.2 && emissionRateThresholdLow < emissionRateThresholdHigh - 0.1}
+                                                    <span>≥ {formatLowThreshold(emissionRateThresholdLow)}: <strong>Bemission = 5</strong></span>
+                                                {/if}
+                                                {#if emissionRateThresholdHigh >= Math.max(0.2, emissionRateThresholdLow + 0.1)}
+                                                    <span>≥ {emissionRateThresholdHigh.toFixed(1)}: <strong>Bemission = 10</strong></span>
+                                                {/if}
                                             </div>
                                         </div>
                                     </div>
@@ -432,7 +436,10 @@
                                     <p><strong>Where:</strong></p>
                                     <ul>
                                         <li><strong>BCH4</strong>: Based on CH4 max amplitude (1000 if ≥ {maxAmplitudeThreshold}, otherwise 1)</li>
-                                        <li><strong>Bemission</strong>: Based on emission rate (SCFH) (10 if ≥ {emissionRateThresholdHigh.toFixed(1)}, 5 if ≥ {formatLowThreshold(emissionRateThresholdLow)}, 1 if ≥ 0.1, otherwise 0.01)</li>
+                                        <li><strong>Bemission</strong>: Based on emission rate (SCFH) (
+                                            {#if emissionRateThresholdHigh >= Math.max(0.2, emissionRateThresholdLow + 0.1)}10 if ≥ {emissionRateThresholdHigh.toFixed(1)}, {/if}
+                                            {#if emissionRateThresholdLow >= 0.2 && emissionRateThresholdLow < emissionRateThresholdHigh - 0.1}5 if ≥ {formatLowThreshold(emissionRateThresholdLow)}, {/if}
+                                            1 if ≥ 0.1, otherwise 0.01)</li>
                                         <li><strong>Persistence</strong>: Square root of detection probability</li>
                                         <li><strong>Cethane</strong>: Classification factor (1 for Natural Gas, 0.7 for Possible Natural Gas, 0 otherwise)</li>
                                     </ul>
