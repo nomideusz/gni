@@ -18,11 +18,41 @@ function calculateStats(items: any[]) {
     const notNaturalGasCount = items.filter(item => item.disposition === 0).length;
     const totalItems = items.length;
     
+    // Calculate representative emission rate statistics
+    const itemsWithEmissionRate = items.filter(item => 
+        item.representative_emission_rate !== null && 
+        item.representative_emission_rate !== undefined &&
+        !isNaN(item.representative_emission_rate)
+    );
+    
+    const totalEmissionRate = itemsWithEmissionRate.reduce((sum, item) => 
+        sum + (item.representative_emission_rate || 0), 0
+    );
+    
+    const avgEmissionRate = itemsWithEmissionRate.length > 0 
+        ? totalEmissionRate / itemsWithEmissionRate.length 
+        : 0;
+    
+    const minEmissionRate = itemsWithEmissionRate.length > 0
+        ? Math.min(...itemsWithEmissionRate.map(item => item.representative_emission_rate))
+        : 0;
+        
+    const maxEmissionRate = itemsWithEmissionRate.length > 0
+        ? Math.max(...itemsWithEmissionRate.map(item => item.representative_emission_rate))
+        : 0;
+    
     return {
         naturalGasCount,
         possibleNaturalGasCount,
         notNaturalGasCount,
-        totalItems
+        totalItems,
+        emissionRateStats: {
+            total: totalEmissionRate,
+            average: avgEmissionRate,
+            min: minEmissionRate,
+            max: maxEmissionRate,
+            count: itemsWithEmissionRate.length
+        }
     };
 }
 
@@ -129,4 +159,4 @@ export const load: PageServerLoad = async ({ locals }) => {
         console.error('Failed to fetch priority score data:', err);
         throw error(500, 'Failed to load priority score data');
     }
-}; 
+};

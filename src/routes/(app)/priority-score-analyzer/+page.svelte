@@ -3,6 +3,7 @@
 <script lang="ts">
     import PageTemplate from '$lib/components/PageTemplate.svelte';
     import SectionContainer from '$lib/components/SectionContainer.svelte';
+
     import { Eye, Edit, Trash2, Star, CheckCircle, Clock, AlertTriangle, Sliders, ChevronUp, ChevronDown } from 'lucide-svelte';
     
     // Import page data with runes
@@ -11,6 +12,7 @@
     import { calculatePS2 } from './priorityScoreUtils';
 
     let { data }: PageProps = $props();
+
     
     // Extract data from server response
     const priorityItems = $state<PriorityItem[]>(data.priorityScoreData?.items || []);
@@ -43,9 +45,9 @@
         // Round to avoid floating point precision issues
         // NEVER round the exact default value 0.885
         if (emissionRateThresholdLow !== 0.885) {
-            emissionRateThresholdLow = Math.round(emissionRateThresholdLow * 1000) / 1000;
+            emissionRateThresholdLow = Math.round(emissionRateThresholdLow * 200) / 200;
         }
-        emissionRateThresholdHigh = Math.round(emissionRateThresholdHigh * 10) / 10;
+        emissionRateThresholdHigh = Math.round(emissionRateThresholdHigh * 200) / 200;
     });
     
     // Pagination state
@@ -253,11 +255,21 @@
     
     // Helper function to format emission rate threshold display
     function formatLowThreshold(value: number): string {
-        // Show 3 decimal places for exact default value 0.885, otherwise 1 decimal place
+        // Show 3 decimal places for exact default value 0.885, otherwise 2 decimal places
         if (value === 0.885) {
             return "0.885";
         }
-        return value.toFixed(1);
+        return value.toFixed(2);
+    }
+    
+    // Debounce collision detection to prevent flickering
+    let collisionTimeout: ReturnType<typeof setTimeout> | null = null;
+    
+    function handleSliderCollision(callback: () => void) {
+        if (collisionTimeout) {
+            clearTimeout(collisionTimeout);
+        }
+        collisionTimeout = setTimeout(callback, 10);
     }
 </script>
 
@@ -325,7 +337,7 @@
                                 <div class="filter-group">
                                     <div class="slider-header">
                                         <label for="emission-rate">Emission Rate Threshold</label>
-                                        <div class="current-value">≥ {formatLowThreshold(emissionRateThresholdLow)} - {emissionRateThresholdHigh.toFixed(1)}</div>
+                                        <div class="current-value">≥ {formatLowThreshold(emissionRateThresholdLow)} - {emissionRateThresholdHigh.toFixed(2)}</div>
                                     </div>
                                     <div class="slider-container">
                                         <div class="double-range-wrapper">
@@ -334,8 +346,8 @@
                                                 type="range" 
                                                 id="emission-rate-low" 
                                                 min="0.1" 
-                                                max={maxEmissionRateValue} 
-                                                step="0.001" 
+                                                max="12" 
+                                                step="0.005" 
                                                 bind:value={emissionRateThresholdLow}
                                                 class="range-slider range-slider--low"
                                                 oninput={(e) => {
@@ -355,11 +367,13 @@
                                                         isDefaultLowThreshold = false;
                                                         return;
                                                     }
-                                                    // Ensure proper gap from high threshold (minimum 0.1 gap)
-                                                    // If the gap would be less than 0.1, push the high threshold up
-                                                    if (emissionRateThresholdHigh - value < 0.1) {
-                                                        console.log('Pushing high slider up from', emissionRateThresholdHigh, 'to', value + 0.1);
-                                                        emissionRateThresholdHigh = Math.min(maxEmissionRateValue, value + 0.1);
+                                                    // Ensure proper gap from high threshold (minimum 0.25 gap)
+                                                    // If the gap would be less than 0.25, push the high threshold up
+                                                    if (emissionRateThresholdHigh - value < 0.25) {
+                                                        handleSliderCollision(() => {
+                                                            console.log('Pushing high slider up from', emissionRateThresholdHigh, 'to', value + 0.25);
+                                                            emissionRateThresholdHigh = Math.min(12, value + 0.25);
+                                                        });
                                                     }
                                                 }}
                                             />
@@ -367,8 +381,8 @@
                                                 type="range" 
                                                 id="emission-rate-high" 
                                                 min="0.1" 
-                                                max={maxEmissionRateValue} 
-                                                step="0.001" 
+                                                max="12" 
+                                                step="0.005" 
                                                 bind:value={emissionRateThresholdHigh}
                                                 class="range-slider range-slider--high"
                                                 oninput={(e) => {
@@ -382,20 +396,22 @@
                                                         emissionRateThresholdHigh = 0.1;
                                                         return;
                                                     }
-                                                    // Ensure proper gap from low threshold (minimum 0.1 gap)
-                                                    // If the gap would be less than 0.1, push the low threshold down
-                                                    if (value - emissionRateThresholdLow < 0.1) {
-                                                        console.log('Pushing low slider down from', emissionRateThresholdLow, 'to', value - 0.1);
-                                                        emissionRateThresholdLow = Math.max(0.1, value - 0.1);
-                                                        isDefaultLowThreshold = false; // No longer default when pushed
+                                                    // Ensure proper gap from low threshold (minimum 0.25 gap)
+                                                    // If the gap would be less than 0.25, push the low threshold down
+                                                    if (value - emissionRateThresholdLow < 0.25) {
+                                                        handleSliderCollision(() => {
+                                                            console.log('Pushing low slider down from', emissionRateThresholdLow, 'to', value - 0.25);
+                                                            emissionRateThresholdLow = Math.max(0.1, value - 0.25);
+                                                            isDefaultLowThreshold = false; // No longer default when pushed
+                                                        });
                                                     }
                                                 }}
                                             />
                                         </div>
                                         <div class="slider-labels">
                                             <span>0.1</span>
-                                            <span>{(maxEmissionRateValue/2).toFixed(1)}</span>
-                                            <span>{maxEmissionRateValue.toFixed(1)}</span>
+                                            <span>6.0</span>
+                                            <span>12.0</span>
                                         </div>
                                         <div class="slider-legend">
                                             <div class="legend-item">
@@ -404,18 +420,18 @@
                                             </div>
                                             <div class="legend-item">
                                                 <div class="legend-color" style="background: var(--accent-primary);"></div>
-                                                <span>10x Threshold: {emissionRateThresholdHigh.toFixed(1)}</span>
+                                                <span>10x Threshold: {emissionRateThresholdHigh.toFixed(2)}</span>
                                             </div>
                                         </div>
                                         <div class="threshold-indicator">
                                             <div class="threshold-effect">
                                                 <span>&lt; 0.1: <strong>Bemission = 0.01</strong></span>
                                                 <span>≥ 0.1: <strong>Bemission = 1</strong></span>
-                                                {#if emissionRateThresholdLow >= 0.2 && emissionRateThresholdLow < emissionRateThresholdHigh - 0.1}
+                                                {#if emissionRateThresholdLow >= 0.2 && emissionRateThresholdLow <= emissionRateThresholdHigh - 0.25 + 0.001}
                                                     <span>≥ {formatLowThreshold(emissionRateThresholdLow)}: <strong>Bemission = 5</strong></span>
                                                 {/if}
-                                                {#if emissionRateThresholdHigh >= Math.max(0.2, emissionRateThresholdLow + 0.1)}
-                                                    <span>≥ {emissionRateThresholdHigh.toFixed(1)}: <strong>Bemission = 10</strong></span>
+                                                {#if emissionRateThresholdHigh >= Math.max(0.2, emissionRateThresholdLow + 0.25 - 0.001)}
+                                                    <span>≥ {emissionRateThresholdHigh.toFixed(2)}: <strong>Bemission = 10</strong></span>
                                                 {/if}
                                             </div>
                                         </div>
@@ -437,15 +453,15 @@
                                     <ul>
                                         <li><strong>BCH4</strong>: Based on CH4 max amplitude (1000 if ≥ {maxAmplitudeThreshold}, otherwise 1)</li>
                                         <li><strong>Bemission</strong>: Based on emission rate (SCFH) (
-                                            {#if emissionRateThresholdHigh >= Math.max(0.2, emissionRateThresholdLow + 0.1)}10 if ≥ {emissionRateThresholdHigh.toFixed(1)}, {/if}
-                                            {#if emissionRateThresholdLow >= 0.2 && emissionRateThresholdLow < emissionRateThresholdHigh - 0.1}5 if ≥ {formatLowThreshold(emissionRateThresholdLow)}, {/if}
+                                            {#if emissionRateThresholdHigh >= Math.max(0.2, emissionRateThresholdLow + 0.25 - 0.001)}10 if ≥ {emissionRateThresholdHigh.toFixed(2)}, {/if}
+                                            {#if emissionRateThresholdLow >= 0.2 && emissionRateThresholdLow <= emissionRateThresholdHigh - 0.25 + 0.001}5 if ≥ {formatLowThreshold(emissionRateThresholdLow)}, {/if}
                                             1 if ≥ 0.1, otherwise 0.01)</li>
                                         <li><strong>Persistence</strong>: Square root of detection probability</li>
                                         <li><strong>Cethane</strong>: Classification factor (1 for Natural Gas, 0.7 for Possible Natural Gas, 0 otherwise)</li>
                                     </ul>
                                     <p class="note">LISAs with PS2 score less than 1 are automatically filtered.</p>
                                 </div>
-                                
+
                                 <!-- Integrated Stats Comparison -->
                                 <div class="equation-stats">
                                     <div class="stats-comparison-compact">
