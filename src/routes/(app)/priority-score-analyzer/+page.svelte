@@ -269,7 +269,7 @@
     {#snippet content()}
         <SectionContainer 
             title="LISA Filtering Analysis" 
-            subtitle="Based on extraction data from 23.05.2025"
+            subtitle="Based on extraction data from 13.05.2025"
             width="full">
             {#snippet sectionActions()}
                 <button class="button button--discrete" onclick={handleFilterByScore}>Sort by Score</button>

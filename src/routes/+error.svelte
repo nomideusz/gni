@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { t, language } from '$lib';
+	import '$lib/styles/typography.css';
+
 	
 	// Get the error status and message from the page store
 	$: status = $page.status;
