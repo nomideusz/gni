@@ -2,7 +2,7 @@
 /* Navigation component styles */
 
 /*---------------------------------------*/
-/* NAVIGATION                            */
+/* DESKTOP NAVIGATION                    */
 /*---------------------------------------*/
 
 /* Navigation block */
@@ -112,6 +112,7 @@
     transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
+    min-height: 40px; /* Consistent touch target */
 }
 
 /* Center icon in collapsed state */
@@ -165,15 +166,22 @@
     overflow: hidden;
 }
 
-/* Responsive styles */
-@media (max-width: 768px) {
-    .nav {
-        display: none;
-    }
-    
-    .nav__toggle {
-        display: none;
-    }
+/* Ensure nav scrollbar styling */
+.nav::-webkit-scrollbar {
+    width: 4px;
+}
+
+.nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.nav::-webkit-scrollbar-thumb {
+    background-color: var(--border-secondary);
+    border-radius: 2px;
+}
+
+.nav::-webkit-scrollbar-thumb:hover {
+    background-color: var(--accent-primary);
 }
 
 /*---------------------------------------*/
@@ -239,20 +247,70 @@
     animation: nav-loading 1.5s ease-in-out infinite;
 }
 
-/* Ensure nav scrollbar styling */
-.nav::-webkit-scrollbar {
-    width: 4px;
-    }
+/*---------------------------------------*/
+/* RESPONSIVE DESIGN                     */
+/*---------------------------------------*/
 
-.nav::-webkit-scrollbar-track {
-    background: transparent;
+/* Tablet adjustments */
+@media (max-width: 1024px) {
+    .nav {
+        width: 200px;
+    }
+    
+    .nav--collapsed {
+        width: 56px;
+    }
+    
+    .nav__toggle {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .nav__header {
+        padding: 0.8rem;
+        min-height: 48px;
+    }
+    
+    .nav__content {
+        padding: 1.2rem 0;
+    }
+    
+    .nav__section {
+        padding: 0 0.8rem;
+    }
 }
 
-.nav::-webkit-scrollbar-thumb {
-    background-color: var(--border-secondary);
-    border-radius: 2px;
+/* Hide desktop navigation on mobile */
+@media (max-width: 768px) {
+    .nav {
+        display: none;
     }
+    
+    .nav__toggle {
+        display: none;
+    }
+    
+    /* Adjust navigation loader position for mobile header height */
+    .navigation-loader {
+        top: 3rem; /* Mobile header height */
+    }
+}
 
-.nav::-webkit-scrollbar-thumb:hover {
-    background-color: var(--accent-primary);
+/* Small tablet improvements */
+@media (max-width: 900px) and (min-width: 769px) {
+    .nav {
+        width: 180px;
+    }
+    
+    .nav--collapsed {
+        width: 52px;
+    }
+    
+    .nav__link {
+        padding: 0.5rem 0.6rem;
+    }
+    
+    .nav__text {
+        font-size: 0.9rem;
+    }
 } 

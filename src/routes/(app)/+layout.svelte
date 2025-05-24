@@ -16,6 +16,8 @@
 	import Eye from 'lucide-svelte/icons/eye';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import Menu from 'lucide-svelte/icons/menu';
+	import X from 'lucide-svelte/icons/x';
 	import Loader from 'lucide-svelte/icons/loader';
 	import { language, t, LANGUAGES } from '$lib';
 	import { initialUserValue, setupAuthListener, pb } from '$lib/pocketbase';
@@ -41,6 +43,9 @@
 	// Navigation collapsed state - persist in localStorage
 	let isNavCollapsed = $state(false);
 	
+	// Mobile navigation state
+	let isMobileNavOpen = $state(false);
+	
 	// Load collapsed state from localStorage on mount
 	$effect(() => {
 		if (isMounted.current && typeof window !== 'undefined') {
@@ -56,9 +61,26 @@
 		}
 	});
 	
-	// Toggle navigation collapsed state
+	// Toggle navigation collapsed state (desktop)
 	function toggleNavigation() {
 		isNavCollapsed = !isNavCollapsed;
+	}
+	
+	// Toggle mobile navigation
+	function toggleMobileNav() {
+		isMobileNavOpen = !isMobileNavOpen;
+	}
+	
+	// Close mobile nav when clicking a link
+	function closeMobileNav() {
+		isMobileNavOpen = false;
+	}
+	
+	// Close mobile nav on escape key
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape' && isMobileNavOpen) {
+			isMobileNavOpen = false;
+		}
 	}
 	
 	// Initialize auth store with initial values as early as possible
@@ -298,6 +320,9 @@
 				shouldShowLoader: false
 			});
 		}
+		
+		// Close mobile nav on route change
+		isMobileNavOpen = false;
 	});
 	
 	// Function to check if a given path is active using navigation context
@@ -317,6 +342,8 @@
 	}
 </script>
 
+<svelte:window on:keydown={handleKeydown} />
+
 <!-- Render children directly -->
 {#snippet defaultContent()}
 <div class="layout" data-sveltekit-layout="root">
@@ -329,8 +356,86 @@
 		</div>
 	{/if}
 
+	<!-- Mobile navigation overlay -->
+	{#if isMobileNavOpen}
+		<div class="mobile-nav-overlay" onclick={closeMobileNav}>
+			<nav class="mobile-nav" onclick={(e) => e.stopPropagation()}>
+				<div class="mobile-nav__header">
+					<div class="mobile-nav__brand">
+						<div class="header__logo">
+							<Flame size={18} />
+						</div>
+						<span class="header__brand-name">{t('appName', $language)}</span>
+					</div>
+					<button class="mobile-nav__close" onclick={closeMobileNav} aria-label="Close navigation">
+						<X size={24} />
+					</button>
+				</div>
+				
+				<div class="mobile-nav__content">
+					<div class="mobile-nav__section">
+						<h3 class="mobile-nav__heading">{t('nav.main', $language)}</h3>
+						<ul class="mobile-nav__list">
+							<li class="mobile-nav__item">
+								<a href="/" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/', true)} onclick={closeMobileNav}>
+									<LayoutDashboard size={20} class="mobile-nav__icon" />
+									<span class="mobile-nav__text">{t('nav.dashboard', $language)}</span>
+								</a>
+							</li>
+							<li class="mobile-nav__item">
+								<a href="/reports" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/reports')} onclick={closeMobileNav}>
+									<FileText size={20} class="mobile-nav__icon" />
+									<span class="mobile-nav__text">{t('nav.reports', $language)}</span>
+								</a>
+							</li>
+							<li class="mobile-nav__item">
+								<a href="/tests" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/tests')} onclick={closeMobileNav}>
+									<TestTube size={20} class="mobile-nav__icon" />
+									<span class="mobile-nav__text">{t('nav.tests', $language)}</span>
+								</a>
+							</li>
+							<li class="mobile-nav__item">
+								<a href="/settings" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/settings')} onclick={closeMobileNav}>
+									<Settings size={20} class="mobile-nav__icon" />
+									<span class="mobile-nav__text">{t('nav.settings', $language)}</span>
+								</a>
+							</li>
+						</ul>
+					</div>
+					
+					{#if data.isAuthenticated}
+					<div class="mobile-nav__section">
+						<h3 class="mobile-nav__heading">{t('nav.tools', $language)}</h3>
+						<ul class="mobile-nav__list">
+							<li class="mobile-nav__item">
+								<a href="/priority-score-analyzer" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/priority-score-analyzer')} onclick={closeMobileNav}>
+									<ChartBar size={20} class="mobile-nav__icon" />
+									<span class="mobile-nav__text">PS 2.0 Analyzer</span>
+								</a>
+							</li>
+							{#if data.isAdmin}
+								<li class="mobile-nav__item">
+									<a href="/survey-viewer" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/survey-viewer')} onclick={closeMobileNav}>
+										<Eye size={20} class="mobile-nav__icon" />
+										<span class="mobile-nav__text">{t('tools.surveyViewer', $language)}</span>
+									</a>
+								</li>
+							{/if}
+						</ul>
+					</div>
+					{/if}
+				</div>
+			</nav>
+		</div>
+	{/if}
+
 	<!-- Ensure the auth context is properly provided to all children -->
 	<header class="header">
+		<!-- Mobile menu button -->
+		<button class="header__mobile-menu" onclick={toggleMobileNav} aria-label="Toggle navigation">
+			<Menu size={20} />
+		</button>
+		
 		<!-- Logo/Brand -->
 		<a href="/" class="header__brand" title="PSG Dashboard">
 			<div class="header__logo">
