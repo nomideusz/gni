@@ -1,40 +1,45 @@
+/* Global Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 /* Theme Variables */
 :root {
-  /* Main colors */
-  --bg-primary: #1e1e2e;
-  --bg-secondary: #1c1c2c;
-  --bg-tertiary: #1a1a2e;
-  --bg-card: #1c1c2c;
+  /* Main colors - Refined dark theme with better hierarchy */
+  --bg-primary: #0f0f14;
+  --bg-secondary: #16161f;
+  --bg-tertiary: #1a1a26;
+  --bg-card: #1e1e2a;
   
-  /* Border colors */
-  --border-primary: #2d2d42;
-  --border-secondary: #334155;
-  --border-hover: #3b82f6;
+  /* Border colors - Subtle and sophisticated */
+  --border-primary: #26263a;
+  --border-secondary: #2f3044;
+  --border-hover: #4a7eff;
   
-  /* Text colors */
-  --text-primary: #e2e8f0;
-  --text-secondary: #9ca3af;
+  /* Text colors - Better contrast and readability */
+  --text-primary: #f7f7f8;
+  --text-secondary: #a8a8b3;
   
-  /* Accent colors */
-  --accent-primary: #2563eb;
+  /* Accent colors - Professional blue with depth */
+  --accent-primary: #3b82f6;
   --accent-secondary: #60a5fa;
-  --accent-hover: #1d4ed8;
+  --accent-hover: #2563eb;
   
-  /* Status colors */
-  --error: #f87171;
-  --success: #16a34a;
-  --warning: #ca8a04;
-  --info: #80deea;
+  /* Status colors - Modern and accessible */
+  --error: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --info: #06b6d4;
   
   /* Animation speeds */
   --transition-fast: 0.15s;
   --transition-normal: 0.25s;
   --transition-slow: 0.5s;
   
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  /* Shadows - Enhanced for depth */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.3);
   
   /* Spacing - for consistent margins/padding */
   --space-xs: 0.25rem;

@@ -5,7 +5,12 @@
     import type { SubmitFunction } from '@sveltejs/kit';
     import { t, language } from '$lib';
     import PageTemplate from '$lib/components/PageTemplate.svelte';
-    import SectionContainer from '$lib/components/SectionContainer.svelte';
+    import '$lib/styles/settings.css';
+    // Import Lucide icons
+    import User from 'lucide-svelte/icons/user';
+    import Lock from 'lucide-svelte/icons/lock';
+    import Check from 'lucide-svelte/icons/check';
+    import AlertCircle from 'lucide-svelte/icons/alert-circle';
     
     // Access page data from server
     let { data } = $props();
@@ -75,29 +80,42 @@
     footer={false}
 >
     {#snippet content()}
+        <div class="settings-page">
         {#if !data.user}
-            <div class="info-card">
+                <div class="settings-info-card">
                 <p>{t('settings.authRequired', $language)}</p>
                 <a href="/login" class="button button--primary">{t('settings.login', $language)}</a>
             </div>
         {:else}
-            <SectionContainer title={t('settings.profile.title', $language)} width="narrow">                
-                {#snippet children()}
+                <div class="settings-sections">
+                    <!-- Profile Settings Card -->
+                    <div class="settings-card">
+                        <header class="settings-card__header">
+                            <h2 class="settings-card__title">
+                                <span class="settings-card__icon">
+                                    <User size={18} />
+                                </span>
+                                {t('settings.profile.title', $language)}
+                            </h2>
+                        </header>
+                        
                     {#if profileSuccess}
-                        <div class="message message--success">
+                            <div class="settings-message settings-message--success">
+                                <Check size={20} class="settings-message__icon" />
                             {profileSuccess}
                         </div>
                     {/if}
                     
                     {#if profileError}
-                        <div class="message message--error">
+                            <div class="settings-message settings-message--error">
+                                <AlertCircle size={20} class="settings-message__icon" />
                             {profileError}
                         </div>
                     {/if}
                     
-                    <form method="POST" action="?/updateProfile" use:enhance={handleProfileUpdate} class="form">
-                        <div class="form__group">
-                            <label for="username" class="form__label">{t('settings.profile.username', $language)}</label>
+                        <form method="POST" action="?/updateProfile" use:enhance={handleProfileUpdate} class="settings-form">
+                            <div class="settings-form__group">
+                                <label for="username" class="settings-form__label">{t('settings.profile.username', $language)}</label>
                             <input 
                                 type="text" 
                                 id="username" 
@@ -105,12 +123,12 @@
                                 value={username}
                                 oninput={(e) => username = e.currentTarget.value}
                                 disabled={profileFormLoading}
-                                class="form__input"
+                                    class="settings-form__input"
                             />
                         </div>
                         
-                        <div class="form__group">
-                            <label for="email" class="form__label">{t('settings.profile.email', $language)}</label>
+                            <div class="settings-form__group">
+                                <label for="email" class="settings-form__label">{t('settings.profile.email', $language)}</label>
                             <input 
                                 type="email" 
                                 id="email" 
@@ -119,35 +137,45 @@
                                 oninput={(e) => email = e.currentTarget.value}
                                 disabled={profileFormLoading}
                                 readonly
-                                class="form__input"
+                                    class="settings-form__input"
                             />
-                            <p class="form__note">{t('settings.profile.emailNote', $language)}</p>
+                                <p class="settings-form__note">{t('settings.profile.emailNote', $language)}</p>
                         </div>
                         
-                        <button type="submit" class="button button--primary" disabled={profileFormLoading}>
+                            <button type="submit" class="button button--primary settings-form__button" disabled={profileFormLoading}>
                             {profileFormLoading ? t('settings.profile.updating', $language) : t('settings.profile.updateButton', $language)}
                         </button>
                     </form>
-                {/snippet}
-            </SectionContainer>
-            
-            <SectionContainer title={t('settings.password.title', $language)} width="narrow">
-                {#snippet children()}
+                    </div>
+                    
+                    <!-- Password Settings Card -->
+                    <div class="settings-card">
+                        <header class="settings-card__header">
+                            <h2 class="settings-card__title">
+                                <span class="settings-card__icon">
+                                    <Lock size={18} />
+                                </span>
+                                {t('settings.password.title', $language)}
+                            </h2>
+                        </header>
+                        
                     {#if passwordSuccess}
-                        <div class="message message--success">
+                            <div class="settings-message settings-message--success">
+                                <Check size={20} class="settings-message__icon" />
                             {passwordSuccess}
                         </div>
                     {/if}
                     
                     {#if passwordError}
-                        <div class="message message--error">
+                            <div class="settings-message settings-message--error">
+                                <AlertCircle size={20} class="settings-message__icon" />
                             {passwordError}
                         </div>
                     {/if}
                     
-                    <form method="POST" action="?/changePassword" use:enhance={handlePasswordChange} class="form">
-                        <div class="form__group">
-                            <label for="currentPassword" class="form__label">{t('settings.password.current', $language)}</label>
+                        <form method="POST" action="?/changePassword" use:enhance={handlePasswordChange} class="settings-form">
+                            <div class="settings-form__group">
+                                <label for="currentPassword" class="settings-form__label">{t('settings.password.current', $language)}</label>
                             <input 
                                 type="password" 
                                 id="currentPassword" 
@@ -156,12 +184,12 @@
                                 oninput={(e) => currentPassword = e.currentTarget.value}
                                 required
                                 disabled={passwordFormLoading}
-                                class="form__input"
+                                    class="settings-form__input"
                             />
                         </div>
                         
-                        <div class="form__group">
-                            <label for="newPassword" class="form__label">{t('settings.password.new', $language)}</label>
+                            <div class="settings-form__group">
+                                <label for="newPassword" class="settings-form__label">{t('settings.password.new', $language)}</label>
                             <input 
                                 type="password" 
                                 id="newPassword" 
@@ -171,13 +199,13 @@
                                 required
                                 minlength="8"
                                 disabled={passwordFormLoading}
-                                class="form__input"
+                                    class="settings-form__input"
                             />
-                            <p class="form__note">{t('settings.password.passwordNote', $language)}</p>
+                                <p class="settings-form__note">{t('settings.password.passwordNote', $language)}</p>
                         </div>
                         
-                        <div class="form__group">
-                            <label for="confirmPassword" class="form__label">{t('settings.password.confirm', $language)}</label>
+                            <div class="settings-form__group">
+                                <label for="confirmPassword" class="settings-form__label">{t('settings.password.confirm', $language)}</label>
                             <input 
                                 type="password" 
                                 id="confirmPassword" 
@@ -186,53 +214,19 @@
                                 oninput={(e) => confirmPassword = e.currentTarget.value}
                                 required
                                 disabled={passwordFormLoading}
-                                class="form__input"
+                                    class="settings-form__input"
                             />
                         </div>
                         
-                        <button type="submit" class="button button--primary" disabled={passwordFormLoading}>
+                            <button type="submit" class="button button--primary settings-form__button" disabled={passwordFormLoading}>
                             {passwordFormLoading ? t('settings.password.changing', $language) : t('settings.password.changeButton', $language)}
                         </button>
                     </form>
-                {/snippet}
-            </SectionContainer>
+                    </div>
+                </div>
         {/if}
+        </div>
     {/snippet}
-    
 </PageTemplate>
 
-<style>
-    /* We can simplify our styles since the components provide structure */
-    :global(.form) {
-        text-align: left;
-        width: 100%;
-        max-width: 600px;
-    }
-    
-    :global(.form__note) {
-        text-align: left;
-    }
-    
-    :global(.form__label) {
-        text-align: left;
-    }
-    
-    :global(.message) {
-        text-align: left;
-        width: 100%;
-        max-width: 600px;
-        margin-bottom: 1rem;
-    }
-    
-    .info-card {
-        background-color: var(--bg-secondary);
-        padding: 1.5rem;
-        border-radius: var(--radius-md);
-        border: 1px solid var(--border-primary);
-        box-shadow: var(--shadow-sm);
-        width: 100%;
-        max-width: 600px;
-        text-align: center;
-        margin: 2rem auto;
-    }
-</style> 
+ 

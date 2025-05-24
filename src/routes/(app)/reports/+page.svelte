@@ -3,6 +3,9 @@
 	import { onMount } from 'svelte';
 	import { reportsApi, formatDate, formatDateTime } from '$lib/pocketbase';
 	import { tick } from 'svelte';
+	import PageTemplate from '$lib/components/PageTemplate.svelte';
+	import SectionContainer from '$lib/components/SectionContainer.svelte';
+	import { ChevronUp, ChevronDown, Database, Clock, CheckCircle, AlertTriangle } from 'lucide-svelte';
 
 	// Define Report interface based on the API response
 	interface Report {
@@ -31,6 +34,7 @@
 	let finalReports = $state(0);
 	let totalReports = $state(0);
 	let draftReports = $state(0);
+	let totalLISAs = $state(0);
 	let syncInfo = $state<any>(null);
 	
 	let reports = $state<Report[]>([]);
@@ -39,7 +43,7 @@
 	let reportsLoading = $state(true);
 	let error = $state('');
 	let meta = $state({ page: 1, totalPages: 0, totalItems: 0, perPage: 0 });
-	let tableContainer: HTMLElement;
+	let tableContainer = $state<HTMLElement>();
 
 	// Sorting state
 	let sortColumn = $state('report_date');
@@ -136,6 +140,20 @@
 		sortReports();
 	}
 
+	// Calculate total survey distance
+	const totalSurveyDistance = $derived(() => {
+		return reports.reduce((sum, report) => {
+			return sum + (parseFloat(report.total_distance_km || '0') || 0);
+		}, 0);
+	});
+
+	// Calculate total coverage
+	const totalCoverage = $derived(() => {
+		const totalAssets = reports.reduce((sum, report) => sum + (report.linear_asset_length || 0), 0);
+		const coveredAssets = reports.reduce((sum, report) => sum + (report.linear_asset_covered_length || 0), 0);
+		return totalAssets > 0 ? (coveredAssets / totalAssets) * 100 : 0;
+	});
+
 	onMount(() => {
 		const loadData = async () => {
 			try {
@@ -165,6 +183,7 @@
 				totalReports = result.stats.totalReports;
 				finalReports = result.stats.reportCounts.finalWithSurveys;
 				draftReports = totalReports - finalReports;
+				totalLISAs = result.stats.totalIndications || 0;
 				
 				// Fetch sync info from centralized API
 				try {
@@ -211,362 +230,672 @@
 	});
 </script>
 
-<div class="page-layout">
-	<div class="page-layout__container">
-		<div class="page-content">
-			<div class="page-header">
-				<h1 class="page-header__title">{t('reports.title', $language)}</h1>
-				<p class="page-header__description">{t('reports.description', $language)}</p>
-			</div>
-
-			<div class="panel-container">
-				<div class="page-subheader">
-					<h2 class="page-subheader__title">
-						{t('reports.title', $language)}
-						{#if !loading && !error}
-							<span class="page-subheader__status-counts">
-								{t('reports.status.final', $language)}: {finalReports} • {t('reports.status.total', $language)}: {totalReports} • {t('reports.status.draft', $language)}: {draftReports}
-							</span>
-						{/if}
-					</h2>
-					
-					<div class="page-subheader__actions">
-						{#if syncInfo === null}
-							<div class="sync sync--loading">
-								<span>{t('reports.sync.loading', $language) || 'Loading sync status...'}</span>
-								<div class="sync-loading-indicator">
-									<div class="sync-loading-dot"></div>
-									<div class="sync-loading-dot"></div>
-									<div class="sync-loading-dot"></div>
-								</div>
+<PageTemplate title={t('reports.title', $language)} showActions={false} fullWidth={true}>
+	{#snippet content()}
+		<SectionContainer
+			title="Survey Reports Overview"
+			subtitle="Comprehensive analysis of survey data and asset coverage"
+			width="full"
+		>
+			{#snippet children()}
+				{#if loading}
+					<div class="loading-container">
+						<div class="loading-indicator">
+							<div class="loading-bar"></div>
+							<div class="loading-bar"></div>
+							<div class="loading-bar"></div>
+						</div>
+						<p class="loading-text">{t('reports.loading', $language)}</p>
+					</div>
+				{:else if error}
+					<div class="error-container">
+						<p class="error">{error}</p>
+					</div>
+				{:else}
+					<!-- Stats Header -->
+					<div class="stats-header">
+						<div class="stats-metric stats-metric--primary">
+							<div class="stats-icon">
+								<Database size={24} />
 							</div>
-						{:else if syncInfo}
-							<div class="sync">
-								{t('reports.sync.lastSynced', $language)}: {syncInfo.last_sync 
+							<div class="stats-content">
+								<div class="stats-value">{totalReports}</div>
+								<div class="stats-label">Total Reports</div>
+							</div>
+						</div>
+						
+						<div class="stats-metric">
+							<div class="stats-icon stats-icon--success">
+								<CheckCircle size={20} />
+							</div>
+							<div class="stats-content">
+								<div class="stats-value">{finalReports}</div>
+								<div class="stats-label">Final Reports</div>
+							</div>
+						</div>
+						
+						<div class="stats-metric">
+							<div class="stats-icon stats-icon--warning">
+								<AlertTriangle size={20} />
+							</div>
+							<div class="stats-content">
+								<div class="stats-value">{draftReports}</div>
+								<div class="stats-label">Draft Reports</div>
+							</div>
+						</div>
+						
+						<div class="stats-metric">
+							<div class="stats-content">
+								<div class="stats-value">{totalCoverage().toFixed(1)}%</div>
+								<div class="stats-label">Asset Coverage</div>
+							</div>
+						</div>
+						
+						<div class="stats-metric">
+							<div class="stats-content">
+								<div class="stats-value">{totalLISAs}</div>
+								<div class="stats-label">Total LISAs</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Sync Status -->
+					{#if syncInfo !== null}
+						<div class="sync-status">
+							<div class="sync-status-content">
+								<Clock size={16} />
+								<span>Last Sync: {syncInfo.last_sync 
 									? formatDateTime(syncInfo.last_sync) 
 									: (syncInfo.last_sync_success 
 										? formatDateTime(syncInfo.last_sync_success) 
-										: t('reports.sync.never', $language))}
-								<span class="sync__status sync__status--{syncInfo.sync_status || 'pending'}">{syncInfo.sync_status || t('reports.sync.unknown', $language)}</span>
+										: 'Never')}</span>
+								<span class="sync-badge sync-badge--{syncInfo.sync_status || 'pending'}">
+									{syncInfo.sync_status || 'Unknown'}
+								</span>
 							</div>
-						{:else}
-							<div class="sync">
-								<span>{t('reports.sync.unavailable', $language)}</span>
-							</div>
-						{/if}
-					</div>
-				</div>
+						</div>
+					{/if}
 
-				<div class="content">
-					<div class="data-display">
-						{#if loading}
-							<div class="loading-container">
-								<div class="loading-indicator">
-									<div class="loading-bar"></div>
-									<div class="loading-bar"></div>
-									<div class="loading-bar"></div>
-								</div>
-								<p class="loading-text">{t('reports.loading', $language)}</p>
-							</div>
-						{:else if error}
-							<p class="error">{error}</p>
-						{:else if reportsLoading}
-							<div class="table-container" bind:this={tableContainer}>
-								<div class="table table--scrollable">
-									<table class="table__element">
-										<thead>
-											<tr>
-												<th class="table__header table__header--sortable">{t('reports.table.reportName', $language)}</th>
-												<th class="table__header table__header--sortable">{t('reports.table.reportTitle', $language)}</th>
-												<th class="table__header table__header--sortable">{t('reports.table.date', $language)}</th>
-												<th class="table__header table__header--sortable">{t('reports.table.assetsCovered', $language)}</th>
-												<th class="table__header table__header--sortable">Total Assets</th>
-												<th class="table__header table__header--sortable">Coverage %</th>
-												<th class="table__header table__header--sortable">Duration</th>
-												<th class="table__header table__header--sortable" style="font-weight: bold;">Survey Distance</th>
-												<th class="table__header table__header--sortable">{t('reports.table.surveyorUnit', $language)}</th>
-												<th class="table__header table__header--sortable">{t('reports.table.lisa', $language)}</th>
-												<th class="table__header table__header--sortable table__header--status">{t('reports.table.status', $language)}</th>
+					<p class="table-scroll-hint">Scroll horizontally to view all report data</p>
+					
+					<div class="table-container" bind:this={tableContainer}>
+						<div class="table table--compact">
+							<table class="table__element">
+								<thead>
+									<tr>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('report_name')}>
+											<div class="sort-header">
+												<span>Report Name</span>
+												{#if sortColumn === 'report_name'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('report_title')}>
+											<div class="sort-header">
+												<span>Report Title</span>
+												{#if sortColumn === 'report_title'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('report_date')}>
+											<div class="sort-header">
+												<span>Report Date</span>
+												{#if sortColumn === 'report_date'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('linear_asset_covered_length')}>
+											<div class="sort-header">
+												<span>Assets Covered</span>
+												{#if sortColumn === 'linear_asset_covered_length'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('linear_asset_length')}>
+											<div class="sort-header">
+												<span>Total Assets</span>
+												{#if sortColumn === 'linear_asset_length'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('linear_asset_coverage')}>
+											<div class="sort-header">
+												<span>Coverage %</span>
+												{#if sortColumn === 'linear_asset_coverage'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('total_duration_seconds')}>
+											<div class="sort-header">
+												<span>Duration</span>
+												{#if sortColumn === 'total_duration_seconds'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('total_distance_km')}>
+											<div class="sort-header">
+												<span>Survey Distance</span>
+												{#if sortColumn === 'total_distance_km'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('surveyor_unit_desc')}>
+											<div class="sort-header">
+												<span>Surveyor Unit</span>
+												{#if sortColumn === 'surveyor_unit_desc'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('indicationsCount')}>
+											<div class="sort-header">
+												<span>LISAs</span>
+												{#if sortColumn === 'indicationsCount'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('report_final')}>
+											<div class="sort-header">
+												<span>Status</span>
+												{#if sortColumn === 'report_final'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#if reportsLoading}
+										{#each Array(5) as _, i}
+											<tr class="table__row table__row--loading">
+												<td class="table__cell"><div class="skeleton-text"></div></td>
+												<td class="table__cell"><div class="skeleton-text"></div></td>
+												<td class="table__cell"><div class="skeleton-text"></div></td>
+												<td class="table__cell"><div class="skeleton-text"></div></td>
+												<td class="table__cell"><div class="skeleton-text"></div></td>
+												<td class="table__cell"><div class="skeleton-text"></div></td>
+												<td class="table__cell"><div class="skeleton-text"></div></td>
+												<td class="table__cell"><div class="skeleton-text"></div></td>
+												<td class="table__cell"><div class="skeleton-text"></div></td>
+												<td class="table__cell"><div class="skeleton-text"></div></td>
+												<td class="table__cell table__cell--status">
+													<div class="skeleton-text"></div>
+												</td>
 											</tr>
-										</thead>
-										<tbody>
-											<!-- Skeleton loading rows -->
-											{#each Array(5) as _, i}
-												<tr class="table__row table__row--loading">
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell table__cell--status">
-														<div class="skeleton-text"></div>
-													</td>
-												</tr>
-											{/each}
-										</tbody>
-									</table>
-								</div>
-							</div>
-						{:else}
-							<div class="table-container" bind:this={tableContainer}>
-								<div class="table table--scrollable">
-									<table class="table__element">
-										<thead>
-											<tr>
-												<th class="table__header table__header--sortable" onclick={() => handleSort('report_name')}>
-													{t('reports.table.reportName', $language)}
-													<span class="table__sort-icon">{sortColumn === 'report_name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th> 
-												<th class="table__header table__header--sortable" onclick={() => handleSort('report_title')}>
-													{t('reports.table.reportTitle', $language)}
-													<span class="table__sort-icon">{sortColumn === 'report_title' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th> 
-												<th class="table__header table__header--sortable" onclick={() => handleSort('report_date')}>
-													{t('reports.table.date', $language)}
-													<span class="table__sort-icon">{sortColumn === 'report_date' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th> 
-												<th class="table__header table__header--sortable" onclick={() => handleSort('linear_asset_covered_length')}>
-													{t('reports.table.assetsCovered', $language)}
-													<span class="table__sort-icon">{sortColumn === 'linear_asset_covered_length' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th>
-												<th class="table__header table__header--sortable" onclick={() => handleSort('linear_asset_length')}>
-													Total Assets
-													<span class="table__sort-icon">{sortColumn === 'linear_asset_length' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th>
-												<th class="table__header table__header--sortable" onclick={() => handleSort('linear_asset_coverage')}>
-													Coverage %
-													<span class="table__sort-icon">{sortColumn === 'linear_asset_coverage' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th>
-												<th class="table__header table__header--sortable" onclick={() => handleSort('total_duration_seconds')}>
-													Duration
-													<span class="table__sort-icon">{sortColumn === 'total_duration_seconds' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th>
-												<th class="table__header table__header--sortable" onclick={() => handleSort('total_distance_km')} style="font-weight: bold;">
-													Survey Distance
-													<span class="table__sort-icon">{sortColumn === 'total_distance_km' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th>
-												<th class="table__header table__header--sortable" onclick={() => handleSort('surveyor_unit_desc')}>
-													{t('reports.table.surveyorUnit', $language)}
-													<span class="table__sort-icon">{sortColumn === 'surveyor_unit_desc' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th> 
-												<th class="table__header table__header--sortable" onclick={() => handleSort('indicationsCount')}>
-													{t('reports.table.lisa', $language)}
-													<span class="table__sort-icon">{sortColumn === 'indicationsCount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th> 
-												<th class="table__header table__header--sortable table__header--status" onclick={() => handleSort('report_final')}>
-													{t('reports.table.status', $language)}
-													<span class="table__sort-icon">{sortColumn === 'report_final' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</span>
-												</th> 
+										{/each}
+									{:else if displayedReports.length > 0}
+										{#each displayedReports as report}
+											<tr class="table__row">
+												<td class="table__cell">{report.report_name}</td>
+												<td class="table__cell">{report.report_title}</td>
+												<td class="table__cell">{formatDate(report.report_date)}</td>
+												<td class="table__cell">{report.linear_asset_covered_length ? `${Number(report.linear_asset_covered_length).toFixed(2)} km` : 'N/A'}</td>
+												<td class="table__cell">{report.linear_asset_length ? `${Number(report.linear_asset_length).toFixed(2)} km` : 'N/A'}</td>
+												<td class="table__cell">{report.linear_asset_coverage ? `${Number(report.linear_asset_coverage * 100).toFixed(1)}%` : 'N/A'}</td>
+												<td class="table__cell">{report.formatted_duration || 'N/A'}</td>
+												<td class="table__cell table__cell--highlight">{report.total_distance_km ? `${report.total_distance_km} km` : 'N/A'}</td>
+												<td class="table__cell">{report.surveyor_unit_desc || 'N/A'}</td>
+												<td class="table__cell table__cell--center">{report.indicationsCount || 0}</td>
+												<td class="table__cell table__cell--status">
+													<div class="status-container">
+														<span class="status-indicator {
+															report.report_final === true || 
+															report.report_final === 1 || 
+															report.report_final === '1' ? 'status-indicator--final' : 'status-indicator--draft'
+														}"></span>
+														<span class="status-text">
+															{report.report_final === true || 
+															report.report_final === 1 || 
+															report.report_final === '1' ? 'Final' : 'Draft'}
+														</span>
+													</div>
+												</td>
 											</tr>
-										</thead>
-										<tbody>
-											{#if displayedReports.length > 0}
-												{#each displayedReports as report}
-													<tr class="table__row">
-														<td class="table__cell">{report.report_name}</td>
-														<td class="table__cell">{report.report_title}</td>
-														<td class="table__cell">{formatDate(report.report_date)}</td>
-														<td class="table__cell">{report.linear_asset_covered_length ? `${Number(report.linear_asset_covered_length).toFixed(2)} km` : 'N/A'}</td>
-														<td class="table__cell">{report.linear_asset_length ? `${Number(report.linear_asset_length).toFixed(2)} km` : 'N/A'}</td>
-														<td class="table__cell">{report.linear_asset_coverage ? `${Number(report.linear_asset_coverage * 100).toFixed(1)}%` : 'N/A'}</td>
-														<td class="table__cell">{report.formatted_duration || 'N/A'}</td>
-														<td class="table__cell highlight-column">{report.total_distance_km ? `${report.total_distance_km} km` : 'N/A'}</td>
-														<td class="table__cell">{report.surveyor_unit_desc || 'N/A'}</td>
-														<td class="table__cell">{report.indicationsCount || 0}</td>
-														<td class="table__cell table__cell--status">
-															<span class="status status--{
-																report.report_final === true || 
-																report.report_final === 1 || 
-																report.report_final === '1' ? 'final' : 'draft'
-															}">
-																{report.report_final === true || 
-																report.report_final === 1 || 
-																report.report_final === '1' ? t('reports.status.final', $language) : t('reports.status.draft', $language)}
-															</span>
-														</td>
-													</tr>
-												{/each}
-											{:else}
-												<tr class="table__row">
-													<td class="table__cell" colspan="11">{t('reports.table.noReportsFound', $language)}</td>
-												</tr>
-											{/if}
-										</tbody>
-									</table>
-								</div>
-							</div>
-						{/if}
+										{/each}
+									{:else}
+										<tr class="table__row">
+											<td class="table__cell table__cell--empty" colspan="11">No reports found</td>
+										</tr>
+									{/if}
+								</tbody>
+							</table>
+						</div>
 					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
+				{/if}
+			{/snippet}
+		</SectionContainer>
+	{/snippet}
+</PageTemplate>
 
 <style>
-	.sync--loading {
+	/* Stats Header */
+	.stats-header {
+		background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+		padding: 1.5rem;
+		border-radius: 8px;
+		margin-bottom: 1.5rem;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+		gap: 1.5rem;
+		color: white;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	}
+
+	.stats-metric {
 		display: flex;
 		align-items: center;
-		gap: 10px;
+		gap: 0.75rem;
 	}
-	
-	.sync-loading-indicator {
+
+	.stats-metric--primary {
+		grid-column: span 2;
+		padding-right: 1.5rem;
+		border-right: 1px solid rgba(255, 255, 255, 0.2);
+	}
+
+	.stats-icon {
 		display: flex;
 		align-items: center;
-		gap: 4px;
+		justify-content: center;
+		width: 40px;
+		height: 40px;
+		background: rgba(255, 255, 255, 0.15);
+		border-radius: 8px;
+		flex-shrink: 0;
 	}
-	
-	.sync-loading-dot {
-		width: 6px;
-		height: 6px;
-		background-color: #666;
-		border-radius: 50%;
-		animation: pulse 1.5s infinite ease-in-out;
+
+	.stats-icon--success {
+		background: rgba(34, 197, 94, 0.2);
 	}
-	
-	.sync-loading-dot:nth-child(2) {
-		animation-delay: 0.5s;
+
+	.stats-icon--warning {
+		background: rgba(245, 158, 11, 0.2);
 	}
-	
-	.sync-loading-dot:nth-child(3) {
-		animation-delay: 1s;
+
+	.stats-content {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
 	}
-	
-	@keyframes pulse {
-		0%, 100% {
-			transform: scale(0.8);
+
+	.stats-value {
+		font-size: 1.5rem;
+		font-weight: 700;
+		line-height: 1;
+	}
+
+	.stats-label {
+		font-size: 0.85rem;
+		opacity: 0.9;
+	}
+
+	/* Sync Status */
+	.sync-status {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 6px;
+		padding: 0.75rem 1rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.sync-status-content {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+	}
+
+	.sync-badge {
+		padding: 0.25rem 0.5rem;
+		border-radius: 12px;
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.sync-badge--success {
+		background: rgba(34, 197, 94, 0.1);
+		color: var(--success);
+	}
+
+	.sync-badge--pending {
+		background: rgba(245, 158, 11, 0.1);
+		color: var(--warning);
+	}
+
+	.sync-badge--failed {
+		background: rgba(239, 68, 68, 0.1);
+		color: var(--error);
+	}
+
+	/* Loading States */
+	.loading-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 4rem 2rem;
+		text-align: center;
+	}
+
+	.loading-indicator {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.loading-bar {
+		width: 4px;
+		height: 40px;
+		background: var(--accent-primary);
+		border-radius: 2px;
+		animation: loading-pulse 1.2s infinite ease-in-out;
+	}
+
+	.loading-bar:nth-child(2) {
+		animation-delay: 0.1s;
+	}
+
+	.loading-bar:nth-child(3) {
+		animation-delay: 0.2s;
+	}
+
+	@keyframes loading-pulse {
+		0%, 80%, 100% {
+			transform: scaleY(0.4);
 			opacity: 0.5;
 		}
-		50% {
-			transform: scale(1.2);
+		40% {
+			transform: scaleY(1);
 			opacity: 1;
 		}
 	}
 
-	/* Table scrolling fixes */
+	.loading-text {
+		color: var(--text-secondary);
+		font-size: 0.9rem;
+	}
+
+	.error-container {
+		padding: 2rem;
+		text-align: center;
+	}
+
+	.error {
+		color: var(--error);
+		font-size: 0.9rem;
+	}
+
+	/* Professional Table Styles */
 	.table-container {
-		width: 100%;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 8px;
+		overflow: hidden;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 		overflow-x: auto;
-		padding-bottom: 15px;
-		margin-bottom: 20px;
-		position: relative;
 	}
 
-	/* Override the global panel-container content styles */
-	:global(.panel-container) .content {
-		position: relative !important;
-		overflow-y: auto !important;
-		overflow-x: hidden !important;
-		width: 100% !important;
-		height: auto !important;
-		min-height: 500px !important;
-		padding-bottom: 20px !important;
-		top: auto !important;
-		bottom: auto !important;
-	}
-
-	.data-display {
+	.table {
 		width: 100%;
-		height: auto;
-	}
-
-	/* Override global scrollable table styles */
-	:global(.table.table--scrollable) {
-		position: relative !important;
-		top: auto !important;
-		bottom: auto !important;
-		left: auto !important;
-		right: auto !important;
-		margin-bottom: 0;
-		box-shadow: var(--shadow-sm);
-		border-radius: var(--radius-md);
-		overflow: visible !important;
 	}
 
 	.table__element {
 		width: 100%;
 		border-collapse: collapse;
-		min-width: 1400px;
-		table-layout: fixed !important;
+		font-size: 0.85rem;
+		min-width: 1200px;
 	}
 
-	/* Override display properties for table elements */
-	.table__element thead,
-	.table__element tbody,
-	.table__element tr {
-		display: table !important;
-		width: 100% !important;
-		table-layout: fixed !important;
+	.table__header {
+		background: var(--bg-secondary);
+		padding: 0.875rem 0.75rem;
+		text-align: left;
+		font-weight: 600;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--text-secondary);
+		border-bottom: 1px solid var(--border-primary);
+		min-width: 120px;
+		max-width: 200px;
+		position: relative;
 	}
 
-	.table__element tbody {
-		display: table-row-group !important;
-		height: auto !important;
-		overflow: visible !important;
+	.table__row {
+		border-bottom: 1px solid var(--border-secondary);
+		transition: background-color 0.15s ease;
 	}
 
-	/* Override cell styles */
-	.table__header,
+	.table__row:hover {
+		background: var(--bg-secondary);
+	}
+
+	.table__row--loading {
+		background: var(--bg-secondary);
+	}
+
 	.table__cell {
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		padding: 0.8rem;
+		padding: 0.875rem 1rem;
+		vertical-align: middle;
+		height: 3.5rem;
+		box-sizing: border-box;
+		border-right: 1px solid var(--border-secondary);
+		font-size: 0.85rem;
+		color: var(--text-primary);
 	}
 
-	/* Define specific column widths for this table */
-	.table__header:nth-child(1), .table__cell:nth-child(1) { width: 9% !important; }
-	.table__header:nth-child(2), .table__cell:nth-child(2) { width: 9% !important; }
-	.table__header:nth-child(3), .table__cell:nth-child(3) { width: 8% !important; }
-	.table__header:nth-child(4), .table__cell:nth-child(4) { width: 8% !important; }
-	.table__header:nth-child(5), .table__cell:nth-child(5) { width: 8% !important; }
-	.table__header:nth-child(6), .table__cell:nth-child(6) { width: 8% !important; }
-	.table__header:nth-child(7), .table__cell:nth-child(7) { width: 8% !important; }
-	.table__header:nth-child(8), .table__cell:nth-child(8) { width: 10% !important; }
-	.table__header:nth-child(9), .table__cell:nth-child(9) { width: 14% !important; }
-	.table__header:nth-child(10), .table__cell:nth-child(10) { width: 8% !important; }
-	.table__header:nth-child(11), .table__cell:nth-child(11) { width: 10% !important; }
-
-	/* Scrollbar styles */
-	.table-container::-webkit-scrollbar {
-		height: 8px;
-		width: 8px;
+	.table__cell:last-child {
+		border-right: none;
 	}
 
-	.table-container::-webkit-scrollbar-track {
-		background: var(--bg-tertiary);
-		border-radius: var(--radius-md);
+	.table__cell--highlight {
+		background: rgba(37, 99, 235, 0.05);
+		font-weight: 600;
+		color: var(--accent-primary);
 	}
 
-	.table-container::-webkit-scrollbar-thumb {
-		background: var(--border-secondary);
-		border-radius: var(--radius-md);
+	.table__cell--center {
+		text-align: center;
 	}
 
-	.table-container::-webkit-scrollbar-thumb:hover {
-		background: var(--accent-primary);
-	}
-
-	/* For Firefox */
-	.table-container {
-		scrollbar-width: thin;
-		scrollbar-color: var(--border-secondary) var(--bg-tertiary);
-	}
-
-	/* Highlight distance column */
-	.highlight-column {
-		font-weight: bold;
-		background-color: rgba(0, 0, 0, 0.03);
-	}
-
-	/* Ensure adequate spacing for status column */
 	.table__cell--status {
 		text-align: center;
-		white-space: nowrap;
+		padding: 0.75rem;
+	}
+
+	.table__cell--empty {
+		text-align: center;
+		color: var(--text-secondary);
+		font-style: italic;
+	}
+
+	/* Status container styling */
+	.status-container {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		height: 100%;
+	}
+
+	.status-indicator {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+
+	.status-indicator--final {
+		background: var(--success);
+		box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+	}
+
+	.status-indicator--draft {
+		background: var(--warning);
+		box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+	}
+
+	.status-text {
+		font-size: 0.8rem;
+		font-weight: 500;
+	}
+
+	/* Sort header styling */
+	.sort-header {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		width: 100%;
+		cursor: pointer;
+		user-select: none;
+		line-height: 1.3;
+	}
+
+	.sort-header span {
+		flex: 1;
+		word-wrap: break-word;
+		overflow-wrap: break-word;
+		hyphens: auto;
+	}
+
+	.table__header--sortable {
+		cursor: pointer;
+		transition: background-color 0.15s ease;
+	}
+
+	.table__header--sortable:hover {
+		background-color: rgba(0, 0, 0, 0.05);
+	}
+
+	.table__sort-icon {
+		color: var(--accent-primary);
+		flex-shrink: 0;
+		margin-top: 0.1rem;
+		opacity: 0.8;
+	}
+
+	.table__header--sortable:hover .table__sort-icon {
+		opacity: 1;
+	}
+
+	/* Skeleton loading */
+	.skeleton-text {
+		height: 1rem;
+		background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+		background-size: 200% 100%;
+		border-radius: 4px;
+		animation: skeleton-loading 1.5s infinite;
+	}
+
+	@keyframes skeleton-loading {
+		0% {
+			background-position: 200% 0;
+		}
+		100% {
+			background-position: -200% 0;
+		}
+	}
+
+	/* Table scroll hint */
+	.table-scroll-hint {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		margin-bottom: 1rem;
+		padding: 0.5rem 0.75rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-secondary);
+		border-radius: 4px;
+		text-align: center;
+		font-style: italic;
+	}
+
+	/* Responsive Design */
+	@media (max-width: 1024px) {
+		.stats-header {
+			grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+			gap: 1rem;
+		}
+
+		.stats-metric--primary {
+			grid-column: span 1;
+			border-right: none;
+			padding-right: 0;
+		}
+
+		.stats-value {
+			font-size: 1.25rem;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.stats-header {
+			grid-template-columns: 1fr 1fr;
+			gap: 0.75rem;
+			padding: 1rem;
+		}
+
+		.stats-value {
+			font-size: 1.1rem;
+		}
+
+		.stats-label {
+			font-size: 0.75rem;
+		}
 	}
 </style>

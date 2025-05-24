@@ -1,0 +1,449 @@
+/* DASHBOARD.CSS */
+/* Dashboard specific styles for a modern, professional look */
+
+/*---------------------------------------*/
+/* DASHBOARD CONTAINER                   */
+/*---------------------------------------*/
+
+.dashboard {
+    width: 100%;
+}
+
+/* Sync info */
+.sync-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-primary);
+    font-size: 0.875rem;
+}
+
+.sync-info__icon {
+    color: var(--accent-primary);
+    /* animation: rotate 2s linear infinite; */
+}
+
+.sync-info__text {
+    color: var(--text-secondary);
+}
+
+.sync-info__status {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.sync-info__status--success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.sync-info__status--pending {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.sync-info__status--failed {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/*---------------------------------------*/
+/* METRICS GRID                          */
+/*---------------------------------------*/
+
+.dashboard__metrics {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+/* Primary metrics - 3 columns for main stats */
+.dashboard__metrics--primary {
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 1.5rem;
+}
+
+/* Stats metrics - 3 columns for report counts */
+.dashboard__metrics--stats {
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 3rem;
+}
+
+/* Metric Cards */
+.metric-card {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Primary metric card */
+.metric-card--primary {
+    grid-column: span 1;
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(59, 130, 246, 0.05) 100%);
+}
+
+/* Compact metric cards */
+.metric-card--compact {
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Metric card header */
+.metric-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.metric-card__icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    color: var(--accent-primary);
+    transition: all 0.3s ease;
+}
+
+.metric-card__icon--primary {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.metric-card__icon--compact {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.metric-card__icon--success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.metric-card__icon--warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.metric-card__label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.metric-card__content {
+    flex: 1;
+}
+
+.metric-card__value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.1;
+    margin-bottom: 0.75rem;
+}
+
+.metric-card__value--compact {
+    font-size: 1.75rem;
+    margin-bottom: 0;
+}
+
+.metric-card__unit {
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.metric-card__footer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.metric-card__stat {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Loading states */
+.metric-card--loading {
+    pointer-events: none;
+}
+
+.metric-card--loading .skeleton-text {
+    background: linear-gradient(90deg, var(--bg-tertiary) 0%, var(--border-primary) 50%, var(--bg-tertiary) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: var(--radius-sm);
+    height: 1.2em;
+}
+
+.metric-card--loading .skeleton-text--large {
+    height: 2.5rem;
+    width: 60%;
+}
+
+/*---------------------------------------*/
+/* REPORTS SECTION                       */
+/*---------------------------------------*/
+
+.dashboard__reports {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.dashboard__reports-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.dashboard__section-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.dashboard__view-all {
+    color: var(--accent-primary);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.dashboard__view-all:hover {
+    color: var(--accent-hover);
+}
+
+/*---------------------------------------*/
+/* REPORTS TABLE                         */
+/*---------------------------------------*/
+
+.reports-table {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.reports-table__element {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.reports-table__header {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.reports-table__header--status {
+    text-align: center;
+}
+
+.reports-table__row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    transition: background-color 0.2s ease;
+}
+
+.reports-table__row:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.reports-table__cell {
+    padding: 1rem;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.reports-table__cell--primary {
+    font-weight: 500;
+}
+
+.reports-table__cell--empty {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 3rem;
+}
+
+.reports-table__link {
+    color: var(--accent-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.reports-table__link:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
+.reports-table__date {
+    color: var(--text-secondary);
+}
+
+.reports-table__metric {
+    font-weight: 500;
+}
+
+.reports-table__unit {
+    color: var(--text-secondary);
+}
+
+.reports-table__na {
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.status-badge--success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-badge--warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Loading states for table */
+.reports-table__row--loading .skeleton-text {
+    height: 1rem;
+    width: 80%;
+}
+
+.reports-table__row--loading .skeleton-text--badge {
+    width: 60px;
+    height: 1.5rem;
+    border-radius: var(--radius-full);
+}
+
+/*---------------------------------------*/
+/* ERROR STATES                          */
+/*---------------------------------------*/
+
+.error-container {
+    padding: 3rem;
+    text-align: center;
+}
+
+.error {
+    color: var(--error);
+    font-size: 1rem;
+}
+
+/*---------------------------------------*/
+/* RESPONSIVE DESIGN                     */
+/*---------------------------------------*/
+
+@media (max-width: 1200px) {
+    .dashboard__metrics--primary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .dashboard__metrics--stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* Make the primary card span 2 columns on medium screens */
+    .metric-card--primary {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard__metrics--primary,
+    .dashboard__metrics--stats {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    /* Reset grid span on mobile */
+    .metric-card--primary {
+        grid-column: span 1;
+    }
+    
+    .metric-card__value {
+        font-size: 1.75rem;
+    }
+    
+    .dashboard__reports {
+        padding: 1.5rem;
+    }
+    
+    .reports-table {
+        font-size: 0.875rem;
+    }
+    
+    .reports-table__cell {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .reports-table__header:nth-child(3),
+    .reports-table__header:nth-child(4),
+    .reports-table__cell:nth-child(3),
+    .reports-table__cell:nth-child(4) {
+        display: none;
+    }
+} 

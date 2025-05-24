@@ -23,15 +23,21 @@ export interface TranslationContent {
   };
   dashboard: {
     overview: string;
+    welcomeMessage: string;
+    totalReports: string;
+    finalReports: string;
+    draftReports: string;
     statistics: string;
     lastUpdated: string;
     totalDistance: string;
     jimnyDistance: string;
     torresDistance: string;
+    distance: string;
     lisa: string;
     lisaPerKm: string;
     recentReports: string;
     viewAllReports: string;
+    viewAll: string;
     lastSynced: string;
     syncUnavailable: string;
     loadingReports: string;
@@ -44,6 +50,7 @@ export interface TranslationContent {
     final: string;
     draft: string;
     noReportsFound: string;
+    indications: string;
   };
   dataPanel: {
     dataDetails: string;
@@ -283,15 +290,21 @@ export const translations: Translations = {
     // Dashboard
     dashboard: {
       overview: 'Dashboard Overview',
+      welcomeMessage: "Statistics summary",
+      totalReports: 'Total Reports',
+      finalReports: 'Final Reports',
+      draftReports: 'Draft Reports',
       statistics: 'Statistics',
       lastUpdated: 'Last updated',
       totalDistance: 'Total Distance',
       jimnyDistance: 'Suzuki Jimny Distance',
       torresDistance: 'Ssanyong Torres Distance',
+      distance: 'Distance',
       lisa: 'LISA',
       lisaPerKm: 'LISA/km',
       recentReports: 'Recent Reports',
       viewAllReports: 'View All Reports',
+      viewAll: 'View All',
       lastSynced: 'Last synced',
       syncUnavailable: 'Sync status unavailable',
       loadingReports: 'Loading recent reports...',
@@ -303,7 +316,8 @@ export const translations: Translations = {
       status: 'Status',
       final: 'Final',
       draft: 'Draft',
-      noReportsFound: 'No recent reports found'
+      noReportsFound: 'No recent reports found',
+      indications: 'LISA Indications',
     },
     
     // Tests section
@@ -565,15 +579,21 @@ export const translations: Translations = {
     // Dashboard
     dashboard: {
       overview: 'Przegląd Pulpitu',
+      welcomeMessage: 'Przegląd najważniejszych statystyk',
+      totalReports: 'Wszystkie raporty',
+      finalReports: 'Raporty finalne',
+      draftReports: 'Raporty robocze',
       statistics: 'Statystyki',
       lastUpdated: 'Ostatnia aktualizacja',
       totalDistance: 'Całkowita odległość',
       jimnyDistance: 'Odległość Suzuki Jimny',
       torresDistance: 'Odległość Ssanyong Torres',
+      distance: 'Odległość',
       lisa: 'LISA',
       lisaPerKm: 'LISA/km',
       recentReports: 'Ostatnie raporty',
       viewAllReports: 'Zobacz wszystkie raporty',
+      viewAll: 'Zobacz wszystkie',
       lastSynced: 'Ostatnia synchronizacja',
       syncUnavailable: 'Status synchronizacji niedostępny',
       loadingReports: 'Ładowanie raportów...',
@@ -585,7 +605,8 @@ export const translations: Translations = {
       status: 'Status',
       final: 'Finalny',
       draft: 'Wersja robocza',
-      noReportsFound: 'Nie znaleziono raportów'
+      noReportsFound: 'Nie znaleziono raportów',
+      indications: 'Wskazania LISA',
     },
     
     // Tests section

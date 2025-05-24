@@ -2,6 +2,7 @@
 
 <script lang="ts">
 	import '$lib/styles/tables.css';
+	import '$lib/styles/dashboard.css';
 	import { t, language } from '$lib';
 	import { onMount } from 'svelte';
 	import { authContext } from '$lib/auth';
@@ -12,9 +13,14 @@
 	import PageTemplate from '$lib/components/PageTemplate.svelte';
 	import SectionContainer from '$lib/components/SectionContainer.svelte';
 	// Import Lucide icons
-	import Map from 'lucide-svelte/icons/map';
-	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
-	import Grid from 'lucide-svelte/icons/grid';
+	import TrendingUp from 'lucide-svelte/icons/trending-up';
+	import Car from 'lucide-svelte/icons/car';
+	import Truck from 'lucide-svelte/icons/truck';
+	import FileText from 'lucide-svelte/icons/file-text';
+	import FileCheck from 'lucide-svelte/icons/file-check';
+	import Activity from 'lucide-svelte/icons/activity';
+	import Calendar from 'lucide-svelte/icons/calendar';
+	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 
 	// Recommended way to access data in SvelteKit with Svelte 5
 	const { data } = $props();
@@ -168,126 +174,190 @@
 	$effect(() => {
 		loading = statsLoading || reportsLoading;
 	});
-
-	function viewAllReports() {
-		console.log('Viewing all reports');
-	}
 </script>
 
 <PageTemplate 
 	title={t('dashboard.overview', $language)}
+	subtitle={t('dashboard.welcomeMessage', $language)}
 >
 	{#snippet pageActions()}
-		<a href="/reports" class="button button--primary">{t('dashboard.viewAllReports', $language)}</a>
+		<a href="/reports" class="button button--primary">
+			<FileText size={18} />
+			{t('dashboard.viewAllReports', $language)}
+		</a>
 		{#if syncInfo}
-			<div class="sync">
-				{t('dashboard.lastSynced', $language)}: {syncInfo.last_sync
-					? formatDateTime(syncInfo.last_sync)
-					: syncInfo.last_sync_success
-						? formatDateTime(syncInfo.last_sync_success)
-						: 'Never'}
-				<span class="sync__status sync__status--{syncInfo.sync_status || 'pending'}"
-					>{syncInfo.sync_status || 'Unknown'}</span
-				>
+			<div class="sync-info">
+				<RefreshCw size={16} class="sync-info__icon" />
+				<span class="sync-info__text">
+					{t('dashboard.lastSynced', $language)}: {syncInfo.last_sync
+						? formatDateTime(syncInfo.last_sync)
+						: syncInfo.last_sync_success
+							? formatDateTime(syncInfo.last_sync_success)
+							: 'Never'}
+				</span>
+				<span class="sync-info__status sync-info__status--{syncInfo.sync_status || 'pending'}">
+					{syncInfo.sync_status || 'Unknown'}
+				</span>
 			</div>
 		{/if}
 	{/snippet}
-
+	
 	{#snippet content()}
-		<SectionContainer title={t('dashboard.statistics', $language) || "Statistics"} width="wide">			
-			{#snippet children()}
-				<div class="dashboard-stats">
-					<!-- Total Distance Card -->
-					<div class="stat-card {statsLoading ? 'card--loading' : ''}">
-						<div class="stat-card__icon">
-							<Map size={24} />
+		<div class="dashboard">
+			<!-- Key Metrics Grid -->
+			<div class="dashboard__metrics dashboard__metrics--primary">
+				<!-- Total Distance Card -->
+				<div class="metric-card metric-card--primary {statsLoading ? 'metric-card--loading' : ''}">
+					<div class="metric-card__header">
+						<div class="metric-card__icon metric-card__icon--primary">
+							<TrendingUp size={24} />
 						</div>
-						<div class="stat-card__content">
-							<h3 class="stat-card__title">{t('dashboard.totalDistance', $language)}</h3>
-							<div class="stat-card__value">
-								{#if statsLoading}
-									<div class="skeleton-text"></div>
-								{:else}
-									{totalDistance.toFixed(2)} km
-								{/if}
-							</div>
-							<div class="stat-card__details">
-								{#if statsLoading}
-									<div class="skeleton-text skeleton-text--thin"></div>
-								{:else}
-									<span>{t('dashboard.lisa', $language)}: {totalIndications}</span> •
-									<span>{totalLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
-								{/if}
-							</div>
-						</div>
+						<span class="metric-card__label">{t('dashboard.totalDistance', $language)}</span>
 					</div>
-
-					<!-- Jimny Card -->
-					<div class="stat-card {statsLoading ? 'card--loading' : ''}">
-						<div class="stat-card__icon">
-							<BarChart3 size={24} />
-						</div>
-						<div class="stat-card__content">
-							<h3 class="stat-card__title">{t('dashboard.jimnyDistance', $language)}</h3>
-							<div class="stat-card__value">
-								{#if statsLoading}
-									<div class="skeleton-text"></div>
-								{:else}
-									{jimnyDistance.toFixed(2)} km
-								{/if}
-							</div>
-							<div class="stat-card__details">
-								{#if statsLoading}
-									<div class="skeleton-text skeleton-text--thin"></div>
-								{:else}
-									<span>{t('dashboard.lisa', $language)}: {jimnyLisaCount}</span> •
-									<span>{jimnyLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
-								{/if}
-							</div>
-						</div>
+					<div class="metric-card__value">
+						{#if statsLoading}
+							<div class="skeleton-text skeleton-text--large"></div>
+						{:else}
+							{totalDistance.toFixed(2)} <span class="metric-card__unit">km</span>
+						{/if}
 					</div>
+					<div class="metric-card__footer">
+						{#if statsLoading}
+							<div class="skeleton-text skeleton-text--thin"></div>
+						{:else}
+							<div class="metric-card__stat">
+								<Activity size={14} />
+								<span>{totalIndications} {t('dashboard.indications', $language)}</span>
+							</div>
+							<div class="metric-card__stat">
+								<span>{totalLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
+							</div>
+						{/if}
+					</div>
+				</div>
 
-					<!-- Torres Card -->
-					<div class="stat-card {statsLoading ? 'card--loading' : ''}">
-						<div class="stat-card__icon">
-							<Grid size={24} />
+				<!-- Vehicle Cards -->
+				<div class="metric-card {statsLoading ? 'metric-card--loading' : ''}">
+					<div class="metric-card__header">
+						<div class="metric-card__icon">
+							<Car size={24} />
 						</div>
-						<div class="stat-card__content">
-							<h3 class="stat-card__title">{t('dashboard.torresDistance', $language)}</h3>
-							<div class="stat-card__value">
-								{#if statsLoading}
-									<div class="skeleton-text"></div>
-								{:else}
-									{torresDistance.toFixed(2)} km
-								{/if}
+						<span class="metric-card__label">Jimny</span>
+					</div>
+					<div class="metric-card__value">
+						{#if statsLoading}
+							<div class="skeleton-text skeleton-text--large"></div>
+						{:else}
+							{jimnyDistance.toFixed(2)} <span class="metric-card__unit">km</span>
+						{/if}
+					</div>
+					<div class="metric-card__footer">
+						{#if statsLoading}
+							<div class="skeleton-text skeleton-text--thin"></div>
+						{:else}
+							<div class="metric-card__stat">
+								<span>{jimnyLisaCount} {t('dashboard.lisa', $language)}</span>
 							</div>
-							<div class="stat-card__details">
-								{#if statsLoading}
-									<div class="skeleton-text skeleton-text--thin"></div>
-								{:else}
-									<span>{t('dashboard.lisa', $language)}: {torresLisaCount}</span> •
-									<span>{torresLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
-								{/if}
+							<div class="metric-card__stat">
+								<span>{jimnyLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
 							</div>
+						{/if}
+					</div>
+				</div>
+
+				<div class="metric-card {statsLoading ? 'metric-card--loading' : ''}">
+					<div class="metric-card__header">
+						<div class="metric-card__icon">
+							<Car size={24} />
+						</div>
+						<span class="metric-card__label">Torres</span>
+					</div>
+					<div class="metric-card__value">
+						{#if statsLoading}
+							<div class="skeleton-text skeleton-text--large"></div>
+						{:else}
+							{torresDistance.toFixed(2)} <span class="metric-card__unit">km</span>
+						{/if}
+					</div>
+					<div class="metric-card__footer">
+						{#if statsLoading}
+							<div class="skeleton-text skeleton-text--thin"></div>
+						{:else}
+							<div class="metric-card__stat">
+								<span>{torresLisaCount} {t('dashboard.lisa', $language)}</span>
+							</div>
+							<div class="metric-card__stat">
+								<span>{torresLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+
+			<!-- Report Stats Row -->
+			<div class="dashboard__metrics dashboard__metrics--stats">
+				<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
+					<div class="metric-card__icon metric-card__icon--compact">
+						<FileText size={20} />
+					</div>
+					<div class="metric-card__content">
+						<span class="metric-card__label">{t('dashboard.totalReports', $language)}</span>
+						<div class="metric-card__value metric-card__value--compact">
+							{#if statsLoading}
+								<div class="skeleton-text"></div>
+							{:else}
+								{totalReports}
+							{/if}
 						</div>
 					</div>
 				</div>
-			{/snippet}
-		</SectionContainer>
-		
-		<SectionContainer title={t('dashboard.recentReports', $language)} width="full">
-			{#snippet sectionActions()}
-				{#if !loading && !error}
-					<div class="status-counts">
-						{t('dashboard.final', $language)}: {finalReports} • 
-						{t('dashboard.total', $language)}: {totalReports} • 
-						{t('dashboard.draft', $language)}: {draftReports}
+
+				<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
+					<div class="metric-card__icon metric-card__icon--compact metric-card__icon--success">
+						<FileCheck size={20} />
 					</div>
-				{/if}
-			{/snippet}
+					<div class="metric-card__content">
+						<span class="metric-card__label">{t('dashboard.finalReports', $language)}</span>
+						<div class="metric-card__value metric-card__value--compact">
+							{#if statsLoading}
+								<div class="skeleton-text"></div>
+							{:else}
+								{finalReports}
+							{/if}
+						</div>
+					</div>
+				</div>
+
+				<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
+					<div class="metric-card__icon metric-card__icon--compact metric-card__icon--warning">
+						<FileText size={20} />
+					</div>
+					<div class="metric-card__content">
+						<span class="metric-card__label">{t('dashboard.draftReports', $language)}</span>
+						<div class="metric-card__value metric-card__value--compact">
+							{#if statsLoading}
+								<div class="skeleton-text"></div>
+							{:else}
+								{draftReports}
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
 			
-			{#snippet children()}
-				<div class="data-display">
+			<!-- Recent Reports Section -->
+			<div class="dashboard__reports">
+				<div class="dashboard__reports-header">
+					<h2 class="dashboard__section-title">
+						<Calendar size={20} />
+						{t('dashboard.recentReports', $language)}
+					</h2>
+					<a href="/reports" class="dashboard__view-all">
+						{t('dashboard.viewAll', $language)} →
+					</a>
+				</div>
+				
+				<div class="dashboard__reports-content">
 					{#if loading}
 						<div class="loading-container">
 							<div class="loading-indicator">
@@ -298,87 +368,95 @@
 							<p class="loading-text">{t('dashboard.loadingReports', $language)}</p>
 						</div>
 					{:else if error}
-						<p class="error">{error}</p>
+						<div class="error-container">
+							<p class="error">{error}</p>
+						</div>
 					{:else}
-						<div class="table-container">
-							<div class="table">
-								<table class="table__element">
-									<thead>
-										<tr>
-											<th class="table__header">{t('dashboard.reportName', $language)}</th>
-											<th class="table__header">{t('dashboard.reportTitle', $language)}</th>
-											<th class="table__header">{t('dashboard.date', $language)}</th>
-											<th class="table__header">{t('dashboard.assetsCovered', $language)}</th>
-											<th class="table__header">{t('dashboard.surveyorUnit', $language)}</th>
-											<th class="table__header">{t('dashboard.lisa', $language)}</th>
-											<th class="table__header table__header--status">{t('dashboard.status', $language)}</th>
-										</tr>
-									</thead>
-									<tbody>
-										{#if reportsLoading}
-											<!-- Skeleton loading rows -->
-											{#each Array(3) as _, i}
-												<tr class="table__row table__row--loading">
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell"><div class="skeleton-text"></div></td>
-													<td class="table__cell table__cell--status">
-														<div class="skeleton-text"></div>
-													</td>
-												</tr>
-											{/each}
-										{:else if recentReports.length > 0}
-											{#each recentReports as report}
-												<tr class="table__row {report.has_surveys &&
-													(report.report_final === true ||
-														report.report_final === 1 ||
-														report.report_final === '1')
-														? 'table__row--calculation'
-														: ''}">
-													<td class="table__cell">{report.report_name}</td>
-													<td class="table__cell">{report.report_title}</td>
-													<td class="table__cell">{formatDate(report.report_date)}</td>
-													<td class="table__cell">{report.linear_asset_covered_length
-														? `${Number(report.linear_asset_covered_length).toFixed(2)} km`
-														: 'N/A'}</td>
-													<td class="table__cell">{report.surveyor_unit_desc || 'N/A'}</td>
-													<td class="table__cell">{report.indicationsCount || 0}</td>
-													<td class="table__cell table__cell--status">
-														<span class="badge {report.report_final === true ||
-														report.report_final === 1 ||
-														report.report_final === '1'
-															? 'badge--green'
-															: 'badge--yellow'}">
-															{report.report_final === true ||
-															report.report_final === 1 ||
-															report.report_final === '1'
-																? 'Final'
-																: 'Draft'}
-														</span>
-													</td>
-												</tr>
-											{/each}
-										{:else}
-											<tr class="table__row">
-												<td class="table__cell" colspan="7">{t('dashboard.noReportsFound', $language)}</td>
+						<div class="reports-table">
+							<table class="reports-table__element">
+								<thead>
+									<tr>
+										<th class="reports-table__header">{t('dashboard.reportTitle', $language)}</th>
+										<th class="reports-table__header">{t('dashboard.reportName', $language)}</th>
+										<th class="reports-table__header">{t('dashboard.date', $language)}</th>
+										<th class="reports-table__header">{t('dashboard.distance', $language)}</th>
+										<th class="reports-table__header">{t('dashboard.surveyorUnit', $language)}</th>
+										<th class="reports-table__header">{t('dashboard.indications', $language)}</th>
+										<th class="reports-table__header reports-table__header--status">{t('dashboard.status', $language)}</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#if reportsLoading}
+										{#each Array(5) as _, i}
+											<tr class="reports-table__row reports-table__row--loading">
+												<td class="reports-table__cell reports-table__cell--primary"><div class="skeleton-text"></div></td>
+												<td class="reports-table__cell"><div class="skeleton-text"></div></td>
+												<td class="reports-table__cell"><div class="skeleton-text"></div></td>
+												<td class="reports-table__cell"><div class="skeleton-text"></div></td>
+												<td class="reports-table__cell"><div class="skeleton-text"></div></td>
+												<td class="reports-table__cell"><div class="skeleton-text"></div></td>
+												<td class="reports-table__cell">
+													<div class="skeleton-text skeleton-text--badge"></div>
+												</td>
 											</tr>
-										{/if}
-									</tbody>
-								</table>
-							</div>
+										{/each}
+									{:else if recentReports.length > 0}
+										{#each recentReports.slice(0, 10) as report}
+											<tr class="reports-table__row">
+												<td class="reports-table__cell reports-table__cell--primary">
+													<!-- <a href="/reports/{report.id}" class="reports-table__link"> -->
+														{report.report_title}
+													<!-- </a> -->
+												</td>
+												<td class="reports-table__cell reports-table__cell--primary">
+													<!-- <a href="/reports/{report.id}" class="reports-table__link"> -->
+														{report.report_name}
+													<!-- </a> -->
+												</td>
+												<td class="reports-table__cell">
+													<span class="reports-table__date">
+														{formatDate(report.report_date)}
+													</span>
+												</td>
+												<td class="reports-table__cell">
+													{#if report.linear_asset_covered_length}
+														<span class="reports-table__metric">
+															{Number(report.linear_asset_covered_length).toFixed(2)} km
+														</span>
+													{:else}
+														<span class="reports-table__na">—</span>
+													{/if}
+												</td>
+												<td class="reports-table__cell">
+													<span class="reports-table__unit">
+														{report.surveyor_unit_desc || '—'}
+													</span>
+												</td>
+												<td class="reports-table__cell">
+													<span class="reports-table__metric">
+														{report.indicationsCount || 0}
+													</span>
+												</td>
+												<td class="reports-table__cell">
+													<span class="status-badge status-badge--{report.report_final ? 'success' : 'warning'}">
+														{report.report_final ? 'Final' : 'Draft'}
+													</span>
+												</td>
+											</tr>
+										{/each}
+									{:else}
+										<tr class="reports-table__row">
+											<td class="reports-table__cell reports-table__cell--empty" colspan="6">
+												{t('dashboard.noReportsFound', $language)}
+											</td>
+										</tr>
+									{/if}
+								</tbody>
+							</table>
 						</div>
 					{/if}
 				</div>
-			{/snippet}
-		</SectionContainer>
-	{/snippet}
-	
-	{#snippet footer()}
-		<div class="actions">
-			<a href="/reports" class="button button--primary">{t('dashboard.viewAllReports', $language)}</a>
+			</div>
 		</div>
 	{/snippet}
 </PageTemplate>

@@ -8,10 +8,14 @@
 	import '$lib/styles/cards.css';
 	import '$lib/styles/tables.css';
 	import Flame from 'lucide-svelte/icons/flame';
-	import BarChart from 'lucide-svelte/icons/bar-chart';
-	import Database from 'lucide-svelte/icons/database';
+	import LayoutDashboard from 'lucide-svelte/icons/layout-dashboard';
+	import FileText from 'lucide-svelte/icons/file-text';
+	import TestTube from 'lucide-svelte/icons/test-tube';
 	import Settings from 'lucide-svelte/icons/settings';
-	import Table from 'lucide-svelte/icons/table';
+	import ChartBar from 'lucide-svelte/icons/chart-bar';
+	import Eye from 'lucide-svelte/icons/eye';
+	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Loader from 'lucide-svelte/icons/loader';
 	import { language, t, LANGUAGES } from '$lib';
 	import { initialUserValue, setupAuthListener, pb } from '$lib/pocketbase';
@@ -33,6 +37,29 @@
 	
 	// Use IsMounted from Runed
 	const isMounted = new IsMounted();
+	
+	// Navigation collapsed state - persist in localStorage
+	let isNavCollapsed = $state(false);
+	
+	// Load collapsed state from localStorage on mount
+	$effect(() => {
+		if (isMounted.current && typeof window !== 'undefined') {
+			const saved = localStorage.getItem('navCollapsed');
+			isNavCollapsed = saved === 'true';
+		}
+	});
+	
+	// Save collapsed state to localStorage when it changes
+	$effect(() => {
+		if (isMounted.current && typeof window !== 'undefined') {
+			localStorage.setItem('navCollapsed', String(isNavCollapsed));
+		}
+	});
+	
+	// Toggle navigation collapsed state
+	function toggleNavigation() {
+		isNavCollapsed = !isNavCollapsed;
+	}
 	
 	// Initialize auth store with initial values as early as possible
 	authStore.set({
@@ -373,32 +400,59 @@
 
 	<div class="layout__content">
 		<!-- Navigation sidebar -->
-		<nav class="nav">
+		<nav class="nav" class:nav--collapsed={isNavCollapsed}>
+			<div class="nav__header">
+				<!-- Navigation toggle button -->
+				<button 
+					class="nav__toggle" 
+					onclick={toggleNavigation}
+					title={isNavCollapsed ? t('nav.expand', $language) : t('nav.collapse', $language)}
+					aria-label={isNavCollapsed ? t('nav.expand', $language) : t('nav.collapse', $language)}
+				>
+					{#if isNavCollapsed}
+						<ChevronRight size={20} />
+					{:else}
+						<ChevronLeft size={20} />
+					{/if}
+				</button>
+			</div>
+			
+			<div class="nav__content">
 			<div class="nav__section">
+				{#if !isNavCollapsed}
 				<h3 class="nav__heading">{t('nav.main', $language)}</h3>
+				{/if}
 				<ul class="nav__list">
 					<li class="nav__item" class:nav__item--active={isActive('/', true)}>
 						<a href="/" class="nav__link" title="{t('nav.dashboard', $language)}">
-							<BarChart size={20} class="nav__icon" />
+							<LayoutDashboard size={20} class="nav__icon" />
+							{#if !isNavCollapsed}
 							<span class="nav__text">{t('nav.dashboard', $language)}</span>
+							{/if}
 						</a>
 					</li>
 					<li class="nav__item" class:nav__item--active={isActive('/reports')}>
 						<a href="/reports" class="nav__link" title="{t('nav.reports', $language)}">
-							<Table size={20} class="nav__icon" />
+							<FileText size={20} class="nav__icon" />
+							{#if !isNavCollapsed}
 							<span class="nav__text">{t('nav.reports', $language)}</span>
+							{/if}
 						</a>
 					</li>
 					<li class="nav__item" class:nav__item--active={isActive('/tests')}>
 						<a href="/tests" class="nav__link" title="{t('nav.tests', $language)}">
-							<Database size={20} class="nav__icon" />
+							<TestTube size={20} class="nav__icon" />
+							{#if !isNavCollapsed}
 							<span class="nav__text">{t('nav.tests', $language)}</span>
+							{/if}
 						</a>
 					</li>
 					<li class="nav__item" class:nav__item--active={isActive('/settings')}>
 						<a href="/settings" class="nav__link" title="{t('nav.settings', $language)}">
 							<Settings size={20} class="nav__icon" />
+							{#if !isNavCollapsed}
 							<span class="nav__text">{t('nav.settings', $language)}</span>
+							{/if}
 						</a>
 					</li>
 				</ul>
@@ -406,25 +460,32 @@
 			
 			{#if data.isAuthenticated}
 			<div class="nav__section">
+				{#if !isNavCollapsed}
 				<h3 class="nav__heading">{t('nav.tools', $language)}</h3>
+				{/if}
 				<ul class="nav__list">
 					<li class="nav__item" class:nav__item--active={isActive('/priority-score-analyzer')}>
 						<a href="/priority-score-analyzer" class="nav__link" title="Priority Score Analyzer">
-							<BarChart size={20} class="nav__icon" />
+							<ChartBar size={20} class="nav__icon" />
+							{#if !isNavCollapsed}
 							<span class="nav__text">PS 2.0 Analyzer</span>
+							{/if}
 						</a>
 					</li>
 					{#if data.isAdmin}
 						<li class="nav__item" class:nav__item--active={isActive('/survey-viewer')}>
 							<a href="/survey-viewer" class="nav__link" title="{t('tools.surveyViewer', $language)}">
-								<Database size={20} class="nav__icon" />
+								<Eye size={20} class="nav__icon" />
+								{#if !isNavCollapsed}
 								<span class="nav__text">{t('tools.surveyViewer', $language)}</span>
+								{/if}
 							</a>
 						</li>
 					{/if}
 				</ul>
 			</div>
 			{/if}
+			</div>
 		</nav>
 
 		<!-- Main content area -->
