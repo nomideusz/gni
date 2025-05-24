@@ -839,7 +839,7 @@
     }
     
     .footer__content {
-        flex-direction: column;
+        flex-direction: row;
         gap: 0.25rem;
         text-align: center;
     }
