@@ -74,11 +74,45 @@
 	let sortField = $state<string | null>(null);
 	let sortDirection = $state<'asc' | 'desc'>('asc');
 
-	// Sort items before pagination
-	const sortedItems = $derived(() => {
-		if (!sortField) return priorityItems;
+	// Search state
+	let searchQuery = $state('');
 
-		return [...priorityItems].sort((a, b) => {
+	// Filter items based on search query
+	const filteredItems = $derived(() => {
+		if (!searchQuery.trim()) return priorityItems;
+
+		const query = searchQuery.toLowerCase().trim();
+		return priorityItems.filter((item) => {
+			// Search across multiple fields
+			const searchableFields = [
+				item.report_title,
+				item.unique_identifier || item.id,
+				item.dispositionLabel,
+				item.representative_bin_label,
+				item.report_date ? new Date(item.report_date).toLocaleDateString() : '',
+				item.max_amplitude?.toString(),
+				item.emission_rate?.toString(),
+				item.representative_emission_rate?.toString(),
+				item.classification_confidence?.toString(),
+				item.number_of_passes?.toString(),
+				item.number_of_peaks?.toString(),
+				item.detection_probability?.toString(),
+				item.priority_score_2?.toString(),
+				calculatePS2WithThresholds(item).toString()
+			];
+
+			return searchableFields.some(field => 
+				field && field.toLowerCase().includes(query)
+			);
+		});
+	});
+
+	// Sort items after filtering
+	const sortedItems = $derived(() => {
+		const itemsToSort = filteredItems();
+		if (!sortField) return itemsToSort;
+
+		return [...itemsToSort].sort((a, b) => {
 			let aValue = getSortValue(a, sortField!);
 			let bValue = getSortValue(b, sortField!);
 
@@ -302,6 +336,18 @@
 
 	function toggleFilterControls() {
 		showFilterControls = !showFilterControls;
+	}
+
+	// Search function
+	function handleSearch(event: Event) {
+		const target = event.target as HTMLInputElement;
+		searchQuery = target.value;
+		currentPage = 1; // Reset to first page when search changes
+	}
+
+	function clearSearch() {
+		searchQuery = '';
+		currentPage = 1;
 	}
 
 	// Pagination functions
@@ -572,6 +618,33 @@
 						</div>
 					</div>
 				{/if}
+
+				<!-- Search Input -->
+				<div class="search-container">
+					<div class="search-input-wrapper">
+						<input
+							type="text"
+							placeholder="Search table entries..."
+							bind:value={searchQuery}
+							oninput={handleSearch}
+							class="search-input"
+						/>
+						{#if searchQuery}
+							<button
+								class="search-clear-btn"
+								onclick={clearSearch}
+								title="Clear search"
+							>
+								×
+							</button>
+						{/if}
+					</div>
+					{#if searchQuery}
+						<div class="search-results-info">
+							Showing {sortedItems().length} of {priorityItems.length} entries
+						</div>
+					{/if}
+				</div>
 
 				<p class="table-scroll-hint">Scroll horizontally to view all data fields</p>
 				<div class="table-container">
@@ -889,7 +962,7 @@
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
 		border-radius: 8px;
-		margin-bottom: 2rem;
+		margin-bottom: 1rem;
 		overflow: hidden;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 	}
@@ -1576,5 +1649,86 @@
 	/* Button icon */
 	.button-icon {
 		margin-right: 0.5rem;
+	}
+
+	/* Search Styles */
+	.search-container {
+		margin: 1rem 0;
+		padding-left: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.search-input-wrapper {
+		position: relative;
+		max-width: 300px;
+	}
+
+	.search-input {
+		width: 100%;
+		padding: 0.5rem 0.75rem;
+		padding-right: 2rem;
+		border: 1px solid var(--border-primary);
+		border-radius: 4px;
+		font-size: 0.85rem;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		transition: all 0.2s ease;
+		box-sizing: border-box;
+		height: 2.25rem;
+	}
+
+	.search-input:focus {
+		outline: none;
+		border-color: var(--accent-primary);
+		box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+	}
+
+	.search-input::placeholder {
+		color: var(--text-secondary);
+		opacity: 0.7;
+	}
+
+	.search-clear-btn {
+		position: absolute;
+		right: 0.5rem;
+		top: 50%;
+		transform: translateY(-50%);
+		background: none;
+		border: none;
+		font-size: 1rem;
+		color: var(--text-secondary);
+		cursor: pointer;
+		padding: 0;
+		width: 1.25rem;
+		height: 1.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: all 0.2s ease;
+	}
+
+	.search-clear-btn:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	.search-results-info {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		font-style: italic;
+		margin-left: 0.25rem;
+	}
+
+	@media (max-width: 640px) {
+		.search-container {
+			padding-left: 1rem;
+		}
+		
+		.search-input-wrapper {
+			max-width: 100%;
+		}
 	}
 </style>
