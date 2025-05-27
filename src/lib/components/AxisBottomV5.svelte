@@ -2,7 +2,7 @@
 <script lang="ts">
     import { axisBottom } from 'd3-axis';
     import { select } from 'd3-selection';
-    import { onMount } from 'svelte';
+    import { onMount, untrack } from 'svelte';
     import type { AxisDomain } from 'd3-axis';
     
     const { width, height, margin, xScale, tick_number = 10, format = null, hideLabels = false } = 
@@ -38,12 +38,14 @@
         }
     }
     
-    // Update axis when width or scale changes
+    // Simple effect with requestAnimationFrame to prevent loops
     $effect(() => {
-        console.log(`X-axis update triggered - width: ${width}`);
         if (width && xScale && xAxisElement) {
-            // Small timeout to ensure the DOM has updated
-            setTimeout(updateAxis, 0);
+            requestAnimationFrame(() => {
+                if (xAxisElement && xScale) {
+                    updateAxis();
+                }
+            });
         }
     });
 </script>

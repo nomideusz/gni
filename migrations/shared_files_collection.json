@@ -1,0 +1,76 @@
+[
+  {
+    "id": "shared_files",
+    "name": "shared_files", 
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "shareId",
+        "name": "shareId",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "unique": true,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "id": "filename", 
+        "name": "filename",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "id": "data",
+        "name": "data", 
+        "type": "json",
+        "system": false,
+        "required": true,
+        "unique": false,
+        "options": {}
+      },
+      {
+        "id": "columns",
+        "name": "columns",
+        "type": "json", 
+        "system": false,
+        "required": true,
+        "unique": false,
+        "options": {}
+      },
+      {
+        "id": "uploadedAt",
+        "name": "uploadedAt",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_shareId` ON `shared_files` (`shareId`)"
+    ],
+    "listRule": null,
+    "viewRule": null, 
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "options": {}
+  }
+] 

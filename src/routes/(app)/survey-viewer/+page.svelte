@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { t, language, SplitPane } from '$lib';
-	import { resource, Context } from 'runed';
+	import PageTemplate from '$lib/components/PageTemplate.svelte';
+	import SectionContainer from '$lib/components/SectionContainer.svelte';
+	import { SplitPane } from '$lib';
+	import { resource } from 'runed';
 	import { onMount } from 'svelte';
 	import LineChart from '$lib/components/LineChart.svelte';
 	import ScatterChart from '$lib/components/ScatterChart.svelte';
@@ -19,15 +21,18 @@
 	let isUploaded = $state(false);
 	let uploadError = $state('');
 	let uploadedData = $state<{ data: DataItem[], columns: string[] } | null>(null);
+	let isDragOver = $state(false);
 	
-	// Create a Context for hover interactions shared across all chart components
-	const chartHoverContext = new Context<DataItem | null>('chartHoverPoint');
-	
-	// State for tracking hovered point with Context
+	// State for tracking hovered point across charts
 	let sharedHoveredPoint = $state<DataItem | null>(null);
 	
 	// Flag to show/hide visualizations
-	let showVisualizations = $state(false);
+	let showVisualizations = $state(true);
+	
+	// State for saving and sharing files
+	let isSaving = $state(false);
+	let shareUrl = $state('');
+	let saveError = $state('');
 	
 	// Use resource for reactive data fetching
 	const dataResource = resource(
@@ -35,7 +40,6 @@
 		async (source, prevSource, { signal }) => {
 			// Handle local file upload
 			if (source.isUploaded && source.uploadedData) {
-				console.log('Using uploaded data');
 				return source.uploadedData;
 			}
 			
@@ -77,16 +81,9 @@
 		};
 	}
 	
-	// Handle file upload
-	async function handleFileUpload(event: Event) {
-		const input = event.target as HTMLInputElement;
+	// Handle file processing
+	async function processFile(file: File) {
 		uploadError = '';
-		
-		if (!input.files || input.files.length === 0) {
-			return;
-		}
-		
-		const file = input.files[0];
 		
 		// Check file extension
 		if (!file.name.toLowerCase().endsWith('.dat')) {
@@ -100,14 +97,50 @@
 			uploadedData = parseDataText(text);
 			uploadedFileName = file.name;
 			isUploaded = true;
-			
-			console.log(`Uploaded ${file.name} with ${uploadedData.data.length} data points`);
 		} catch (error) {
 			console.error('Error processing uploaded file:', error);
 			uploadError = `Error processing file: ${error instanceof Error ? error.message : 'Unknown error'}`;
 			isUploaded = false;
 			uploadedData = null;
 		}
+	}
+
+	// Handle file upload from input
+	async function handleFileUpload(event: Event) {
+		const input = event.target as HTMLInputElement;
+		
+		if (!input.files || input.files.length === 0) {
+			return;
+		}
+		
+		const file = input.files[0];
+		await processFile(file);
+	}
+
+	// Handle drag and drop
+	function handleDragOver(event: DragEvent) {
+		event.preventDefault();
+		isDragOver = true;
+	}
+
+	function handleDragLeave(event: DragEvent) {
+		event.preventDefault();
+		isDragOver = false;
+	}
+
+	function handleDrop(event: DragEvent) {
+		event.preventDefault();
+		isDragOver = false;
+		
+		const files = event.dataTransfer?.files;
+		if (files && files.length > 0) {
+			processFile(files[0]);
+		}
+	}
+
+	// Trigger file input click
+	function triggerFileInput() {
+		fileInput?.click();
 	}
 	
 	// Calculate statistics for display in the info panel
@@ -203,543 +236,774 @@
 		showVisualizations = !showVisualizations;
 	}
 	
+	// Save and share file
+	async function saveAndShareFile() {
+		if (!uploadedData || !uploadedFileName) {
+			saveError = 'No file to save';
+			return;
+		}
+		
+		isSaving = true;
+		saveError = '';
+		shareUrl = '';
+		
+		try {
+			const response = await fetch('/api/v1/shared-files', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					filename: uploadedFileName,
+					data: uploadedData.data,
+					columns: uploadedData.columns,
+					uploadedAt: new Date().toISOString()
+				})
+			});
+			
+			if (!response.ok) {
+				throw new Error('Failed to save file');
+			}
+			
+			const result = await response.json();
+			shareUrl = `${window.location.origin}/shared/${result.shareId}`;
+			
+			// Copy to clipboard
+			await navigator.clipboard.writeText(shareUrl);
+			
+			// Show success notification with deduplication info
+			if (result.isDuplicate) {
+				alert('This file was already shared! Existing share link copied to clipboard.');
+			} else {
+				alert('File saved and share link copied to clipboard!');
+			}
+			
+		} catch (error) {
+			console.error('Error saving file:', error);
+			saveError = error instanceof Error ? error.message : 'Failed to save file';
+		} finally {
+			isSaving = false;
+		}
+	}
+	
 	// Update sharedHoveredPoint when chart reports a hover
 	function handleChartHover(point: DataItem | null) {
 		sharedHoveredPoint = point;
 	}
 	
-	// Initialize the context during component initialization
-	onMount(() => {
-		// Initialize the hover context
-		chartHoverContext.set(null);
-		
-		return () => {
-			// Cleanup
-		};
-	});
-	
-	// Use a reactive effect to update the context when sharedHoveredPoint changes
-	$effect(() => {
-		if (chartHoverContext) {
-			chartHoverContext.set(sharedHoveredPoint);
-		}
-	});
+	// No need for Context initialization - using direct prop passing
 </script>
 
-<div class="survey-viewer-container">
-	<div class="page-header">
-		<h1>Survey Viewer</h1>
-		<p class="description">View and analyze survey data files</p>
-		
-		<!-- File Upload Section -->
-		<div class="upload-section">
-			<div class="upload-container">
-				<label for="dat-file-upload" class="upload-label">
-					<span>Upload .DAT File</span>
-				</label>
-				<input 
-					type="file" 
-					id="dat-file-upload" 
-					accept=".dat"
-					bind:this={fileInput}
-					on:change={handleFileUpload}
-					class="file-input"
-				/>
-			</div>
-			
-			{#if isUploaded}
-				<div class="upload-info">
-					<span class="uploaded-file-name">{uploadedFileName}</span>
-				</div>
-			{/if}
-			
-			{#if uploadError}
-				<div class="upload-error">
-					{uploadError}
-				</div>
-			{/if}
-		</div>
-		
-		<!-- Display loading or error state -->
-		{#if dataResource.loading}
-			<div class="loading-state">Loading data file... Please wait.</div>
-		{:else if dataResource.error}
-			<div class="error-state">Error: {dataResource.error.message}</div>
-		{/if}
-	</div>
-
-	<div class="main-content">
+<PageTemplate 
+	title="Survey Viewer" 
+	description="View and analyze survey data files"
+	fullWidth={true}
+>
+	{#snippet pageActions()}
 		{#if !dataResource.loading && !dataResource.error && dataResource.current.data.length > 0}
-			<div class="data-summary-card">
-				<div class="summary-header">
-					<h3>{selectedFile?.name}</h3>
-					{#if dataResource.current.data.length > 0}
-						<div class="timestamp">
-							<span class="timestamp-icon">⏱️</span> 
-							{new Date(dataResource.current.data[0]?.EPOCH_TIME * 1000).toLocaleString()} 
-							<span class="timestamp-separator">→</span> 
-							{new Date(dataResource.current.data[dataResource.current.data.length-1]?.EPOCH_TIME * 1000).toLocaleString()}
+			<div class="action-group">
+				<button 
+					class="button button--secondary" 
+					onclick={saveAndShareFile}
+					disabled={isSaving || !uploadedData}
+				>
+					{isSaving ? 'Saving...' : 'Save & Share'}
+				</button>
+				{#if shareUrl}
+					<button class="button button--secondary" onclick={() => navigator.clipboard.writeText(shareUrl)}>
+						Copy Link
+					</button>
+				{/if}
+			</div>
+			<button class="button button--primary" onclick={toggleVisualizations}>
+				{showVisualizations ? 'Hide Charts' : 'Show Charts'}
+			</button>
+		{/if}
+	{/snippet}
+
+	{#snippet content()}
+		<SectionContainer title="File Upload" showActions={false} width="full">
+			{#snippet children()}
+				<div class="upload-section">
+					{#if !isUploaded}
+						<div 
+							class="upload-dropzone"
+							class:drag-over={isDragOver}
+							ondragover={handleDragOver}
+							ondragleave={handleDragLeave}
+							ondrop={handleDrop}
+							onclick={triggerFileInput}
+							role="button"
+							tabindex="0"
+							onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? triggerFileInput() : null}
+						>
+							<div class="upload-icon">
+								<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+									<polyline points="7,10 12,15 17,10"/>
+									<line x1="12" y1="15" x2="12" y2="3"/>
+								</svg>
+							</div>
+							<div class="upload-text">
+								<h3>Drop your .DAT file here</h3>
+								<p>or <span class="upload-link">click to browse</span></p>
+								<small>Supports .dat files only</small>
+							</div>
+						</div>
+						
+						<input 
+							type="file" 
+							id="dat-file-upload" 
+							accept=".dat"
+							bind:this={fileInput}
+							onchange={handleFileUpload}
+							class="file-input"
+						/>
+					{:else}
+						<div class="upload-success">
+							<div class="upload-success-icon">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+									<polyline points="22,4 12,14.01 9,11.01"/>
+								</svg>
+							</div>
+							<div class="upload-success-content">
+								<h4>File uploaded successfully</h4>
+								<p class="uploaded-file-name">{uploadedFileName}</p>
+								<button class="button button--discrete button--small" onclick={() => { isUploaded = false; uploadedData = null; uploadedFileName = ''; }}>
+									Upload different file
+								</button>
+							</div>
+						</div>
+					{/if}
+					
+					{#if uploadError}
+						<div class="upload-error">
+							<div class="upload-error-icon">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<circle cx="12" cy="12" r="10"/>
+									<line x1="15" y1="9" x2="9" y2="15"/>
+									<line x1="9" y1="9" x2="15" y2="15"/>
+								</svg>
+							</div>
+							<div class="upload-error-content">
+								<strong>Upload failed</strong>
+								<p>{uploadError}</p>
+							</div>
+						</div>
+					{/if}
+					
+					<!-- Display loading or error state -->
+					{#if dataResource.loading}
+						<div class="loading-state">
+							<div class="loading-spinner"></div>
+							<p>Loading data file... Please wait.</p>
+						</div>
+					{:else if dataResource.error}
+						<div class="error-state">
+							<div class="error-icon">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<circle cx="12" cy="12" r="10"/>
+									<line x1="15" y1="9" x2="9" y2="15"/>
+									<line x1="9" y1="9" x2="15" y2="15"/>
+								</svg>
+							</div>
+							<p>Error: {dataResource.error.message}</p>
 						</div>
 					{/if}
 				</div>
-				
-				<div class="data-stats">
-					<div class="stat-section">
-						<h4>File Information</h4>
-						<div class="stat-grid">
-							<div class="stat-item">
-								<div class="stat-label">Data Points</div>
-								<div class="stat-value">{dataResource.current.data.length.toLocaleString()}</div>
+			{/snippet}
+		</SectionContainer>
+
+		{#if !dataResource.loading && !dataResource.error && dataResource.current.data.length > 0}
+			<SectionContainer title="File Information" showActions={false} width="full">
+				{#snippet children()}
+					<div class="file-header">
+						<div class="file-info">
+							<h3 class="file-name">{selectedFile?.name}</h3>
+							{#if dataResource.current.data.length > 0}
+								<div class="timestamp">
+									<span class="timestamp-icon">⏱️</span> 
+									{new Date(dataResource.current.data[0]?.EPOCH_TIME * 1000).toLocaleString()} 
+									<span class="timestamp-separator">→</span> 
+									{new Date(dataResource.current.data[dataResource.current.data.length-1]?.EPOCH_TIME * 1000).toLocaleString()}
+								</div>
+							{/if}
+						</div>
+					</div>
+				{/snippet}
+			</SectionContainer>
+
+			<SectionContainer title="Data Statistics" showActions={false} width="full">
+				{#snippet children()}
+					<div class="dashboard-stats">
+						<!-- File Information -->
+						<article class="stat-card">
+							<div class="stat-card__icon">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<circle cx="12" cy="12" r="10"/>
+									<polyline points="12,6 12,12 16,14"/>
+								</svg>
 							</div>
-							<div class="stat-item">
-								<div class="stat-label">Columns</div>
-								<div class="stat-value">{dataResource.current.columns.length}</div>
+							<div class="stat-card__content">
+								<h3 class="stat-card__title">Data Points</h3>
+								<div class="stat-card__value">{dataResource.current.data.length.toLocaleString()}</div>
 							</div>
-							<div class="stat-item">
-								<div class="stat-label">Duration</div>
-								<div class="stat-value">
+						</article>
+
+						<article class="stat-card">
+							<div class="stat-card__icon">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<circle cx="12" cy="12" r="10"/>
+									<polyline points="12,6 12,12 16,14"/>
+								</svg>
+							</div>
+							<div class="stat-card__content">
+								<h3 class="stat-card__title">Duration</h3>
+								<div class="stat-card__value">
 									{dataResource.current.data.length > 0 ? 
 										((dataResource.current.data[dataResource.current.data.length-1].EPOCH_TIME - 
 										dataResource.current.data[0].EPOCH_TIME) / 60).toFixed(2) + ' min' : 
 										'N/A'}
 								</div>
 							</div>
-						</div>
+						</article>
+
+						<!-- CH₄ Statistics -->
+						<article class="stat-card">
+							<div class="stat-card__icon">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M3 3v18h18"/>
+									<path d="M7 12l4-4 4 4 6-6"/>
+								</svg>
+							</div>
+							<div class="stat-card__content">
+								<h3 class="stat-card__title">CH₄ Minimum</h3>
+								<div class="stat-card__value">{minCH4.toFixed(2)} ppm</div>
+							</div>
+						</article>
+
+						<article class="stat-card">
+							<div class="stat-card__icon">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M3 3v18h18"/>
+									<path d="M7 16l4-4 4 4 6-6"/>
+								</svg>
+							</div>
+							<div class="stat-card__content">
+								<h3 class="stat-card__title">CH₄ Average</h3>
+								<div class="stat-card__value">{averageCH4.toFixed(2)} ppm</div>
+							</div>
+						</article>
+
+						<article class="stat-card">
+							<div class="stat-card__icon">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M3 3v18h18"/>
+									<path d="M7 8l4-4 4 4 6-6"/>
+								</svg>
+							</div>
+							<div class="stat-card__content">
+								<h3 class="stat-card__title">CH₄ Maximum</h3>
+								<div class="stat-card__value">{maxCH4.toFixed(2)} ppm</div>
+							</div>
+						</article>
+
+						<!-- C₂H₆ Statistics -->
+						<article class="stat-card">
+							<div class="stat-card__icon">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M3 3v18h18"/>
+									<path d="M7 12l4-4 4 4 6-6"/>
+								</svg>
+							</div>
+							<div class="stat-card__content">
+								<h3 class="stat-card__title">C₂H₆ Minimum</h3>
+								<div class="stat-card__value">{minC2H6.toFixed(3)} ppm</div>
+							</div>
+						</article>
+
+						<article class="stat-card">
+							<div class="stat-card__icon">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M3 3v18h18"/>
+									<path d="M7 16l4-4 4 4 6-6"/>
+								</svg>
+							</div>
+							<div class="stat-card__content">
+								<h3 class="stat-card__title">C₂H₆ Average</h3>
+								<div class="stat-card__value">{averageC2H6.toFixed(3)} ppm</div>
+							</div>
+						</article>
+
+						<article class="stat-card">
+							<div class="stat-card__icon">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M3 3v18h18"/>
+									<path d="M7 8l4-4 4 4 6-6"/>
+								</svg>
+							</div>
+							<div class="stat-card__content">
+								<h3 class="stat-card__title">C₂H₆ Maximum</h3>
+								<div class="stat-card__value">{maxC2H6.toFixed(3)} ppm</div>
+							</div>
+						</article>
 					</div>
-					
-					<div class="stat-section">
-						<h4>CH₄ Statistics</h4>
-						<div class="stat-grid">
-							<div class="stat-item">
-								<div class="stat-label">Minimum</div>
-								<div class="stat-value">{minCH4.toFixed(2)} ppm</div>
-							</div>
-							<div class="stat-item">
-								<div class="stat-label">Average</div>
-								<div class="stat-value">{averageCH4.toFixed(2)} ppm</div>
-							</div>
-							<div class="stat-item">
-								<div class="stat-label">Maximum</div>
-								<div class="stat-value">{maxCH4.toFixed(2)} ppm</div>
-							</div>
-						</div>
-					</div>
-					
-					<div class="stat-section">
-						<h4>C₂H₆ Statistics</h4>
-						<div class="stat-grid">
-							<div class="stat-item">
-								<div class="stat-label">Minimum</div>
-								<div class="stat-value">{minC2H6.toFixed(3)} ppm</div>
-							</div>
-							<div class="stat-item">
-								<div class="stat-label">Average</div>
-								<div class="stat-value">{averageC2H6.toFixed(3)} ppm</div>
-							</div>
-							<div class="stat-item">
-								<div class="stat-label">Maximum</div>
-								<div class="stat-value">{maxC2H6.toFixed(3)} ppm</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				
-				<div class="column-list">
-					<h4>Available Data Columns</h4>
+				{/snippet}
+			</SectionContainer>
+
+			<SectionContainer title="Available Data Columns" showActions={false} width="full">
+				{#snippet children()}
 					<div class="columns-grid">
 						{#each dataResource.current.columns as column}
-							<div class="column-item">{column}</div>
+							<span class="badge badge--blue">{column}</span>
 						{/each}
 					</div>
-				</div>
-				
-				<div class="actions">
-					<button class="action-button primary" on:click={toggleVisualizations}>
-						{showVisualizations ? 'Hide Visualizations' : 'Show Visualizations'}
-					</button>
-					<button class="action-button" on:click={() => alert('Data export not implemented')}>
-						Export Data
-					</button>
-				</div>
-			</div>
+				{/snippet}
+			</SectionContainer>
+
+
+			
+			{#if saveError}
+				<SectionContainer title="Error" showActions={false} width="full">
+					{#snippet children()}
+						<div class="save-error">
+							{saveError}
+						</div>
+					{/snippet}
+				</SectionContainer>
+			{/if}
 			
 			<!-- Visualizations Section -->
 			{#if showVisualizations}
-				<div class="visualizations-container">
-					<h2>Data Visualizations</h2>
-					
-					<div class="charts-grid">
-						<SplitPane type="vertical" min="30%" max="70%" pos="50%" --color="#2d2d42" --thickness="4px">
-							{#snippet a()}
-								<!-- Top charts -->
-								<SplitPane 
-									type="horizontal" 
-									min="30%" 
-									max="70%" 
-									pos="50%" 
-									--color="#2d2d42" 
-									--thickness="4px"
-									--handle-position="relative"
-								>
-									{#snippet a()}
-										<!-- Methane Chart -->
-										<div class="chart-panel">
-											<div class="chart-card">
-												<h3>Methane (CH₄) Concentration</h3>
-												<div class="chart-wrapper">
-													<LineChart 
-														dataSource={dataResource.current.data}
-														yColumn="CH4"
-														xAxisLabel="Time"
-														yAxisLabel="ppm"
-														title="CH₄ over Time"
-														color="#38bdf8"
-														includeZero={false}
-														padding={0.15}
-														topPadding={0.3}
-														colorGradient={true}
-														colorColumn="CH4"
-														minColor="#38bdf8"
-														maxColor="#ff3333"
-														showDataPoints={false}
-														lineWidth={2.5}
-														hoveredPoint={sharedHoveredPoint}
-														on:hoverPoint={(e) => handleChartHover(e.detail)}
-													/>
+				<SectionContainer title="Data Visualizations" showActions={false} width="full">
+					{#snippet children()}
+						<div class="charts-grid">
+							<SplitPane type="vertical" min="30%" max="70%" pos="50%" --color="var(--border-primary)" --thickness="4px">
+								{#snippet a()}
+									<!-- Top charts -->
+									<SplitPane 
+										type="horizontal" 
+										min="30%" 
+										max="70%" 
+										pos="50%" 
+										--color="var(--border-primary)" 
+										--thickness="4px"
+										--handle-position="relative"
+									>
+										{#snippet a()}
+											<!-- Methane Chart -->
+											<div class="chart-panel">
+												<div class="chart-card">
+													<h3>Methane (CH₄) Concentration</h3>
+													<div class="chart-wrapper">
+														<LineChart 
+															dataSource={dataResource.current.data}
+															yColumn="CH4"
+															xAxisLabel="Time"
+															yAxisLabel="ppm"
+															title="CH₄ over Time"
+															color="#38bdf8"
+															includeZero={false}
+															padding={0.15}
+															topPadding={0.3}
+															colorGradient={true}
+															colorColumn="CH4"
+															minColor="#38bdf8"
+															maxColor="#ff3333"
+															showDataPoints={false}
+															lineWidth={2.5}
+															hoveredPoint={sharedHoveredPoint}
+															on:hoverPoint={(e) => handleChartHover(e.detail)}
+														/>
+													</div>
 												</div>
 											</div>
-										</div>
-									{/snippet}
-									
-									{#snippet b()}
-										<!-- GPS Scatter Plot -->
-										<div class="chart-panel">
-											<div class="chart-card">
-												<h3>GPS Trace with CH₄ Levels</h3>
-												<div class="chart-wrapper">
-													<ScatterChart 
-														dataSource={dataResource.current.data}
-														xColumn="GPS_ABS_LONG"
-														yColumn="GPS_ABS_LAT"
-														xAxisLabel="Longitude" 
-														yAxisLabel="Latitude"
-														title="GPS Trace"
-														color="#38bdf8"
-														lineColor="#888888"
-														lineOpacity={0.5}
-														lineWidth={1.5}
-														dotSizeColumn="CH4"
-														minDotSize={4}
-														maxDotSize={12}
-														colorColumn="CH4"
-														minColor="#38bdf8"
-														maxColor="#ff3333"
-														subsample={3}
-														padding={0.03}
-														showKmScale={true}
-														showGrid={true}
-														gridColor="#9ca3af"
-														gridOpacity={0.65}
-														gridDotSpacing={10}
-														preserveAspectRatio={true}
-														showWindArrow={true}
-														windNColumn="WIND_N"
-														windEColumn="WIND_E"
-														arrowColor="#2563eb"
-														arrowSize={50}
-														hoveredPoint={sharedHoveredPoint}
-														on:hoverPoint={(e) => handleChartHover(e.detail)}
-													/>
-													
-													<!-- Wind Rose Chart Overlay -->
-													<div class="wind-rose-overlay">
-														<div class="wind-rose-container">
-															<WindRoseChart 
-																dataSource={dataResource.current.data}
-																windNColumn="WIND_N"
-																windEColumn="WIND_E"
-																title="Wind Distribution"
-																colorScale={['#d0f0fd', '#94d8fb', '#4a9ff9', '#1d6feb', '#0143eb']}
-																segmentCount={16}
-																speedBins={5}
-																hoveredPoint={sharedHoveredPoint}
-																compact={true}
-															/>
+										{/snippet}
+										
+										{#snippet b()}
+											<!-- GPS Scatter Plot -->
+											<div class="chart-panel">
+												<div class="chart-card">
+													<h3>GPS Trace with CH₄ Levels</h3>
+													<div class="chart-wrapper">
+														<ScatterChart 
+															dataSource={dataResource.current.data}
+															xColumn="GPS_ABS_LONG"
+															yColumn="GPS_ABS_LAT"
+															xAxisLabel="Longitude" 
+															yAxisLabel="Latitude"
+															title="GPS Trace"
+															color="#38bdf8"
+															lineColor="#888888"
+															lineOpacity={0.5}
+															lineWidth={1.5}
+															dotSizeColumn="CH4"
+															minDotSize={4}
+															maxDotSize={12}
+															colorColumn="CH4"
+															minColor="#38bdf8"
+															maxColor="#ff3333"
+															subsample={3}
+															padding={0.03}
+															showKmScale={true}
+															showGrid={true}
+															gridColor="#9ca3af"
+															gridOpacity={0.65}
+															gridDotSpacing={10}
+															preserveAspectRatio={true}
+															showWindArrow={true}
+															windNColumn="WIND_N"
+															windEColumn="WIND_E"
+															arrowColor="#2563eb"
+															arrowSize={50}
+															hoveredPoint={sharedHoveredPoint}
+															on:hoverPoint={(e) => handleChartHover(e.detail)}
+														/>
+														
+														<!-- Wind Rose Chart Overlay -->
+														<div class="wind-rose-overlay">
+															<div class="wind-rose-container">
+																<WindRoseChart 
+																	dataSource={dataResource.current.data}
+																	windNColumn="WIND_N"
+																	windEColumn="WIND_E"
+																	title="Wind Distribution"
+																	colorScale={['#d0f0fd', '#94d8fb', '#4a9ff9', '#1d6feb', '#0143eb']}
+																	segmentCount={16}
+																	speedBins={5}
+																	hoveredPoint={sharedHoveredPoint}
+																	compact={true}
+																/>
+															</div>
 														</div>
 													</div>
 												</div>
 											</div>
-										</div>
-									{/snippet}
-								</SplitPane>
-							{/snippet}
-							
-							{#snippet b()}
-								<!-- Bottom section -->
-								<div class="chart-panel">
-									<div class="chart-card">
-										<h3>CH₄ and C₂H₆ Comparison</h3>
-										<div class="chart-wrapper">
-											<DualAxisChart 
-												dataSource={dataResource.current.data}
-												xColumn="EPOCH_TIME"
-												leftYColumn="CH4"
-												rightYColumn="C2H6"
-												leftYLabel="CH₄ (ppm)"
-												rightYLabel="C₂H₆ (ppm)"
-												leftColor="#38bdf8"
-												rightColor="#f97316"
-												title="Dual Gas Analysis"
-												xAxisLabel="Time"
-												tooltipTimeLabel="Time"
-												tooltipUnitMultiplier={1000}
-											/>
+										{/snippet}
+									</SplitPane>
+								{/snippet}
+								
+								{#snippet b()}
+									<!-- Bottom section -->
+									<div class="chart-panel">
+										<div class="chart-card">
+											<h3>CH₄ and C₂H₆ Comparison</h3>
+											<div class="chart-wrapper">
+												<DualAxisChart 
+													dataSource={dataResource.current.data}
+													xColumn="EPOCH_TIME"
+													leftYColumn="CH4"
+													rightYColumn="C2H6"
+													leftYLabel="CH₄ (ppm)"
+													rightYLabel="C₂H₆ (ppm)"
+													leftColor="#38bdf8"
+													rightColor="#f97316"
+													title="Dual Gas Analysis"
+													xAxisLabel="Time"
+													tooltipTimeLabel="Time"
+													tooltipUnitMultiplier={1000}
+												/>
+											</div>
 										</div>
 									</div>
-								</div>
-							{/snippet}
-						</SplitPane>
-					</div>
-				</div>
+								{/snippet}
+							</SplitPane>
+						</div>
+					{/snippet}
+				</SectionContainer>
 			{/if}
 		{:else if !dataResource.loading && !dataResource.error}
-			<div class="empty-state">
-				<div class="empty-icon">📊</div>
-				<h3>No Data to Display</h3>
-				<p>Upload a .DAT file to view survey data</p>
-			</div>
+			<SectionContainer title="No Data" showActions={false} width="full">
+				{#snippet children()}
+					<div class="empty-state">
+						<div class="empty-icon">📊</div>
+						<h3>No Data to Display</h3>
+						<p>Upload a .DAT file to view survey data</p>
+					</div>
+				{/snippet}
+			</SectionContainer>
 		{/if}
-	</div>
-</div>
+	{/snippet}
+</PageTemplate>
 
 <style>
-	.survey-viewer-container {
-		height: 100%;
+	.action-group {
 		display: flex;
-		flex-direction: column;
-		background-color: #1e1e2e;
-		color: #e2e8f0;
-		overflow: hidden;
-	}
-
-	.page-header {
-		padding: 1.5rem;
-		border-bottom: 1px solid #2d2d42;
-	}
-
-	.page-header h1 {
-		margin: 0 0 0.5rem 0;
-		font-size: 1.8rem;
-		font-weight: 600;
-		color: #e2e8f0;
-	}
-
-	.description {
-		margin: 0 0 1.5rem 0;
-		color: #9ca3af;
-	}
-	
-	.upload-section {
-		margin-bottom: 1rem;
-	}
-
-	.upload-container {
-		display: flex;
+		gap: var(--space-sm);
 		align-items: center;
 	}
 
-	.upload-label {
-		display: inline-block;
-		padding: 0.5rem 1rem;
-		background-color: #2563eb;
-		color: white;
-		border-radius: 0.375rem;
-		cursor: pointer;
-		transition: background-color 0.2s;
+	/* Compact statistics cards */
+	.dashboard-stats {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+		gap: var(--space-sm);
+		padding: var(--space-sm) var(--space-md);
 	}
 
-	.upload-label:hover {
-		background-color: #1d4ed8;
+	.dashboard-stats .stat-card {
+		padding: var(--space-xs) var(--space-sm);
+		min-height: auto;
+	}
+
+	.dashboard-stats .stat-card__icon {
+		display: none;
+	}
+
+	.dashboard-stats .stat-card__title {
+		font-size: 0.8rem;
+		margin-bottom: var(--space-xs);
+		line-height: 1.2;
+	}
+
+	.dashboard-stats .stat-card__value {
+		font-size: 1.1rem;
+		font-weight: 600;
+		line-height: 1.1;
+	}
+
+	.upload-section {
+		padding: var(--space-lg);
+	}
+
+	.upload-dropzone {
+		border: 2px dashed var(--border-primary);
+		border-radius: var(--radius-lg);
+		padding: 3rem 2rem;
+		text-align: center;
+		cursor: pointer;
+		transition: all var(--transition-normal) ease;
+		background-color: var(--bg-secondary);
+		position: relative;
+		overflow: hidden;
+	}
+
+	.upload-dropzone:hover,
+	.upload-dropzone:focus {
+		border-color: var(--accent-primary);
+		background-color: var(--bg-tertiary);
+		outline: none;
+	}
+
+	.upload-dropzone.drag-over {
+		border-color: var(--accent-primary);
+		background-color: var(--bg-tertiary);
+		transform: scale(1.02);
+		box-shadow: var(--shadow-md);
+	}
+
+	.upload-icon {
+		color: var(--accent-primary);
+		margin-bottom: var(--space-md);
+		opacity: 0.8;
+	}
+
+	.upload-text h3 {
+		margin: 0 0 var(--space-sm) 0;
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.upload-text p {
+		margin: 0 0 var(--space-sm) 0;
+		color: var(--text-secondary);
+		font-size: 1rem;
+	}
+
+	.upload-link {
+		color: var(--accent-primary);
+		font-weight: 500;
+		text-decoration: underline;
+	}
+
+	.upload-text small {
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+		opacity: 0.7;
 	}
 
 	.file-input {
 		display: none;
 	}
 
-	.upload-info {
+	.upload-success {
 		display: flex;
 		align-items: center;
-		margin-top: 0.5rem;
-		gap: 1rem;
+		gap: var(--space-md);
+		padding: var(--space-lg);
+		background-color: rgba(16, 185, 129, 0.1);
+		border: 1px solid rgba(16, 185, 129, 0.2);
+		border-radius: var(--radius-lg);
+	}
+
+	.upload-success-icon {
+		color: var(--success);
+		flex-shrink: 0;
+	}
+
+	.upload-success-content {
+		flex: 1;
+	}
+
+	.upload-success-content h4 {
+		margin: 0 0 var(--space-xs) 0;
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-primary);
 	}
 
 	.uploaded-file-name {
 		font-size: 0.875rem;
-		color: #9ca3af;
-		font-style: italic;
+		color: var(--text-secondary);
+		margin: 0 0 var(--space-sm) 0;
+		font-family: monospace;
 	}
 
+
+
 	.upload-error {
-		margin-top: 0.5rem;
-		padding: 0.5rem;
-		background-color: rgba(239, 68, 68, 0.2);
-		border-left: 3px solid #ef4444;
-		color: #fca5a5;
+		display: flex;
+		align-items: flex-start;
+		gap: var(--space-sm);
+		margin-top: var(--space-md);
+		padding: var(--space-md);
+		background-color: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.2);
+		border-radius: var(--radius-md);
+	}
+
+	.upload-error-icon {
+		color: var(--error);
+		flex-shrink: 0;
+		margin-top: var(--space-xs);
+	}
+
+	.upload-error-content strong {
+		display: block;
+		color: var(--error);
+		font-weight: 600;
+		margin-bottom: var(--space-xs);
+	}
+
+	.upload-error-content p {
+		margin: 0;
+		color: var(--text-secondary);
 		font-size: 0.875rem;
+		opacity: 0.8;
 	}
 
 	.loading-state {
-		margin-top: 1rem;
-		padding: 1rem;
-		background-color: rgba(96, 165, 250, 0.1);
-		border-radius: 0.375rem;
-		text-align: center;
-		color: #93c5fd;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-sm);
+		margin-top: var(--space-md);
+		padding: var(--space-lg);
+		background-color: rgba(59, 130, 246, 0.1);
+		border: 1px solid rgba(59, 130, 246, 0.2);
+		border-radius: var(--radius-md);
+	}
+
+	.loading-state p {
+		margin: 0;
+		color: var(--accent-secondary);
+		font-size: 0.875rem;
+	}
+
+	.loading-spinner {
+		width: 20px;
+		height: 20px;
+		border: 2px solid rgba(59, 130, 246, 0.3);
+		border-top: 2px solid var(--accent-primary);
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
 	}
 
 	.error-state {
-		margin-top: 1rem;
-		padding: 1rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-sm);
+		margin-top: var(--space-md);
+		padding: var(--space-lg);
 		background-color: rgba(239, 68, 68, 0.1);
-		border-radius: 0.375rem;
-		text-align: center;
-		color: #fca5a5;
+		border: 1px solid rgba(239, 68, 68, 0.2);
+		border-radius: var(--radius-md);
 	}
 
-	.main-content {
-		flex: 1;
-		padding: 1.5rem;
-		overflow: auto;
+	.error-state p {
+		margin: 0;
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+		opacity: 0.8;
 	}
 
-	.data-summary-card {
-		background-color: #252538;
-		border-radius: 0.5rem;
-		padding: 1.5rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	.error-icon {
+		color: var(--error);
+		flex-shrink: 0;
 	}
 
-	.summary-header {
-		margin-bottom: 1.5rem;
-		padding-bottom: 1rem;
-		border-bottom: 1px solid #424254;
+	.file-header {
+		margin-bottom: var(--space-lg);
+		padding: var(--space-lg);
 	}
 
-	.summary-header h3 {
-		margin: 0 0 0.5rem 0;
+	.file-info {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-sm);
+	}
+
+	.file-name {
+		margin: 0;
 		font-size: 1.25rem;
-		font-weight: 500;
+		font-weight: 600;
+		color: var(--text-primary);
 	}
 
 	.timestamp {
 		font-size: 0.875rem;
-		color: #9ca3af;
+		color: var(--text-secondary);
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
 	}
 
 	.timestamp-separator {
-		margin: 0 0.5rem;
-		color: #6b7280;
+		margin: 0 var(--space-sm);
+		color: var(--text-secondary);
+		opacity: 0.6;
 	}
 
-	.data-stats {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-		gap: 1.5rem;
-		margin-bottom: 1.5rem;
-	}
 
-	.stat-section h4 {
-		margin: 0 0 1rem 0;
-		font-size: 1rem;
-		color: #94a3b8;
-		font-weight: 500;
-	}
 
-	.stat-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-		gap: 0.75rem;
-	}
 
-	.stat-item {
-		padding: 0.75rem;
-		background-color: #1e1e2e;
-		border-radius: 0.375rem;
-	}
-
-	.stat-label {
-		font-size: 0.75rem;
-		color: #9ca3af;
-		margin-bottom: 0.25rem;
-	}
-
-	.stat-value {
-		font-size: 1rem;
-		font-weight: 500;
-	}
-
-	.column-list {
-		margin-top: 1.5rem;
-		padding-top: 1.5rem;
-		border-top: 1px solid #424254;
-	}
-
-	.column-list h4 {
-		margin: 0 0 1rem 0;
-		font-size: 1rem;
-		color: #94a3b8;
-		font-weight: 500;
-	}
 
 	.columns-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-		gap: 0.5rem;
-	}
-
-	.column-item {
-		padding: 0.5rem;
-		background-color: #1e1e2e;
-		border-radius: 0.25rem;
-		font-size: 0.875rem;
-		text-align: center;
-		border: 1px solid #424254;
-	}
-
-	.actions {
 		display: flex;
-		gap: 1rem;
-		margin-top: 2rem;
-		padding-top: 1.5rem;
-		border-top: 1px solid #424254;
+		flex-wrap: wrap;
+		gap: var(--space-sm);
+		padding: var(--space-lg);
 	}
 
-	.action-link, .action-button {
-		padding: 0.5rem 1rem;
-		border-radius: 0.375rem;
+
+	
+	.save-error {
+		margin: var(--space-lg);
+		padding: var(--space-sm);
+		background-color: rgba(239, 68, 68, 0.1);
+		border-left: 3px solid var(--error);
+		color: var(--text-secondary);
 		font-size: 0.875rem;
-		text-align: center;
-		cursor: pointer;
-		transition: background-color 0.2s;
-	}
-
-	.action-button {
-		background-color: #4b5563;
-		color: white;
-		border: none;
-	}
-
-	.action-button:hover {
-		background-color: #374151;
-	}
-	
-	.action-button.primary {
-		background-color: #2563eb;
-		color: white;
-	}
-	
-	.action-button.primary:hover {
-		background-color: #1d4ed8;
+		border-radius: var(--radius-md);
+		opacity: 0.8;
 	}
 
 	.empty-state {
@@ -747,43 +1011,27 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		padding: 3rem;
-		background-color: #252538;
-		border-radius: 0.5rem;
+		padding: calc(var(--space-xl) * 2);
 		text-align: center;
 	}
 
 	.empty-icon {
 		font-size: 3rem;
-		margin-bottom: 1rem;
+		margin-bottom: var(--space-md);
 	}
 
 	.empty-state h3 {
-		margin: 0 0 0.5rem 0;
+		margin: 0 0 var(--space-sm) 0;
 		font-size: 1.25rem;
+		color: var(--text-primary);
 	}
 
 	.empty-state p {
-		color: #9ca3af;
+		color: var(--text-secondary);
 		max-width: 400px;
 	}
 	
 	/* Visualization styles */
-	.visualizations-container {
-		margin-top: 2rem;
-		background-color: #252538;
-		border-radius: 0.5rem;
-		padding: 1.5rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	}
-	
-	.visualizations-container h2 {
-		margin: 0 0 1.5rem 0;
-		font-size: 1.5rem;
-		font-weight: 600;
-		color: #e2e8f0;
-	}
-	
 	.charts-grid {
 		height: 70vh;
 		min-height: 500px;
@@ -793,31 +1041,31 @@
 	.chart-panel {
 		height: 100%;
 		width: 100%;
-		padding: 0.35rem;
+		padding: var(--space-xs);
 		overflow: hidden;
 		box-sizing: border-box;
 		display: flex;
 	}
 	
 	.chart-card {
-		background-color: #2a2a3c;
-		border-radius: 0.5rem;
-		box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
-		padding: 0.5rem 0.75rem;
+		background-color: var(--bg-secondary);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-sm);
+		padding: var(--space-sm) var(--space-sm);
 		height: 100%;
 		width: 100%;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
 		box-sizing: border-box;
-		border: 1px solid #3a3a4f;
+		border: 1px solid var(--border-primary);
 	}
 	
 	.chart-card h3 {
-		margin: 0 0 0.25rem 0;
+		margin: 0 0 var(--space-xs) 0;
 		font-size: 1.15rem;
 		font-weight: 600;
-		color: #e2e8f0;
+		color: var(--text-primary);
 		flex-shrink: 0;
 		line-height: 1.2;
 	}
@@ -833,20 +1081,20 @@
 	.wind-rose-overlay {
 		position: absolute;
 		top: 0px;
-		right: 10px;
+		right: var(--space-sm);
 		width: 18%;
 		height: 18%;
 		min-width: 65px;
 		min-height: 65px;
 		max-width: 110px;
 		max-height: 110px;
-		background-color: rgba(42, 42, 60, 0.7);
-		border-radius: 0.375rem;
-		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+		background-color: rgba(22, 22, 31, 0.9);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-sm);
 		z-index: 10;
 		overflow: hidden;
-		border: 1px solid rgba(58, 58, 79, 0.5);
-		transition: all 0.2s ease;
+		border: 1px solid var(--border-primary);
+		transition: all var(--transition-normal) ease;
 		opacity: 1;
 	}
 	
@@ -888,7 +1136,7 @@
 	/* Chart text styles */
 	:global(svg text) {
 		font-size: calc(0.6rem + 0.3vmin);
-		fill: #e2e8f0;
+		fill: var(--text-primary);
 	}
 	
 	:global(.chart-title),
@@ -899,18 +1147,18 @@
 	:global(.chart-label),
 	:global(.x-axis text),
 	:global(.y-axis text) {
-		fill: #e2e8f0 !important;
-		color: #e2e8f0 !important;
+		fill: var(--text-primary) !important;
+		color: var(--text-primary) !important;
 	}
 	
 	:global(.y-axis-label),
 	:global(.x-axis-label) {
-		fill: #e2e8f0 !important;
+		fill: var(--text-primary) !important;
 		font-weight: 500;
 	}
 	
 	:global(.axis-arrow) {
-		fill: #94a3b8 !important;
+		fill: var(--text-secondary) !important;
 		font-weight: bold;
 	}
 	
@@ -923,21 +1171,21 @@
 	}
 	
 	:global(.x-axis path), :global(.y-axis path) {
-		stroke: #6b7280;
+		stroke: var(--border-secondary);
 		stroke-width: 1px;
 	}
 	
 	:global(.x-axis line), :global(.y-axis line) {
-		stroke: #6b7280;
+		stroke: var(--border-secondary);
 		stroke-width: 1px;
 	}
 	
 	:global(.x-axis .tick line) {
-		stroke: #4b5563;
+		stroke: var(--border-primary);
 	}
   
 	:global(.y-axis .tick line) {
-		stroke: #4b5563;
+		stroke: var(--border-primary);
 	}
 	
 	:global(svg) {

@@ -288,6 +288,7 @@
             role="img"
             aria-label={title || "Wind rose chart showing wind direction and speed distribution"}
         >
+            {#if radius > 0}
             <g transform={`translate(${margin.left + innerWidth / 2}, ${margin.top + innerHeight / 2})`}>
                 <!-- Wind rose segments -->
                 {#if windData.bins && windData.bins.length > 0}
@@ -296,8 +297,8 @@
                             {#if count > 0}
                                 {@const angleStart = dirIndex * windData.dirStep}
                                 {@const angleEnd = (dirIndex + 1) * windData.dirStep}
-                                {@const outerRadius = radius * ((speedIndex + 1) / speedBins)}
-                                {@const innerRadius = speedIndex === 0 ? 0 : radius * (speedIndex / speedBins)}
+                                {@const outerRadius = Math.max(0, radius * ((speedIndex + 1) / speedBins))}
+                                {@const innerRadius = speedIndex === 0 ? 0 : Math.max(0, radius * (speedIndex / speedBins))}
                                 
                                 <path
                                     d={arc()({
@@ -350,16 +351,18 @@
                 
                 <!-- Concentric circles for speed reference -->
                 {#each [...Array(speedBins).keys()] as i}
-                    {@const circleRadius = radius * ((i + 1) / speedBins)}
-                    <circle
-                        cx="0"
-                        cy="0"
-                        r={circleRadius}
-                        fill="none"
-                        stroke={compact ? "#666" : "#ccc"}
-                        stroke-width={compact ? 0.3 : 0.5}
-                        stroke-dasharray={i === speedBins - 1 ? "none" : "2,2"}
-                    />
+                    {@const circleRadius = Math.max(0, radius * ((i + 1) / speedBins))}
+                    {#if circleRadius > 0}
+                        <circle
+                            cx="0"
+                            cy="0"
+                            r={circleRadius}
+                            fill="none"
+                            stroke={compact ? "#666" : "#ccc"}
+                            stroke-width={compact ? 0.3 : 0.5}
+                            stroke-dasharray={i === speedBins - 1 ? "none" : "2,2"}
+                        />
+                    {/if}
                     
                     <!-- Only show max speed value in compact mode -->
                     {#if i === speedBins - 1 && compact}
@@ -385,6 +388,7 @@
                     {/if}
                 {/each}
             </g>
+            {/if}
             
             <!-- Legend -->
             {#if !compact}

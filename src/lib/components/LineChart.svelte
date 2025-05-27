@@ -88,15 +88,29 @@
     
     // Setup resize observer to handle container size changes
     onMount(() => {
-      // Create a resize observer to detect container size changes
+      // Create a resize observer to detect container size changes with debouncing
+      let resizeTimeout: ReturnType<typeof setTimeout>;
+      let lastWidth = 0;
+      let lastHeight = 0;
+      
       const resizeObserver = new ResizeObserver(entries => {
-        for (const entry of entries) {
-          if (entry.target === containerElement) {
-            width = entry.contentRect.width;
-            height = entry.contentRect.height;
-            console.log(`LineChart dimensions updated to: ${width}x${height}`);
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          for (const entry of entries) {
+            if (entry.target === containerElement) {
+              const newWidth = Math.floor(entry.contentRect.width);
+              const newHeight = Math.floor(entry.contentRect.height);
+              
+              // Only update if dimensions actually changed by a meaningful amount
+              if (Math.abs(newWidth - lastWidth) > 1 || Math.abs(newHeight - lastHeight) > 1) {
+                lastWidth = newWidth;
+                lastHeight = newHeight;
+                width = newWidth;
+                height = newHeight;
+              }
+            }
           }
-        }
+        }, 50); // Increased debounce time
       });
       
       // Start observing the container for size changes
@@ -105,7 +119,6 @@
       }
       
       // Initialize with data
-      console.log(`Component mounted, dataSource:`, dataSource ? `${dataSource.length} items` : 'none', `dataFile:`, dataFile || 'none');
       debugInfo = `Component mounted, checking data source`;
       
       // If dataSource is provided directly, use it
@@ -151,7 +164,6 @@
     // Function to parse DAT file
     async function loadDatFile(filePath: string) {
       debugInfo = `Attempting to load: ${filePath}`;
-      console.log(`Attempting to load data file: ${filePath}`);
       
       try {
         loading = true;
@@ -159,7 +171,6 @@
         
         const response = await fetch(filePath);
         debugInfo = `Fetch response status: ${response.status}`;
-        console.log(`Fetch response:`, response);
         
         if (!response.ok) {
           throw new Error(`Failed to load data file: ${response.status} ${response.statusText}`);
@@ -167,14 +178,12 @@
         
         const text = await response.text();
         debugInfo = `Data received: ${text.substring(0, 100)}...`;
-        console.log(`Data length: ${text.length} characters`);
         
         if (!text || text.trim() === '') {
           throw new Error('File is empty or contains no data');
         }
         
         const lines = text.trim().split('\n');
-        console.log(`Parsed ${lines.length} lines of data`);
         
         if (lines.length < 2) {
           throw new Error('File does not contain enough data (needs header + at least one row)');
@@ -183,7 +192,6 @@
         // Parse header row to get column names
         columns = lines[0].trim().split(/\s+/);
         debugInfo = `Columns found: ${columns.join(', ')}`;
-        console.log(`Columns found:`, columns);
         
         // Parse data rows
         const parsedData = lines.slice(1).map(line => {
@@ -200,10 +208,8 @@
         
         data = parsedData;
         debugInfo = `Processed ${data.length} data points`;
-        console.log(`Successfully processed ${data.length} data points`);
         loading = false;
       } catch (err) {
-        console.error('Error loading data file:', err);
         error = err instanceof Error ? err.message : 'Unknown error loading data';
         debugInfo = `Error: ${error}`;
         loading = false;
@@ -228,10 +234,7 @@
       }
     });
     
-    // Log dimension changes to help debug
-    $effect(() => {
-      console.log(`LineChart dimensions updated: ${width}x${height}, scales should recalculate`);
-    });
+    // Removed dimension logging effect to prevent infinite loops
     
     let xScale = $derived(
       data.length && width
@@ -437,7 +440,7 @@
 </script>
   
 <!-- bind width of the container div to the svg width-->
-<div class="wrapper" bind:this={containerElement} bind:clientWidth={width} bind:clientHeight={height}>
+<div class="wrapper" bind:this={containerElement}>
   {#if loading}
     <div class="loading">Loading data... <span class="debug">{debugInfo}</span></div>
   {:else if error}

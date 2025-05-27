@@ -52,17 +52,31 @@
   let hoverPosition = $state({ x: 0, y: 0 });
   let svgElement = $state<SVGSVGElement | undefined>(undefined);
   
-  // Setup resize observer
+    // Setup resize observer
   onMount(() => {
-    // Create a resize observer to detect container size changes
+    // Create a resize observer to detect container size changes with debouncing
+    let resizeTimeout: ReturnType<typeof setTimeout>;
+    let lastWidth = 0;
+    let lastHeight = 0;
+    
     const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        if (entry.target === containerElement) {
-          width = entry.contentRect.width;
-          height = entry.contentRect.height;
-          console.log(`DualAxisChart dimensions updated to: ${width}x${height}`);
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        for (const entry of entries) {
+          if (entry.target === containerElement) {
+            const newWidth = Math.floor(entry.contentRect.width);
+            const newHeight = Math.floor(entry.contentRect.height);
+            
+            // Only update if dimensions actually changed by a meaningful amount
+            if (Math.abs(newWidth - lastWidth) > 1 || Math.abs(newHeight - lastHeight) > 1) {
+              lastWidth = newWidth;
+              lastHeight = newHeight;
+              width = newWidth;
+              height = newHeight;
+            }
+          }
         }
-      }
+      }, 50); // Increased debounce time
     });
     
     // Start observing the container for size changes
@@ -76,10 +90,7 @@
     };
   });
   
-  // Log dimension changes to help debug
-  $effect(() => {
-    console.log(`DualAxisChart dimensions updated: ${width}x${height}, scales should recalculate`);
-  });
+  // Removed dimension logging effect to prevent infinite loops
   
   // Computed values for scales
   let xScale = $derived(
@@ -187,7 +198,7 @@
   }
 </script>
 
-<div class="wrapper" bind:this={containerElement} bind:clientWidth={width} bind:clientHeight={height}>
+<div class="wrapper" bind:this={containerElement}>
   {#if dataSource.length && width && height && xScale && leftYScale && rightYScale && leftLineGenerator && rightLineGenerator}
     <svg 
       {width}

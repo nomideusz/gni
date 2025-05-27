@@ -107,10 +107,6 @@
     // Use the external hover point if provided, otherwise use internal
     let activeHoveredPoint = $derived(externalHoveredPoint || internalHoveredPoint);
     
-    // Scale variables
-    let scaleBarLength = $state(0); // in pixels
-    let scaleBarValue = $state(0); // in kilometers
-    
     // Subsampled data for display
     let displayData = $derived(
       subsample > 1
@@ -120,13 +116,29 @@
   
     // Initialize component
     onMount(() => {
-      // Create a resize observer to detect container size changes
+      // Create a resize observer to detect container size changes with debouncing
+      let resizeTimeout: ReturnType<typeof setTimeout>;
+      let lastWidth = 0;
+      let lastHeight = 0;
+      
       const resizeObserver = new ResizeObserver(entries => {
-        for (const entry of entries) {
-          // Update width and height
-          width = entry.contentRect.width;
-          height = entry.contentRect.height;
-        }
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          for (const entry of entries) {
+            if (entry.target === containerElement) {
+              const newWidth = Math.floor(entry.contentRect.width);
+              const newHeight = Math.floor(entry.contentRect.height);
+              
+              // Only update if dimensions actually changed by a meaningful amount
+              if (Math.abs(newWidth - lastWidth) > 1 || Math.abs(newHeight - lastHeight) > 1) {
+                lastWidth = newWidth;
+                lastHeight = newHeight;
+                width = newWidth;
+                height = newHeight;
+              }
+            }
+          }
+        }, 50); // Increased debounce time
       });
       
       // Start observing the container element
@@ -135,7 +147,6 @@
       }
       
       // Initialize with data
-      console.log(`ScatterChart mounted, dataSource:`, dataSource ? `${dataSource.length} items` : 'none', `dataFile:`, dataFile || 'none');
       debugInfo = `Component mounted, checking data source`;
       
       // If dataSource is provided directly, use it
@@ -222,17 +233,13 @@
         debugInfo = `Loaded ${data.length} data points`;
         loading = false;
       } catch (err) {
-        console.error('Error loading data file:', err);
         error = err instanceof Error ? err.message : 'Unknown error loading data';
         debugInfo = `Error: ${error}`;
         loading = false;
       }
     }
   
-    // Log dimension changes to help debug
-    $effect(() => {
-      console.log(`ScatterChart dimensions updated: ${width}x${height}, scales should recalculate`);
-    });
+    // Removed dimension logging effect to prevent infinite loops
     
     // Computed scales with padding and aspect ratio preservation
     let xExtent = $derived(
@@ -317,37 +324,35 @@
         : null
     );
     
-    // Calculate kilometer scale bar (for GPS coordinates)
-    $effect(() => {
-      if (showKmScale && data.length && xScale && yScale && 
-          xColumn.includes('LONG') && yColumn.includes('LAT')) {
-        
-        // Get the domain extents
-        const xDomain = xScale.domain();
-        const yDomain = yScale.domain();
-        
-        // Calculate a reasonable length for scale bar (about 20% of chart width)
-        const targetPixelLength = (width - margin.left - margin.right) * 0.2;
-        
-        // For longitude at this latitude, calculate kilometers per degree
-        // Using approximation: 1 degree longitude at equator ≈ 111km, adjusted by cos(latitude)
-        const centerLat = (yDomain[0] + yDomain[1]) / 2;
-        const kmPerLongDegree = 111 * Math.cos(centerLat * Math.PI / 180);
-        
-        // Calculate a nice round number of kilometers
-        const xRangeInKm = (xDomain[1] - xDomain[0]) * kmPerLongDegree;
-        const scaleInKm = getNiceRoundNumber(xRangeInKm * 0.2);
-        
-        // Convert back to degrees longitude
-        const scaleLengthInDegrees = scaleInKm / kmPerLongDegree;
-        const scaleLengthInPixels = Math.abs(xScale(xDomain[0] + scaleLengthInDegrees) - xScale(xDomain[0]));
-        
-        scaleBarLength = scaleLengthInPixels;
-        scaleBarValue = scaleInKm;
-        
-        console.log(`Scale bar: ${scaleBarValue} km, ${scaleBarLength}px`);
-      }
-    });
+    // Scale variables - use derived instead of state to avoid infinite loops
+    let scaleBarData = $derived(
+      showKmScale && data.length && xScale && yScale && 
+      xColumn.includes('LONG') && yColumn.includes('LAT')
+        ? (() => {
+            // Get the domain extents
+            const xDomain = xScale.domain();
+            const yDomain = yScale.domain();
+            
+            // For longitude at this latitude, calculate kilometers per degree
+            // Using approximation: 1 degree longitude at equator ≈ 111km, adjusted by cos(latitude)
+            const centerLat = (yDomain[0] + yDomain[1]) / 2;
+            const kmPerLongDegree = 111 * Math.cos(centerLat * Math.PI / 180);
+            
+            // Calculate a nice round number of kilometers
+            const xRangeInKm = (xDomain[1] - xDomain[0]) * kmPerLongDegree;
+            const scaleInKm = getNiceRoundNumber(xRangeInKm * 0.2);
+            
+            // Convert back to degrees longitude
+            const scaleLengthInDegrees = scaleInKm / kmPerLongDegree;
+            const scaleLengthInPixels = Math.abs(xScale(xDomain[0] + scaleLengthInDegrees) - xScale(xDomain[0]));
+            
+            return {
+              length: scaleLengthInPixels,
+              value: scaleInKm
+            };
+          })()
+        : { length: 0, value: 0 }
+    );
     
     // Helper function to get nice round numbers for scale
     function getNiceRoundNumber(value: number): number {
@@ -607,7 +612,7 @@
     });
 </script>
   
-<div class="wrapper" bind:this={containerElement} bind:clientWidth={width} bind:clientHeight={height}>
+<div class="wrapper" bind:this={containerElement}>
   {#if loading}
     <div class="loading">Loading data... <span class="debug">{debugInfo}</span></div>
   {:else if error}
@@ -617,8 +622,8 @@
       {width} 
       {height} 
       bind:this={svgElement}
-      on:mousemove={handleMouseMove}
-      on:mouseleave={handleMouseLeave}
+      onmousemove={handleMouseMove}
+      onmouseleave={handleMouseLeave}
       role="img"
       aria-label={title || "GPS scatter plot with data visualization"}>
       
@@ -788,28 +793,28 @@
       {/if}
       
       <!-- Kilometer scale bar (only for GPS coordinates) -->
-      {#if showKmScale && scaleBarLength > 0 && scaleBarValue > 0}
+      {#if showKmScale && scaleBarData.length > 0 && scaleBarData.value > 0}
         <g class="scale-bar" transform="translate({margin.left + 20}, {height - margin.bottom + 25})">
           <!-- Scale bar line -->
           <line
             x1="0"
             y1="0"
-            x2="{scaleBarLength}"
+            x2="{scaleBarData.length}"
             y2="0"
             stroke="#cbd5e1"
             stroke-width="2" />
           
           <!-- Scale tick marks -->
           <line x1="0" y1="-4" x2="0" y2="4" stroke="#cbd5e1" stroke-width="1.5" />
-          <line x1="{scaleBarLength}" y1="-4" x2="{scaleBarLength}" y2="4" stroke="#cbd5e1" stroke-width="1.5" />
+          <line x1="{scaleBarData.length}" y1="-4" x2="{scaleBarData.length}" y2="4" stroke="#cbd5e1" stroke-width="1.5" />
           
           <!-- Scale label -->
           <text
-            x="{scaleBarLength / 2}"
+            x="{scaleBarData.length / 2}"
             y="-8"
             text-anchor="middle"
             class="scale-label">
-            {scaleBarValue} km
+            {scaleBarData.value} km
           </text>
         </g>
       {/if}

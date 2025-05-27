@@ -59,8 +59,6 @@
     // Wait for the next tick to ensure the DOM is ready
     await tick();
     
-    console.log(`Updating ${orientation} axis with width: ${width}`);
-    
     // Create the appropriate axis based on orientation
     let axisGenerator;
     if (orientation === 'right') {
@@ -151,8 +149,12 @@
   // Update axis when scale or dimensions change
   $effect(() => {
     if (scale && width && height && element) {
-      // Use a small timeout to ensure DOM is ready
-      setTimeout(updateAxis, 0);
+      // Use requestAnimationFrame to prevent infinite loops
+      requestAnimationFrame(() => {
+        if (element && scale) {
+          updateAxis();
+        }
+      });
     }
   });
 </script>
