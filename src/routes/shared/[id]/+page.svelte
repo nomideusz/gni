@@ -90,142 +90,70 @@
 
 	<main class="shared-content">
 		{#if !dataResource.loading && !dataResource.error && dataResource.current.data.length > 0}
-			<section class="file-section">
-				<h2>File Information</h2>
-				<div class="file-header">
-					<div class="file-info">
-						<h3 class="file-name">{sharedFile.filename}</h3>
+			<!-- Combined File Information and Statistics -->
+			<section class="file-overview-section">
+				<h2>File Overview</h2>
+				<div class="file-overview">
+					<!-- File Info Column -->
+					<div class="file-info-compact">
+						<h3 class="file-name-compact">{sharedFile.filename}</h3>
 						{#if dataResource.current.data.length > 0}
-							<div class="timestamp">
+							<div class="timestamp-compact">
 								<span class="timestamp-icon">⏱️</span> 
 								{new Date(dataResource.current.data[0]?.EPOCH_TIME * 1000).toLocaleString()} 
 								<span class="timestamp-separator">→</span> 
 								{new Date(dataResource.current.data[dataResource.current.data.length-1]?.EPOCH_TIME * 1000).toLocaleString()}
 							</div>
 						{/if}
-						<div class="shared-info">
+						<div class="shared-info-compact">
 							<span class="shared-icon">🔗</span>
 							Shared on {new Date(sharedFile.createdAt).toLocaleString()}
 						</div>
 					</div>
-				</div>
-			</section>
-
-			<section class="stats-section">
-				<h2>Data Statistics</h2>
-					<div class="dashboard-stats">
-						<!-- File Information -->
-						<article class="stat-card">
-							<div class="stat-card__icon">
-								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<circle cx="12" cy="12" r="10"/>
-									<polyline points="12,6 12,12 16,14"/>
-								</svg>
-							</div>
-							<div class="stat-card__content">
-								<h3 class="stat-card__title">Data Points</h3>
-								<div class="stat-card__value">{dataResource.current.data.length.toLocaleString()}</div>
-							</div>
-						</article>
-
-						<article class="stat-card">
-							<div class="stat-card__icon">
-								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<circle cx="12" cy="12" r="10"/>
-									<polyline points="12,6 12,12 16,14"/>
-								</svg>
-							</div>
-							<div class="stat-card__content">
-								<h3 class="stat-card__title">Duration</h3>
-								<div class="stat-card__value">
-									{dataResource.current.data.length > 0 ? 
-										((dataResource.current.data[dataResource.current.data.length-1].EPOCH_TIME - 
-										dataResource.current.data[0].EPOCH_TIME) / 60).toFixed(2) + ' min' : 
-										'N/A'}
-								</div>
-							</div>
-						</article>
-
-						<!-- CH₄ Statistics -->
-						<article class="stat-card">
-							<div class="stat-card__icon">
-								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M3 3v18h18"/>
-									<path d="M7 12l4-4 4 4 6-6"/>
-								</svg>
-							</div>
-							<div class="stat-card__content">
-								<h3 class="stat-card__title">CH₄ Minimum</h3>
-								<div class="stat-card__value">{minCH4.toFixed(2)} ppm</div>
-							</div>
-						</article>
-
-						<article class="stat-card">
-							<div class="stat-card__icon">
-								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M3 3v18h18"/>
-									<path d="M7 16l4-4 4 4 6-6"/>
-								</svg>
-							</div>
-							<div class="stat-card__content">
-								<h3 class="stat-card__title">CH₄ Average</h3>
-								<div class="stat-card__value">{averageCH4.toFixed(2)} ppm</div>
-							</div>
-						</article>
-
-						<article class="stat-card">
-							<div class="stat-card__icon">
-								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M3 3v18h18"/>
-									<path d="M7 8l4-4 4 4 6-6"/>
-								</svg>
-							</div>
-							<div class="stat-card__content">
-								<h3 class="stat-card__title">CH₄ Maximum</h3>
-								<div class="stat-card__value">{maxCH4.toFixed(2)} ppm</div>
-							</div>
-						</article>
-
-						<!-- C₂H₆ Statistics -->
-						<article class="stat-card">
-							<div class="stat-card__icon">
-								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M3 3v18h18"/>
-									<path d="M7 12l4-4 4 4 6-6"/>
-								</svg>
-							</div>
-							<div class="stat-card__content">
-								<h3 class="stat-card__title">C₂H₆ Minimum</h3>
-								<div class="stat-card__value">{minC2H6.toFixed(3)} ppm</div>
-							</div>
-						</article>
-
-						<article class="stat-card">
-							<div class="stat-card__icon">
-								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M3 3v18h18"/>
-									<path d="M7 16l4-4 4 4 6-6"/>
-								</svg>
-							</div>
-							<div class="stat-card__content">
-								<h3 class="stat-card__title">C₂H₆ Average</h3>
-								<div class="stat-card__value">{averageC2H6.toFixed(3)} ppm</div>
-							</div>
-						</article>
-
-						<article class="stat-card">
-							<div class="stat-card__icon">
-								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M3 3v18h18"/>
-									<path d="M7 8l4-4 4 4 6-6"/>
-								</svg>
-							</div>
-							<div class="stat-card__content">
-								<h3 class="stat-card__title">C₂H₆ Maximum</h3>
-								<div class="stat-card__value">{maxC2H6.toFixed(3)} ppm</div>
-							</div>
-						</article>
+					
+					<!-- Statistics Grid -->
+					<div class="stats-compact">
+						<div class="stat-item">
+							<span class="stat-label">Data Points</span>
+							<span class="stat-value">{dataResource.current.data.length.toLocaleString()}</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">Duration</span>
+							<span class="stat-value">
+								{dataResource.current.data.length > 0 ? 
+									((dataResource.current.data[dataResource.current.data.length-1].EPOCH_TIME - 
+									dataResource.current.data[0].EPOCH_TIME) / 60).toFixed(1) + ' min' : 
+									'N/A'}
+							</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">CH₄ Range</span>
+							<span class="stat-value">{minCH4.toFixed(2)} - {maxCH4.toFixed(2)} ppm</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">CH₄ Avg</span>
+							<span class="stat-value">{averageCH4.toFixed(2)} ppm</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">C₂H₆ Range</span>
+							<span class="stat-value">{minC2H6.toFixed(3)} - {maxC2H6.toFixed(3)} ppm</span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label">C₂H₆ Avg</span>
+							<span class="stat-value">{averageC2H6.toFixed(3)} ppm</span>
+						</div>
 					</div>
+					
+					<!-- Available Columns -->
+					<div class="columns-compact">
+						<span class="columns-label">Columns:</span>
+						<div class="columns-tags">
+							{#each dataResource.current.columns as column}
+								<span class="column-tag">{column}</span>
+							{/each}
+						</div>
+					</div>
+				</div>
 			</section>
 
 			
@@ -472,44 +400,10 @@
 		color: var(--text-primary);
 	}
 
-	.file-header {
-		margin-bottom: var(--space-lg);
-		padding: var(--space-lg);
-	}
-
-	.file-info {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-sm);
-	}
-
-	.file-name {
-		margin: 0;
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.timestamp {
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		display: flex;
-		align-items: center;
-		gap: var(--space-sm);
-	}
-
 	.timestamp-separator {
 		margin: 0 var(--space-sm);
 		color: var(--text-secondary);
 		opacity: 0.6;
-	}
-
-	.shared-info {
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		display: flex;
-		align-items: center;
-		gap: var(--space-sm);
 	}
 
 	.shared-icon {
@@ -634,18 +528,159 @@
 		flex-shrink: 0;
 	}
 	
+	/* File Overview Compact Layout */
+	.file-overview {
+		display: grid;
+		grid-template-columns: 1fr 2fr 1fr;
+		gap: var(--space-lg);
+		padding: var(--space-md) var(--space-lg);
+		align-items: start;
+	}
+
+	.file-info-compact {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.file-name-compact {
+		margin: 0;
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		line-height: 1.2;
+	}
+
+	.timestamp-compact {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		flex-wrap: wrap;
+	}
+
+	.shared-info-compact {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+	}
+
+	.stats-compact {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--space-sm);
+	}
+
+	.stat-item {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: var(--space-xs);
+		background-color: var(--bg-tertiary);
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--border-primary);
+	}
+
+	.stat-label {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.stat-value {
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		line-height: 1.1;
+	}
+
+	.columns-compact {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.columns-label {
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.columns-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+
+	.column-tag {
+		display: inline-block;
+		font-size: 0.7rem;
+		padding: 2px 6px;
+		background-color: var(--accent-primary);
+		color: white;
+		border-radius: var(--radius-sm);
+		font-weight: 500;
+		letter-spacing: 0.3px;
+	}
+
+	/* Responsive adjustments */
+	@media (max-width: 1024px) {
+		.file-overview {
+			grid-template-columns: 1fr;
+			gap: var(--space-md);
+		}
+
+		.stats-compact {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.charts-grid {
+			height: 72vh;
+			min-height: 500px;
+			padding-bottom: 1.5rem;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.stats-compact {
+			grid-template-columns: 1fr;
+		}
+
+		.file-overview {
+			padding: var(--space-sm) var(--space-md);
+		}
+
+		.charts-grid {
+			height: 68vh;
+			min-height: 450px;
+			padding-bottom: 1rem;
+		}
+
+		.chart-wrapper {
+			padding-bottom: var(--space-lg);
+		}
+	}
+
 	/* Visualization styles */
 	.charts-grid {
-		height: 70vh;
-		min-height: 500px;
-		margin-bottom: var(--space-md);
+		height: 78vh;
+		min-height: 580px;
+		margin-bottom: 3rem;
+		padding-bottom: 2rem;
 	}
 	
 	.chart-panel {
 		height: 100%;
 		width: 100%;
 		padding: var(--space-xs);
-		overflow: hidden;
+		overflow: visible;
 		box-sizing: border-box;
 		display: flex;
 	}
@@ -654,12 +689,12 @@
 		background-color: var(--bg-secondary);
 		border-radius: var(--radius-md);
 		box-shadow: var(--shadow-sm);
-		padding: var(--space-sm) var(--space-sm);
+		padding: var(--space-sm) var(--space-sm) var(--space-xs) var(--space-sm);
 		height: 100%;
 		width: 100%;
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
+		overflow: visible;
 		box-sizing: border-box;
 		border: 1px solid var(--border-primary);
 	}
@@ -677,7 +712,8 @@
 		flex: 1;
 		min-height: 0;
 		position: relative;
-		overflow: hidden;
+		overflow: visible;
+		padding-bottom: calc(var(--space-lg) + var(--space-md));
 	}
 	
 	/* Wind Rose Overlay */
@@ -708,5 +744,87 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	/* Global SplitPane styles */
+	:global(.splitpane-container) {
+		overflow: hidden !important;
+	}
+	
+	:global(.pane) {
+		height: 100%;
+		overflow: visible;
+		box-sizing: border-box;
+		display: flex;
+	}
+	
+	:global(.pane > div) {
+		height: 100%;
+		overflow: visible;
+		box-sizing: border-box;
+		flex: 1;
+	}
+	
+	:global(.splitpane-wrapper) {
+		overflow: hidden !important;
+	}
+
+	/* Chart text styles */
+	:global(svg text) {
+		font-size: calc(0.6rem + 0.3vmin);
+		fill: var(--text-primary);
+	}
+	
+	:global(.chart-title),
+	:global(.axis-title),
+	:global(.axis-label),
+	:global(.tick text),
+	:global(.legend text),
+	:global(.chart-label),
+	:global(.x-axis text),
+	:global(.y-axis text) {
+		fill: var(--text-primary) !important;
+		color: var(--text-primary) !important;
+	}
+	
+	:global(.y-axis-label),
+	:global(.x-axis-label) {
+		fill: var(--text-primary) !important;
+		font-weight: 500;
+	}
+	
+	:global(.axis-arrow) {
+		fill: var(--text-secondary) !important;
+		font-weight: bold;
+	}
+	
+	:global(.data-point:hover) {
+		r: 6 !important;
+	}
+	
+	:global(.x-axis), :global(.y-axis) {
+		shape-rendering: crispEdges; 
+	}
+	
+	:global(.x-axis path), :global(.y-axis path) {
+		stroke: var(--border-secondary);
+		stroke-width: 1px;
+	}
+	
+	:global(.x-axis line), :global(.y-axis line) {
+		stroke: var(--border-secondary);
+		stroke-width: 1px;
+	}
+	
+	:global(.x-axis .tick line) {
+		stroke: var(--border-primary);
+	}
+  
+	:global(.y-axis .tick line) {
+		stroke: var(--border-primary);
+	}
+	
+	:global(svg) {
+		overflow: visible;
 	}
 </style> 

@@ -4,6 +4,8 @@
     import { scaleTime, scaleLinear, scaleSequential } from 'd3-scale';
     import { extent, max, min } from 'd3-array';
     import { line, curveBasis } from 'd3-shape';
+    import { zoom, zoomIdentity } from 'd3';
+    import { select } from 'd3-selection';
     import { draw } from 'svelte/transition';
     import { onMount, createEventDispatcher } from 'svelte';
     // Component imports
@@ -37,6 +39,9 @@
       lineWidth = 2,
       showDataPoints = false,
       pointRadius = 3,
+      maxDataPoints = 8000, // Maximum points to render for performance
+      allowFullData = true, // Allow viewing all data points
+      enableZoom = true, // Enable zoom and pan functionality
       // External hover state for chart synchronization
       hoveredPoint: externalHoveredPoint = null
     } = $props<{
@@ -58,6 +63,9 @@
       lineWidth?: number;
       showDataPoints?: boolean;
       pointRadius?: number;
+      maxDataPoints?: number;
+      allowFullData?: boolean;
+      enableZoom?: boolean;
       hoveredPoint?: DataItem | null;
     }>();
   
@@ -86,7 +94,157 @@
     // Use the external hover point if provided, otherwise use internal
     let activeHoveredPoint = $derived(externalHoveredPoint || internalHoveredPoint);
     
-    // Setup resize observer to handle container size changes
+    // Data filtering and subsampling for performance
+    let displayData = $state<DataItem[]>([]);
+    let dataStats = $state({ total: 0, displayed: 0, subsampled: false });
+    let showFullData = $state(false);
+    
+    // Zoom-related state
+    let currentTransform = $state(zoomIdentity);
+    let zoomBehavior: any = null;
+    let originalXDomain = $state<[Date, Date] | null>(null);
+    let isZoomed = $state(false);
+    
+    // Handle zoom events
+    function handleZoom(event: any) {
+      currentTransform = event.transform;
+      isZoomed = event.transform.k > 1.01;
+    }
+    
+    function handleZoomEnd(event: any) {
+      updateDisplayData();
+    }
+    
+    // Reset zoom to original view
+    function resetZoom() {
+      if (zoomBehavior && svgElement) {
+        select(svgElement)
+          .transition()
+          .duration(750)
+          .call(zoomBehavior.transform, zoomIdentity);
+      }
+    }
+    
+    // Toggle full data display
+    function toggleFullData() {
+      showFullData = !showFullData;
+      updateDisplayData();
+    }
+    
+    // Intelligent data subsampling for performance (zoom-aware)
+    function subsampleData(sourceData: DataItem[], transform: any): DataItem[] {
+      // If user explicitly wants full data and browser can handle it, show all
+      if (showFullData && allowFullData) {
+        return sourceData;
+      }
+      
+      // For reasonable data sizes, show all points
+      if (sourceData.length <= maxDataPoints) {
+        return sourceData;
+      }
+      
+      // If zoom is enabled and we have a transform, filter to visible range first
+      if (enableZoom && originalXDomain && transform.k > 1) {
+        const xScale = scaleTime()
+          .domain(originalXDomain)
+          .range([margin.left, width - margin.right]);
+        
+        const transformedScale = transform.rescaleX(xScale);
+        const [visibleStart, visibleEnd] = transformedScale.domain();
+        
+        // Filter data to visible time range with padding
+        const timeBuffer = (visibleEnd.getTime() - visibleStart.getTime()) * 0.1;
+        const filteredToVisible = sourceData.filter(d => {
+          const time = new Date(d.EPOCH_TIME * 1000);
+          return time.getTime() >= (visibleStart.getTime() - timeBuffer) && 
+                 time.getTime() <= (visibleEnd.getTime() + timeBuffer);
+        });
+        
+        // When zoomed in significantly, try to show more detail
+        if (transform.k > 5) {
+          // High zoom - try to show all visible points up to maxDataPoints * 2
+          if (filteredToVisible.length <= maxDataPoints * 2) {
+            return filteredToVisible;
+          }
+        }
+        
+        // If still too many points, subsample intelligently
+        if (filteredToVisible.length > maxDataPoints) {
+          const step = Math.ceil(filteredToVisible.length / maxDataPoints);
+          return filteredToVisible.filter((_, i) => i % step === 0);
+        }
+        
+        return filteredToVisible;
+      }
+      
+      // Default subsampling when not zoomed - be more conservative
+      // Only subsample if we have significantly more points than the limit
+      if (sourceData.length > maxDataPoints * 1.5) {
+        const step = Math.ceil(sourceData.length / maxDataPoints);
+        return sourceData.filter((_, i) => i % step === 0);
+      }
+      
+      return sourceData;
+    }
+    
+    // Update display data whenever source data or transform changes
+    function updateDisplayData() {
+      if (data.length > 0) {
+        const subsampled = subsampleData(data, currentTransform);
+        displayData = subsampled;
+        dataStats = {
+          total: data.length,
+          displayed: subsampled.length,
+          subsampled: subsampled.length < data.length
+        };
+      } else {
+        displayData = [];
+        dataStats = { total: 0, displayed: 0, subsampled: false };
+      }
+    }
+    
+    // Update display data whenever source data changes
+    $effect(() => {
+      if (data.length > 0) {
+        // Initialize original domain for zoom
+        if (enableZoom && !originalXDomain) {
+          originalXDomain = extent(data, (d: DataItem) => new Date(d.EPOCH_TIME * 1000)) as [Date, Date];
+        }
+        updateDisplayData();
+      } else {
+        displayData = [];
+        dataStats = { total: 0, displayed: 0, subsampled: false };
+      }
+          });
+      
+      // Setup zoom behavior when SVG element is available
+      $effect(() => {
+        if (enableZoom && svgElement && width > 0 && height > 0) {
+          zoomBehavior = zoom()
+            .scaleExtent([1, 50])
+            .extent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
+            .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
+            .on('zoom', handleZoom)
+            .on('end', handleZoomEnd);
+          
+          const svgSelection = select(svgElement);
+          svgSelection.call(zoomBehavior);
+          
+          const wheelHandler = (event: WheelEvent) => {
+            event.preventDefault();
+          };
+          
+          svgElement.addEventListener('wheel', wheelHandler, { passive: false });
+          
+          return () => {
+            if (svgElement) {
+              svgElement.removeEventListener('wheel', wheelHandler);
+            }
+          };
+        }
+      });
+      
+      // Setup resize observer to handle container size changes
     onMount(() => {
       // Create a resize observer to detect container size changes with debouncing
       let resizeTimeout: ReturnType<typeof setTimeout>;
@@ -237,20 +395,25 @@
     // Removed dimension logging effect to prevent infinite loops
     
     let xScale = $derived(
-      data.length && width
+      displayData.length && width && originalXDomain
         ? scaleTime()
-            .domain(extent(data, (d: DataItem) => new Date(d.EPOCH_TIME * 1000)) as [Date, Date])
+            .domain(originalXDomain)
             .range([margin.left, width - margin.right])
         : null
     );
+    
+    // Transform the X scale based on current zoom/pan
+    let transformedXScale = $derived(
+      xScale && currentTransform ? currentTransform.rescaleX(xScale) : xScale
+    );
   
     let yScale = $derived(
-      data.length && width && height && columns.includes(yColumn)
+      displayData.length && width && height && columns.includes(yColumn)
         ? scaleLinear()
             .domain((() => {
-              // Get min and max values of the data
-              const minVal = min(data, (d: DataItem) => Number(d[yColumn])) || 0;
-              const maxVal = max(data, (d: DataItem) => Number(d[yColumn])) || 1;
+              // Get min and max values of the display data
+              const minVal = min(displayData, (d: DataItem) => Number(d[yColumn])) || 0;
+              const maxVal = max(displayData, (d: DataItem) => Number(d[yColumn])) || 1;
               
               // Calculate domain based on includeZero and padding
               if (includeZero) {
@@ -271,9 +434,9 @@
     );
   
     let lineGenerator = $derived(
-      xScale && yScale && data.length
+      transformedXScale && yScale && displayData.length
         ? line<DataItem>()
-            .x((d) => xScale(new Date(d.EPOCH_TIME * 1000)))
+            .x((d) => transformedXScale(new Date(d.EPOCH_TIME * 1000)))
             .y((d) => yScale(Number(d[yColumn])))
             .curve(curveBasis)
         : null
@@ -281,14 +444,14 @@
     
     // Calculate min/max for color gradient - use colorColumn if specified, otherwise use yColumn
     let minColorValue = $derived(
-      data.length && columns.includes(colorColumn || yColumn)
-        ? min(data, (d: DataItem) => Number(d[colorColumn || yColumn])) || 0
+      displayData.length && columns.includes(colorColumn || yColumn)
+        ? min(displayData, (d: DataItem) => Number(d[colorColumn || yColumn])) || 0
         : 0
     );
     
     let maxColorValue = $derived(
-      data.length && columns.includes(colorColumn || yColumn)
-        ? max(data, (d: DataItem) => Number(d[colorColumn || yColumn])) || 1
+      displayData.length && columns.includes(colorColumn || yColumn)
+        ? max(displayData, (d: DataItem) => Number(d[colorColumn || yColumn])) || 1
         : 1
     );
     
@@ -344,7 +507,7 @@
     
     // Find nearest data point to cursor position
     function handleMouseMove(event: MouseEvent) {
-      if (!data.length || !xScale || !yScale || !svgElement) return;
+      if (!displayData.length || !transformedXScale || !yScale || !svgElement) return;
       
       // Get mouse position relative to SVG
       const svgRect = svgElement.getBoundingClientRect();
@@ -354,11 +517,11 @@
       mousePosition = { x: event.clientX, y: event.clientY };
       
       // Find closest data point
-      let closestPoint = data[0];
+      let closestPoint = displayData[0];
       let closestDistance = Infinity;
       
-      data.forEach((d) => {
-        const xPos = xScale(new Date(d.EPOCH_TIME * 1000));
+      displayData.forEach((d) => {
+        const xPos = transformedXScale(new Date(d.EPOCH_TIME * 1000));
         const distance = Math.abs(mouseX - xPos);
         
         if (distance < closestDistance) {
@@ -374,7 +537,7 @@
       
       // Calculate position for hover point and tooltip
       if (internalHoveredPoint) {
-        const pointX = xScale(new Date(internalHoveredPoint.EPOCH_TIME * 1000));
+        const pointX = transformedXScale(new Date(internalHoveredPoint.EPOCH_TIME * 1000));
         const pointY = yScale(Number(internalHoveredPoint[yColumn]));
         hoverPosition = { x: pointX, y: pointY };
         
@@ -411,8 +574,8 @@
     
     // Update the display position when the external hover point changes
     $effect(() => {
-      if (externalHoveredPoint && data.length && xScale && yScale) {
-        const pointX = xScale(new Date(externalHoveredPoint.EPOCH_TIME * 1000));
+      if (externalHoveredPoint && displayData.length && transformedXScale && yScale) {
+        const pointX = transformedXScale(new Date(externalHoveredPoint.EPOCH_TIME * 1000));
         const pointY = yScale(Number(externalHoveredPoint[yColumn]));
         hoverPosition = { x: pointX, y: pointY };
         
@@ -445,7 +608,54 @@
     <div class="loading">Loading data... <span class="debug">{debugInfo}</span></div>
   {:else if error}
     <div class="error">Error: {error} <span class="debug">{debugInfo}</span></div>
-  {:else if data.length && width && height && xScale && yScale && lineGenerator}
+  {:else if displayData.length && width && height && transformedXScale && yScale && lineGenerator}
+    {#if enableZoom && data.length > 0}
+      <!-- Zoom Controls -->
+      <div class="zoom-controls">
+        <div class="data-info">
+          <span class="data-count">
+            {dataStats.displayed.toLocaleString()} / {dataStats.total.toLocaleString()} points
+            {#if dataStats.subsampled}
+              <span class="subsampled-indicator">subsampled</span>
+            {/if}
+          </span>
+          {#if isZoomed}
+            <span class="zoom-level">
+              {currentTransform.k.toFixed(1)}x zoom
+            </span>
+          {/if}
+        </div>
+        <div class="zoom-buttons">
+          {#if allowFullData && dataStats.total > maxDataPoints}
+            <button 
+              class="data-toggle" 
+              class:active={showFullData}
+              onclick={toggleFullData} 
+              title={showFullData ? 'Enable subsampling for better performance' : 'Show all data points'}>
+              {showFullData ? '📊 All Data' : '⚡ Performance'}
+            </button>
+          {/if}
+          {#if isZoomed}
+            <button class="zoom-reset" onclick={resetZoom} title="Reset zoom">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"/>
+                <path d="M8 12h8"/>
+                <path d="M12 8v8"/>
+              </svg>
+              Reset
+            </button>
+          {/if}
+        </div>
+      </div>
+    {:else if dataStats.subsampled}
+      <!-- Data info bar for subsampled data -->
+      <div class="data-info-bar">
+        <span class="data-count">
+          Showing {dataStats.displayed.toLocaleString()} / {dataStats.total.toLocaleString()} points
+          <span class="subsampled-badge">subsampled for performance</span>
+        </span>
+      </div>
+    {/if}
     <svg 
       {width} 
       {height} 
@@ -454,7 +664,8 @@
       onmouseleave={handleMouseLeave}
       role="img"
       aria-label="{title || `${yColumn} over time`}"
-      class="chart-svg">
+      class="chart-svg"
+      class:zoomable={enableZoom}>
       {#if title}
         <text 
           x={width / 2} 
@@ -468,7 +679,7 @@
       {#if useStyledAxis}
         <!-- Styled X-axis -->
         <StyledAxis
-          scale={xScale}
+          scale={transformedXScale}
           {width}
           {height}
           {margin}
@@ -521,7 +732,7 @@
           {height}
           {margin}
           tick_number={width > 380 ? 8 : 4}
-          {xScale}
+          xScale={transformedXScale}
           format={(d: Date) => formatTime(d.getTime() / 1000)} />
           
         <AxisLeft {width} {height} {margin} {yScale} position="left" />
@@ -552,13 +763,13 @@
       {#if colorGradient}
         <defs>
           <linearGradient id="lineGradient" gradientUnits="userSpaceOnUse"
-                         x1={xScale.range()[0]} y1="0" 
-                         x2={xScale.range()[1]} y2="0">
-            {#each data as point, i}
+                         x1={transformedXScale?.range()[0] || 0} y1="0" 
+                         x2={transformedXScale?.range()[1] || width} y2="0">
+            {#each displayData as point, i}
               {@const value = Number(point[colorColumn || yColumn])}
               {@const normalizedValue = (value - minColorValue) / (maxColorValue - minColorValue) || 0}
               <stop 
-                offset="{i / (data.length - 1) * 100}%" 
+                offset="{i / (displayData.length - 1) * 100}%" 
                 stop-color={getDataColor(point)} />
             {/each}
           </linearGradient>
@@ -568,16 +779,16 @@
       <!-- Draw path with either gradient or solid color -->
       <path
         in:draw={{ duration: 1500 }}
-        d={lineGenerator(data)}
+        d={lineGenerator(displayData)}
         stroke={colorGradient ? "url(#lineGradient)" : color}
         stroke-width={lineWidth}
         fill="none" />
         
       <!-- Optional data points -->
       {#if showDataPoints}
-        {#each data as point}
+        {#each displayData as point}
           <circle 
-            cx={xScale(new Date(point.EPOCH_TIME * 1000))}
+            cx={transformedXScale(new Date(point.EPOCH_TIME * 1000))}
             cy={yScale(Number(point[yColumn]))}
             r={pointRadius}
             fill={colorGradient ? getDataColor(point) : color}
@@ -775,5 +986,130 @@
     font-family: monospace;
     white-space: pre-wrap;
     word-break: break-all;
+  }
+  
+  /* Data info bar for subsampled data */
+  .data-info-bar {
+    padding: 6px 10px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    margin-bottom: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    font-size: 11px;
+  }
+  
+  .data-count {
+    color: #666;
+    font-weight: 500;
+  }
+  
+  .subsampled-badge {
+    background-color: #fbbf24;
+    color: #92400e;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 8px;
+  }
+  
+  /* Zoom controls */
+  .zoom-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    font-size: 12px;
+  }
+  
+  .data-info {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  
+  .subsampled-indicator {
+    background-color: #fbbf24;
+    color: #92400e;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  .zoom-level {
+    color: #3b82f6;
+    font-weight: 600;
+  }
+  
+  .zoom-reset {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  
+  .zoom-reset:hover {
+    background-color: #2563eb;
+  }
+  
+  .zoom-reset svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .data-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background-color: #6b7280;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    margin-right: 8px;
+  }
+  
+  .data-toggle:hover {
+    background-color: #4b5563;
+  }
+  
+  .data-toggle.active {
+    background-color: #059669;
+  }
+  
+  .data-toggle.active:hover {
+    background-color: #047857;
+  }
+  
+  /* Zoomable chart cursor */
+  .chart-svg.zoomable {
+    cursor: grab;
+  }
+  
+  .chart-svg.zoomable:active {
+    cursor: grabbing;
+  }
+  
+  .chart-svg.zoomable:hover {
+    filter: brightness(1.02);
   }
 </style>
