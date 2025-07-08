@@ -13,7 +13,7 @@ declare global {
 }
 
 // Default fallback if env var isn't set
-const POCKETBASE_URL = process.env.POCKETBASE_URL || 'https://xeon.pl';
+const POCKETBASE_URL = process.env.POCKETBASE_URL || 'https://g.zaur.app';
 
 export const handle: Handle = async ({ event, resolve }) => {
     // Initialize PocketBase with URL from environment variable

@@ -8,7 +8,7 @@ The shared files feature now uses PocketBase for persistent storage instead of i
 ### Method 1: Import via PocketBase Admin UI
 
 1. **Access PocketBase Admin UI**
-   - Go to your PocketBase admin interface (usually `https://xeon.pl/_/` or your configured URL)
+   - Go to your PocketBase admin interface (usually `https://g.zaur.app/_/` or your configured URL)
    - Log in with your admin credentials
 
 2. **Import Collection**
