@@ -54,11 +54,11 @@ export const GET: RequestHandler = async ({ locals }) => {
         // Fallback method: Return estimated values based on historical data
         return json({
             totalWorkHours: 320.5,
-            jimnyWorkHours: 180.25,
-            torresWorkHours: 140.25,
+            car1WorkHours: 160.25,
+            car2WorkHours: 160.25,
             totalSessions: 42,
-            jimnySessionCount: 24,
-            torresSessionCount: 18,
+            car1SessionCount: 21,
+            car2SessionCount: 21,
             totalBreadcrumbs: 5280,
             method: 'fallback-estimation',
             errorInfo: 'All calculation methods failed, using fallback estimates',
@@ -82,10 +82,10 @@ async function calculateFromDrivingSessionsBasic(pb: any) {
     console.log('[API] Calculating work hours from driving sessions with minimal fields');
     
     let totalWorkHours = 0;
-    let jimnyWorkHours = 0;
-    let torresWorkHours = 0;
-    let jimnySessionCount = 0;
-    let torresSessionCount = 0;
+    let car1WorkHours = 0;
+    let car2WorkHours = 0;
+    let car1SessionCount = 0;
+    let car2SessionCount = 0;
     let totalSessions = 0;
     
     try {
@@ -108,31 +108,31 @@ async function calculateFromDrivingSessionsBasic(pb: any) {
             // Add to total hours
             totalWorkHours += AVERAGE_SESSION_HOURS;
             
-            // Add to vehicle-specific counts
+            // Add to vehicle-specific counts (equal treatment)
             if (vehicle.includes('Car #1')) {
-                jimnyWorkHours += AVERAGE_SESSION_HOURS;
-                jimnySessionCount++;
+                car1WorkHours += AVERAGE_SESSION_HOURS;
+                car1SessionCount++;
             } else if (vehicle.includes('Car #2')) {
-                torresWorkHours += AVERAGE_SESSION_HOURS;
-                torresSessionCount++;
+                car2WorkHours += AVERAGE_SESSION_HOURS;
+                car2SessionCount++;
             }
         });
         
         // Format to 2 decimal places
         const formattedTotal = totalWorkHours.toFixed(2);
-        const formattedJimny = jimnyWorkHours.toFixed(2);
-        const formattedTorres = torresWorkHours.toFixed(2);
+        const formattedCar1 = car1WorkHours.toFixed(2);
+        const formattedCar2 = car2WorkHours.toFixed(2);
         
         console.log(`[API] Total work hours via sessions basic: ${formattedTotal} hours`);
         console.log(`[API] Processed ${totalSessions} sessions`);
         
         return {
             totalWorkHours: parseFloat(formattedTotal),
-            jimnyWorkHours: parseFloat(formattedJimny),
-            torresWorkHours: parseFloat(formattedTorres),
+            car1WorkHours: parseFloat(formattedCar1),
+            car2WorkHours: parseFloat(formattedCar2),
             totalSessions,
-            jimnySessionCount,
-            torresSessionCount,
+            car1SessionCount,
+            car2SessionCount,
             totalBreadcrumbs: 0,
             updated: new Date().toISOString()
         };
@@ -156,30 +156,31 @@ async function calculateFromGasReports(pb: any) {
             fields: 'id,report_name'
         });
         
-        // Set fixed values per report
+        // Set fixed values per report - equal treatment for all cars
         const HOURS_PER_REPORT = 8;
-        const JIMNY_RATIO = 0.6; // 60% GNI Car #1
-        const TORRES_RATIO = 0.4; // 40% GNI Car #2
+        const CARS_COUNT = 2;
+        const HOURS_PER_CAR_RATIO = 1 / CARS_COUNT; // Equal distribution (0.5 each)
+        const SESSIONS_PER_REPORT = 1.0; // Equal sessions per report for each car
         
         const totalReports = reportsResult.items.length;
         const totalWorkHours = totalReports * HOURS_PER_REPORT;
-        const jimnyWorkHours = totalWorkHours * JIMNY_RATIO;
-        const torresWorkHours = totalWorkHours * TORRES_RATIO;
+        const car1WorkHours = totalWorkHours * HOURS_PER_CAR_RATIO;
+        const car2WorkHours = totalWorkHours * HOURS_PER_CAR_RATIO;
         
         // Format to 2 decimal places
         const formattedTotal = totalWorkHours.toFixed(2);
-        const formattedJimny = jimnyWorkHours.toFixed(2);
-        const formattedTorres = torresWorkHours.toFixed(2);
+        const formattedCar1 = car1WorkHours.toFixed(2);
+        const formattedCar2 = car2WorkHours.toFixed(2);
         
         console.log(`[API] Total work hours via gas reports: ${formattedTotal} hours from ${totalReports} reports`);
         
         return {
             totalWorkHours: parseFloat(formattedTotal),
-            jimnyWorkHours: parseFloat(formattedJimny),
-            torresWorkHours: parseFloat(formattedTorres),
-            totalSessions: totalReports * 2, // Assumption: 2 sessions per report
-            jimnySessionCount: Math.round(totalReports * 1.2), // 1.2 GNI Car #1 sessions per report
-            torresSessionCount: Math.round(totalReports * 0.8), // 0.8 GNI Car #2 sessions per report
+            car1WorkHours: parseFloat(formattedCar1),
+            car2WorkHours: parseFloat(formattedCar2),
+            totalSessions: Math.round(totalReports * CARS_COUNT * SESSIONS_PER_REPORT),
+            car1SessionCount: Math.round(totalReports * SESSIONS_PER_REPORT),
+            car2SessionCount: Math.round(totalReports * SESSIONS_PER_REPORT),
             totalBreadcrumbs: 0,
             reportCount: totalReports,
             updated: new Date().toISOString()

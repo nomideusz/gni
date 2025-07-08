@@ -39,14 +39,14 @@
 	let finalReports = $state(0);
 	let draftReports = $state(0);
 	let totalDistance = $state(0);
-	let jimnyDistance = $state(0);
-	let torresDistance = $state(0);
+	let car1Distance = $state(0);
+	let car2Distance = $state(0);
 	let totalIndications = $state(0);
-	let jimnyLisaCount = $state(0);
-	let torresLisaCount = $state(0);
+	let car1LisaCount = $state(0);
+	let car2LisaCount = $state(0);
 	let totalLisaPerKm = $state(0);
-	let jimnyLisaPerKm = $state(0);
-	let torresLisaPerKm = $state(0);
+	let car1LisaPerKm = $state(0);
+	let car2LisaPerKm = $state(0);
 	let meta = $state<DashboardData['meta']>(null);
 
 	// Use IsMounted to safely access the context
@@ -113,14 +113,14 @@
 						finalReports = dashData.stats.finalReports || 0;
 						draftReports = dashData.stats.draftReports || 0;
 						totalDistance = dashData.stats.totalDistance || 0;
-						jimnyDistance = dashData.stats.jimnyDistance || 0;
-						torresDistance = dashData.stats.torresDistance || 0;
+						car1Distance = dashData.stats.car1Distance || 0;
+						car2Distance = dashData.stats.car2Distance || 0;
 						totalIndications = dashData.stats.totalIndications || 0;
-						jimnyLisaCount = dashData.stats.jimnyLisaCount || 0;
-						torresLisaCount = dashData.stats.torresLisaCount || 0;
+						car1LisaCount = dashData.stats.car1LisaCount || 0;
+						car2LisaCount = dashData.stats.car2LisaCount || 0;
 						totalLisaPerKm = dashData.stats.totalLisaPerKm || 0;
-						jimnyLisaPerKm = dashData.stats.jimnyLisaPerKm || 0;
-						torresLisaPerKm = dashData.stats.torresLisaPerKm || 0;
+						car1LisaPerKm = dashData.stats.car1LisaPerKm || 0;
+						car2LisaPerKm = dashData.stats.car2LisaPerKm || 0;
 						statsLoading = false;
 					}
 
@@ -242,13 +242,13 @@
 						<div class="metric-card__icon">
 							<Car size={24} />
 						</div>
-						<span class="metric-card__label">Jimny</span>
+						<span class="metric-card__label">{t('dashboard.car1Distance', $language)}</span>
 					</div>
 					<div class="metric-card__value">
 						{#if statsLoading}
 							<div class="skeleton-text skeleton-text--large"></div>
 						{:else}
-							{jimnyDistance.toFixed(2)} <span class="metric-card__unit">km</span>
+							{car1Distance.toFixed(2)} <span class="metric-card__unit">km</span>
 						{/if}
 					</div>
 					<div class="metric-card__footer">
@@ -256,10 +256,10 @@
 							<div class="skeleton-text skeleton-text--thin"></div>
 						{:else}
 							<div class="metric-card__stat">
-								<span>{jimnyLisaCount} {t('dashboard.lisa', $language)}</span>
+								<span>{car1LisaCount} {t('dashboard.lisa', $language)}</span>
 							</div>
 							<div class="metric-card__stat">
-								<span>{jimnyLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
+								<span>{car1LisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
 							</div>
 						{/if}
 					</div>
@@ -270,13 +270,13 @@
 						<div class="metric-card__icon">
 							<Car size={24} />
 						</div>
-						<span class="metric-card__label">Torres</span>
+						<span class="metric-card__label">{t('dashboard.car2Distance', $language)}</span>
 					</div>
 					<div class="metric-card__value">
 						{#if statsLoading}
 							<div class="skeleton-text skeleton-text--large"></div>
 						{:else}
-							{torresDistance.toFixed(2)} <span class="metric-card__unit">km</span>
+							{car2Distance.toFixed(2)} <span class="metric-card__unit">km</span>
 						{/if}
 					</div>
 					<div class="metric-card__footer">
@@ -284,10 +284,10 @@
 							<div class="skeleton-text skeleton-text--thin"></div>
 						{:else}
 							<div class="metric-card__stat">
-								<span>{torresLisaCount} {t('dashboard.lisa', $language)}</span>
+								<span>{car2LisaCount} {t('dashboard.lisa', $language)}</span>
 							</div>
 							<div class="metric-card__stat">
-								<span>{torresLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
+								<span>{car2LisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
 							</div>
 						{/if}
 					</div>

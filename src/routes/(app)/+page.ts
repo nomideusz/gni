@@ -38,17 +38,17 @@ export interface ApiResponseStats {
         finalWithSurveys: number;
     };
     totalDistance: number;
-    jimnyDistance: number;
-    torresDistance: number;
+    car1Distance: number;
+    car2Distance: number;
     totalIndications: number;
-    jimnyLisaCount: number;
-    torresLisaCount: number;
+    car1LisaCount: number;
+    car2LisaCount: number;
     totalLisaPerKm: number;
-    jimnyLisaPerKm: number;
-    torresLisaPerKm: number;
+    car1LisaPerKm: number;
+    car2LisaPerKm: number;
     totalWorkHours: number;
-    jimnyWorkHours: number;
-    torresWorkHours: number;
+    car1WorkHours: number;
+    car2WorkHours: number;
     [key: string]: any;
 }
 
@@ -61,17 +61,17 @@ export interface DashboardData {
         finalReports: number;
         draftReports: number;
         totalDistance: number;
-        jimnyDistance: number;
-        torresDistance: number;
+        car1Distance: number;
+        car2Distance: number;
         totalIndications: number;
-        jimnyLisaCount: number;
-        torresLisaCount: number;
+        car1LisaCount: number;
+        car2LisaCount: number;
         totalLisaPerKm: number;
-        jimnyLisaPerKm: number;
-        torresLisaPerKm: number;
+        car1LisaPerKm: number;
+        car2LisaPerKm: number;
         totalWorkHours: number;
-        jimnyWorkHours: number;
-        torresWorkHours: number;
+        car1WorkHours: number;
+        car2WorkHours: number;
     } | null;
     meta: {
         page: number;

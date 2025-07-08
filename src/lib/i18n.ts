@@ -28,8 +28,8 @@ export interface TranslationContent {
     statistics: string;
     lastUpdated: string;
     totalDistance: string;
-    jimnyDistance: string;
-    torresDistance: string;
+    car1Distance: string;
+    car2Distance: string;
     distance: string;
     lisa: string;
     lisaPerKm: string;
@@ -218,8 +218,8 @@ export const translations: Translations = {
       statistics: 'Statistics',
       lastUpdated: 'Last updated',
       totalDistance: 'Total Distance',
-      jimnyDistance: 'GNI Car #1 Distance',
-      torresDistance: 'GNI Car #2 Distance',
+      car1Distance: 'GNI Car #1',
+      car2Distance: 'GNI Car #2',
       distance: 'Distance',
       lisa: 'LISA',
       lisaPerKm: 'LISA/km',

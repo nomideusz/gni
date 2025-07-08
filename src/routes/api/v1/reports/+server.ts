@@ -203,14 +203,14 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         }, 0);
         
         // Distance for specific vehicles (only from final reports with surveys)
-        const jimnyDistance = calculationReports
+        const car1Distance = calculationReports
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #1')
             .reduce((sum: number, report: any) => {
                 const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
                 return sum + distance;
             }, 0);
             
-        const torresDistance = calculationReports
+        const car2Distance = calculationReports
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #2')
             .reduce((sum: number, report: any) => {
                 const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
@@ -240,23 +240,23 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         const totalUniqueIndications = uniqueIndicationsArray.length;
         
         // Count unique indications per vehicle
-        const uniqueJimnyIndications = uniqueIndicationsArray.filter(
+        const uniqueCar1Indications = uniqueIndicationsArray.filter(
             (indication: any) => indication.surveyor_unit_desc === 'GNI Car #1'
         ).length;
         
-        const uniqueTorresIndications = uniqueIndicationsArray.filter(
+        const uniqueCar2Indications = uniqueIndicationsArray.filter(
             (indication: any) => indication.surveyor_unit_desc === 'GNI Car #2'
         ).length;
         
         // Calculate LISA per km metrics using unique indications
         const totalLisaPerKm = totalDistance > 0 ? (totalUniqueIndications / totalDistance) : 0;
-        const jimnyLisaPerKm = jimnyDistance > 0 ? (uniqueJimnyIndications / jimnyDistance) : 0;
-        const torresLisaPerKm = torresDistance > 0 ? (uniqueTorresIndications / torresDistance) : 0;
+        const car1LisaPerKm = car1Distance > 0 ? (uniqueCar1Indications / car1Distance) : 0;
+        const car2LisaPerKm = car2Distance > 0 ? (uniqueCar2Indications / car2Distance) : 0;
         
         // Placeholder for work hours - will be loaded from separate API
         const totalWorkHours = 0;
-        const jimnyWorkHours = 0;
-        const torresWorkHours = 0;
+        const car1WorkHours = 0;
+        const car2WorkHours = 0;
         
         // Calculate statistics
         const stats = {
@@ -264,18 +264,18 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             calculationReportsCount: calculationReports.length,
             reportCounts: reportStatusCount,
             totalDistance,
-            jimnyDistance,
-            torresDistance,
+            car1Distance,
+            car2Distance,
             totalIndications: totalUniqueIndications,
             totalRawIndications: calculationReports.reduce((sum, item: any) => sum + (item.indicationsCount || 0), 0),
-            jimnyLisaCount: uniqueJimnyIndications,
-            torresLisaCount: uniqueTorresIndications,
+            car1LisaCount: uniqueCar1Indications,
+            car2LisaCount: uniqueCar2Indications,
             totalLisaPerKm,
-            jimnyLisaPerKm,
-            torresLisaPerKm,
+            car1LisaPerKm,
+            car2LisaPerKm,
             totalWorkHours,
-            jimnyWorkHours,
-            torresWorkHours
+            car1WorkHours,
+            car2WorkHours
         };
         
         // Log processed data summary

@@ -43,17 +43,17 @@ export const load: PageServerLoad = async ({ locals, fetch, depends }) => {
                     finalReports: apiData.stats.reportCounts.finalWithSurveys,
                     draftReports: apiData.stats.totalReports - apiData.stats.reportCounts.finalWithSurveys,
                     totalDistance: apiData.stats.totalDistance,
-                    jimnyDistance: apiData.stats.jimnyDistance,
-                    torresDistance: apiData.stats.torresDistance,
+                    car1Distance: apiData.stats.car1Distance,
+                    car2Distance: apiData.stats.car2Distance,
                     totalIndications: apiData.stats.totalIndications,
-                    jimnyLisaCount: apiData.stats.jimnyLisaCount,
-                    torresLisaCount: apiData.stats.torresLisaCount,
+                    car1LisaCount: apiData.stats.car1LisaCount,
+                    car2LisaCount: apiData.stats.car2LisaCount,
                     totalLisaPerKm: apiData.stats.totalLisaPerKm,
-                    jimnyLisaPerKm: apiData.stats.jimnyLisaPerKm,
-                    torresLisaPerKm: apiData.stats.torresLisaPerKm,
+                    car1LisaPerKm: apiData.stats.car1LisaPerKm,
+                    car2LisaPerKm: apiData.stats.car2LisaPerKm,
                     totalWorkHours: apiData.stats.totalWorkHours || 0,
-                    jimnyWorkHours: apiData.stats.jimnyWorkHours || 0,
-                    torresWorkHours: apiData.stats.torresWorkHours || 0
+                    car1WorkHours: apiData.stats.car1WorkHours || 0,
+                    car2WorkHours: apiData.stats.car2WorkHours || 0
                 },
                 meta: apiData.meta
             };
