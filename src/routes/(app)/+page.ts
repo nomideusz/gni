@@ -53,6 +53,11 @@ export interface ApiResponseStats {
     totalWorkHours: number;
     car1WorkHours: number;
     car2WorkHours: number;
+    weeklyTargetKm?: number;
+    dailyTargetKm?: number;
+    weeklyProgress?: number;
+    dailyProgress?: number;
+    timePeriod?: string;
     [key: string]: any;
 }
 
@@ -79,6 +84,11 @@ export interface DashboardData {
         totalWorkHours: number;
         car1WorkHours: number;
         car2WorkHours: number;
+        weeklyTargetKm?: number;
+        dailyTargetKm?: number;
+        weeklyProgress?: number;
+        dailyProgress?: number;
+        timePeriod?: string;
     } | null;
     meta: {
         page: number;

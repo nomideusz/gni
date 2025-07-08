@@ -30,11 +30,28 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         const finalOnly = url.searchParams.get('finalOnly') !== 'false'; // default true
         const includeUnitDesc = url.searchParams.get('includeUnitDesc') === 'true'; // default false
         const withSurveys = url.searchParams.get('withSurveys') !== 'false'; // default true
+        const timePeriod = url.searchParams.get('timePeriod') || 'all'; // 'today', 'week', 'month', 'all'
         
-        console.log('API: Query parameters:', { limit, page, sort, finalOnly, includeUnitDesc, withSurveys });
+        console.log('API: Query parameters:', { limit, page, sort, finalOnly, includeUnitDesc, withSurveys, timePeriod });
         
         // Prepare filtering with date constraint (only data after July 1st, 2025)
-        const dateFilter = 'report_date >= "2025-07-01"';
+        let dateFilter = 'report_date >= "2025-07-01"';
+        
+        // Add time period filter
+        const now = new Date();
+        if (timePeriod === 'today') {
+            const today = now.toISOString().split('T')[0];
+            dateFilter += ` && report_date >= "${today}"`;
+        } else if (timePeriod === 'week') {
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const weekAgoStr = weekAgo.toISOString().split('T')[0];
+            dateFilter += ` && report_date >= "${weekAgoStr}"`;
+        } else if (timePeriod === 'month') {
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            const monthAgoStr = monthAgo.toISOString().split('T')[0];
+            dateFilter += ` && report_date >= "${monthAgoStr}"`;
+        }
+        
         let filter = dateFilter;
         
         // Add final report filter if requested
@@ -295,6 +312,14 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         const car1WorkHours = 0;
         const car2WorkHours = 0;
         
+        // Weekly targets (configurable)
+        const WEEKLY_TARGET_KM = 200; // Client's weekly target in km
+        const DAILY_TARGET_KM = WEEKLY_TARGET_KM / 5; // Assuming 5 working days
+        
+        // Calculate progress against targets
+        const weeklyProgress = timePeriod === 'week' ? (totalDistance / WEEKLY_TARGET_KM) * 100 : 0;
+        const dailyProgress = timePeriod === 'today' ? (totalDistance / DAILY_TARGET_KM) * 100 : 0;
+        
         // Calculate statistics
         const stats = {
             totalReports: filteredItems.length,
@@ -315,7 +340,13 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             car2LisaPerKm,
             totalWorkHours,
             car1WorkHours,
-            car2WorkHours
+            car2WorkHours,
+            // Target tracking
+            weeklyTargetKm: WEEKLY_TARGET_KM,
+            dailyTargetKm: DAILY_TARGET_KM,
+            weeklyProgress,
+            dailyProgress,
+            timePeriod
         };
         
         // Log processed data summary

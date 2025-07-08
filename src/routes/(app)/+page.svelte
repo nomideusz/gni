@@ -50,10 +50,62 @@
 	let totalLisaPerKm = $state(0);
 	let car1LisaPerKm = $state(0);
 	let car2LisaPerKm = $state(0);
+	let weeklyTargetKm = $state(200);
+	let dailyTargetKm = $state(40);
+	let weeklyProgress = $state(0);
+	let dailyProgress = $state(0);
+	let timePeriod = $state('all');
 	let meta = $state<DashboardData['meta']>(null);
 
 	// Use IsMounted to safely access the context
 	const isMounted = new IsMounted();
+	
+	// Handle time period change
+	async function handleTimePeriodChange(period: string) {
+		timePeriod = period;
+		await reloadDashboardData(period);
+	}
+	
+	// Reload dashboard data with time filter
+	async function reloadDashboardData(period: string = 'all') {
+		try {
+			statsLoading = true;
+			
+			// Fetch data with time period filter
+			const response = await fetch(`/api/v1/reports?timePeriod=${period}&finalOnly=false&includeUnitDesc=true&withSurveys=true`);
+			if (!response.ok) throw new Error('Failed to fetch reports');
+			
+			const apiData = await response.json();
+			
+			// Update stats with new data
+			if (apiData.stats) {
+				totalReports = apiData.stats.totalReports || 0;
+				finalReports = apiData.stats.reportCounts.finalWithSurveys || 0;
+				draftReports = apiData.stats.reportCounts.draftWithSurveys || 0;
+				totalDistance = apiData.stats.totalDistance || 0;
+				car1Distance = apiData.stats.car1Distance || 0;
+				car2Distance = apiData.stats.car2Distance || 0;
+				totalDraftDistance = apiData.stats.totalDraftDistance || 0;
+				car1DraftDistance = apiData.stats.car1DraftDistance || 0;
+				car2DraftDistance = apiData.stats.car2DraftDistance || 0;
+				totalIndications = apiData.stats.totalIndications || 0;
+				car1LisaCount = apiData.stats.car1LisaCount || 0;
+				car2LisaCount = apiData.stats.car2LisaCount || 0;
+				totalLisaPerKm = apiData.stats.totalLisaPerKm || 0;
+				car1LisaPerKm = apiData.stats.car1LisaPerKm || 0;
+				car2LisaPerKm = apiData.stats.car2LisaPerKm || 0;
+				weeklyTargetKm = apiData.stats.weeklyTargetKm || 200;
+				dailyTargetKm = apiData.stats.dailyTargetKm || 40;
+				weeklyProgress = apiData.stats.weeklyProgress || 0;
+				dailyProgress = apiData.stats.dailyProgress || 0;
+			}
+			
+			statsLoading = false;
+		} catch (error) {
+			console.error('Error reloading dashboard data:', error);
+			statsLoading = false;
+		}
+	}
 
 	// Debug logging using a function to capture current state values
 	function logData() {
@@ -133,6 +185,17 @@
 						totalLisaPerKm = dashData.stats.totalLisaPerKm || 0;
 						car1LisaPerKm = dashData.stats.car1LisaPerKm || 0;
 						car2LisaPerKm = dashData.stats.car2LisaPerKm || 0;
+						// These fields might not exist on initial load from server
+						// @ts-ignore - new fields not yet in type definition
+						weeklyTargetKm = dashData.stats?.weeklyTargetKm || 200;
+						// @ts-ignore
+						dailyTargetKm = dashData.stats?.dailyTargetKm || 40;
+						// @ts-ignore
+						weeklyProgress = dashData.stats?.weeklyProgress || 0;
+						// @ts-ignore
+						dailyProgress = dashData.stats?.dailyProgress || 0;
+						// @ts-ignore
+						timePeriod = dashData.stats?.timePeriod || 'all';
 						statsLoading = false;
 					}
 
@@ -321,52 +384,175 @@
 				</div>
 			</div>
 
-			<!-- Report Stats Row -->
-			<div class="dashboard__metrics dashboard__metrics--stats">
-				<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
-					<div class="metric-card__icon metric-card__icon--compact">
-						<FileText size={20} />
-					</div>
-					<div class="metric-card__content">
-						<span class="metric-card__label">{t('dashboard.totalReports', $language)}</span>
-						<div class="metric-card__value metric-card__value--compact">
+			<!-- Key Metrics Section with Time Period Filter -->
+			<div class="dashboard__section">
+				<!-- Time Period Selector -->
+				<div class="dashboard__time-selector">
+					<button class="time-selector__button {timePeriod === 'today' ? 'time-selector__button--active' : ''}" onclick={() => handleTimePeriodChange('today')}>
+						Today
+					</button>
+					<button class="time-selector__button {timePeriod === 'week' ? 'time-selector__button--active' : ''}" onclick={() => handleTimePeriodChange('week')}>
+						This Week
+					</button>
+					<button class="time-selector__button {timePeriod === 'month' ? 'time-selector__button--active' : ''}" onclick={() => handleTimePeriodChange('month')}>
+						This Month
+					</button>
+					<button class="time-selector__button {timePeriod === 'all' ? 'time-selector__button--active' : ''}" onclick={() => handleTimePeriodChange('all')}>
+						All Time
+					</button>
+				</div>
+
+				<!-- Primary Metric - Final Distance -->
+				<div class="dashboard__primary-metric">
+					<div class="primary-metric-card {statsLoading ? 'metric-card--loading' : ''}">
+						<div class="primary-metric-card__header">
+							<h2 class="primary-metric-card__title">Final Distance Covered</h2>
+							<p class="primary-metric-card__subtitle">
+								{#if timePeriod === 'today'}
+									Today's Progress
+								{:else if timePeriod === 'week'}
+									This Week's Progress
+								{:else if timePeriod === 'month'}
+									This Month's Progress
+								{:else}
+									Total Progress
+								{/if}
+							</p>
+						</div>
+						<div class="primary-metric-card__content">
 							{#if statsLoading}
-								<div class="skeleton-text"></div>
+								<div class="skeleton-text skeleton-text--xxlarge"></div>
 							{:else}
-								{totalReports}
+								<div class="primary-metric-card__value">
+									{totalDistance.toFixed(1)}
+									<span class="primary-metric-card__unit">km</span>
+								</div>
+								{#if timePeriod === 'week' && weeklyTargetKm}
+									<div class="progress-bar">
+										<div class="progress-bar__fill" style="width: {Math.min(weeklyProgress, 100)}%"></div>
+									</div>
+									<div class="primary-metric-card__target">
+										<span>{weeklyProgress.toFixed(0)}% of weekly target ({weeklyTargetKm} km)</span>
+									</div>
+								{:else if timePeriod === 'today' && dailyTargetKm}
+									<div class="progress-bar">
+										<div class="progress-bar__fill" style="width: {Math.min(dailyProgress, 100)}%"></div>
+									</div>
+									<div class="primary-metric-card__target">
+										<span>{dailyProgress.toFixed(0)}% of daily target ({dailyTargetKm} km)</span>
+									</div>
+								{/if}
+								<div class="primary-metric-card__draft">
+									+ {totalDraftDistance.toFixed(1)} km in draft
+								</div>
 							{/if}
 						</div>
 					</div>
 				</div>
 
-				<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
-					<div class="metric-card__icon metric-card__icon--compact metric-card__icon--success">
-						<FileCheck size={20} />
+				<!-- Secondary Metrics Grid -->
+				<div class="dashboard__metrics dashboard__metrics--secondary">
+					<!-- Vehicle Performance -->
+					<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
+						<div class="metric-card__icon metric-card__icon--compact">
+							<Car size={20} />
+						</div>
+						<div class="metric-card__content">
+							<span class="metric-card__label">GNI Car #1</span>
+							<div class="metric-card__value metric-card__value--compact">
+								{#if statsLoading}
+									<div class="skeleton-text"></div>
+								{:else}
+									{car1Distance.toFixed(1)} km
+									<span class="metric-card__sub">({car1DraftDistance.toFixed(1)} draft)</span>
+								{/if}
+							</div>
+						</div>
 					</div>
-					<div class="metric-card__content">
-						<span class="metric-card__label">{t('dashboard.finalReports', $language)}</span>
-						<div class="metric-card__value metric-card__value--compact">
-							{#if statsLoading}
-								<div class="skeleton-text"></div>
-							{:else}
-								{finalReports}
-							{/if}
+
+					<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
+						<div class="metric-card__icon metric-card__icon--compact">
+							<Car size={20} />
+						</div>
+						<div class="metric-card__content">
+							<span class="metric-card__label">GNI Car #2</span>
+							<div class="metric-card__value metric-card__value--compact">
+								{#if statsLoading}
+									<div class="skeleton-text"></div>
+								{:else}
+									{car2Distance.toFixed(1)} km
+									<span class="metric-card__sub">({car2DraftDistance.toFixed(1)} draft)</span>
+								{/if}
+							</div>
+						</div>
+					</div>
+
+					<!-- LISA Metrics -->
+					<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
+						<div class="metric-card__icon metric-card__icon--compact metric-card__icon--success">
+							<Activity size={20} />
+						</div>
+						<div class="metric-card__content">
+							<span class="metric-card__label">LISA Indications</span>
+							<div class="metric-card__value metric-card__value--compact">
+								{#if statsLoading}
+									<div class="skeleton-text"></div>
+								{:else}
+									{totalIndications}
+									<span class="metric-card__sub">({totalLisaPerKm.toFixed(2)}/km)</span>
+								{/if}
+							</div>
 						</div>
 					</div>
 				</div>
-
-				<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
-					<div class="metric-card__icon metric-card__icon--compact metric-card__icon--warning">
-						<FileText size={20} />
+				
+				<!-- Report Stats Row -->
+				<div class="dashboard__metrics dashboard__metrics--stats">
+					<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
+						<div class="metric-card__icon metric-card__icon--compact">
+							<FileText size={20} />
+						</div>
+						<div class="metric-card__content">
+							<span class="metric-card__label">{t('dashboard.totalReports', $language)}</span>
+							<div class="metric-card__value metric-card__value--compact">
+								{#if statsLoading}
+									<div class="skeleton-text"></div>
+								{:else}
+									{totalReports}
+								{/if}
+							</div>
+						</div>
 					</div>
-					<div class="metric-card__content">
-						<span class="metric-card__label">{t('dashboard.draftReports', $language)}</span>
-						<div class="metric-card__value metric-card__value--compact">
-							{#if statsLoading}
-								<div class="skeleton-text"></div>
-							{:else}
-								{draftReports}
-							{/if}
+
+					<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
+						<div class="metric-card__icon metric-card__icon--compact metric-card__icon--success">
+							<FileCheck size={20} />
+						</div>
+						<div class="metric-card__content">
+							<span class="metric-card__label">{t('dashboard.finalReports', $language)}</span>
+							<div class="metric-card__value metric-card__value--compact">
+								{#if statsLoading}
+									<div class="skeleton-text"></div>
+								{:else}
+									{finalReports}
+								{/if}
+							</div>
+						</div>
+					</div>
+
+					<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
+						<div class="metric-card__icon metric-card__icon--compact metric-card__icon--warning">
+							<FileText size={20} />
+						</div>
+						<div class="metric-card__content">
+							<span class="metric-card__label">{t('dashboard.draftReports', $language)}</span>
+							<div class="metric-card__value metric-card__value--compact">
+								{#if statsLoading}
+									<div class="skeleton-text"></div>
+								{:else}
+									{draftReports}
+								{/if}
+							</div>
 						</div>
 					</div>
 				</div>
