@@ -10,7 +10,6 @@
 	import Flame from 'lucide-svelte/icons/flame';
 	import LayoutDashboard from 'lucide-svelte/icons/layout-dashboard';
 	import FileText from 'lucide-svelte/icons/file-text';
-	import TestTube from 'lucide-svelte/icons/test-tube';
 	import Settings from 'lucide-svelte/icons/settings';
 	import ChartBar from 'lucide-svelte/icons/chart-bar';
 	import Eye from 'lucide-svelte/icons/eye';
@@ -19,10 +18,10 @@
 	import Menu from 'lucide-svelte/icons/menu';
 	import X from 'lucide-svelte/icons/x';
 	import Loader from 'lucide-svelte/icons/loader';
-	import { language, t, LANGUAGES } from '$lib';
+	import { language, t } from '$lib';
 	import { initialUserValue, setupAuthListener, pb } from '$lib/pocketbase';
 	import { onDestroy, onMount } from 'svelte';
-	import { languageContext, switchLanguage, languageStore, navigationContext, navigationStore } from '$lib/context';
+	import { languageContext, languageStore, navigationContext, navigationStore } from '$lib/context';
 	import { authFSM, updateAuthState, authContext, authStore } from '$lib/auth';
 	import { IsMounted } from 'runed';
 	import AuthStatus from './AuthStatus.svelte';
@@ -215,16 +214,7 @@
 	// Set language context from the store
 	languageContext.set(languageStore);
 	
-	// Language switcher functions with direct store updates
-	function switchToEnglish(event: MouseEvent) {
-		event.preventDefault();
-		switchLanguage('en');
-	}
-	
-	function switchToPolish(event: MouseEvent) {
-		event.preventDefault();
-		switchLanguage('pl');
-	}
+
 	
 	// Initialize auth FSM on component mount
 	onDestroy(() => {
@@ -389,12 +379,6 @@
 								</a>
 							</li>
 							<li class="mobile-nav__item">
-								<a href="/tests" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/tests')} onclick={closeMobileNav}>
-									<TestTube size={20} class="mobile-nav__icon" />
-									<span class="mobile-nav__text">{t('nav.tests', $language)}</span>
-								</a>
-							</li>
-							<li class="mobile-nav__item">
 								<a href="/settings" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/settings')} onclick={closeMobileNav}>
 									<Settings size={20} class="mobile-nav__icon" />
 									<span class="mobile-nav__text">{t('nav.settings', $language)}</span>
@@ -437,7 +421,7 @@
 		</button>
 		
 		<!-- Logo/Brand -->
-		<a href="/" class="header__brand" title="PSG Dashboard">
+		<a href="/" class="header__brand" title="GNI Ireland">
 			<div class="header__logo">
 				<Flame size={18} />
 			</div>
@@ -480,26 +464,6 @@
 					</div>
 				{/if}
 			</div>
-			
-			<!-- Language switcher -->
-			<div class="lang-switcher">
-				<button 
-					class:lang-switcher__button--active={$language === 'en'} 
-					class="lang-switcher__button"
-					onclick={switchToEnglish}
-					aria-label="Switch to English"
-				>
-					EN
-				</button>
-				<button 
-					class:lang-switcher__button--active={$language === 'pl'} 
-					class="lang-switcher__button"
-					onclick={switchToPolish}
-					aria-label="Switch to Polish"
-				>
-					PL
-				</button>
-			</div>
 		</div>
 	</header>
 
@@ -541,14 +505,6 @@
 							<FileText size={20} class="nav__icon" />
 							{#if !isNavCollapsed}
 							<span class="nav__text">{t('nav.reports', $language)}</span>
-							{/if}
-						</a>
-					</li>
-					<li class="nav__item" class:nav__item--active={isActive('/tests')}>
-						<a href="/tests" class="nav__link" title="{t('nav.tests', $language)}">
-							<TestTube size={20} class="nav__icon" />
-							{#if !isNavCollapsed}
-							<span class="nav__text">{t('nav.tests', $language)}</span>
 							{/if}
 						</a>
 					</li>

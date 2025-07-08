@@ -204,14 +204,14 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         
         // Distance for specific vehicles (only from final reports with surveys)
         const jimnyDistance = calculationReports
-            .filter((r: any) => r.surveyor_unit_desc === 'PSG Service car #1 - Suzuki Jimny WE5N810')
+            .filter((r: any) => r.surveyor_unit_desc === 'GNI Service car #1 - Suzuki Jimny WE5N810')
             .reduce((sum: number, report: any) => {
                 const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
                 return sum + distance;
             }, 0);
             
         const torresDistance = calculationReports
-            .filter((r: any) => r.surveyor_unit_desc === 'PSG MSA car #1 - Ssanyong Torres')
+            .filter((r: any) => r.surveyor_unit_desc === 'GNI MSA car #1 - Ssanyong Torres')
             .reduce((sum: number, report: any) => {
                 const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
                 return sum + distance;
@@ -241,11 +241,11 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         
         // Count unique indications per vehicle
         const uniqueJimnyIndications = uniqueIndicationsArray.filter(
-            (indication: any) => indication.surveyor_unit_desc === 'PSG Service car #1 - Suzuki Jimny WE5N810'
+            (indication: any) => indication.surveyor_unit_desc === 'GNI Service car #1 - Suzuki Jimny WE5N810'
         ).length;
         
         const uniqueTorresIndications = uniqueIndicationsArray.filter(
-            (indication: any) => indication.surveyor_unit_desc === 'PSG MSA car #1 - Ssanyong Torres'
+            (indication: any) => indication.surveyor_unit_desc === 'GNI MSA car #1 - Ssanyong Torres'
         ).length;
         
         // Calculate LISA per km metrics using unique indications

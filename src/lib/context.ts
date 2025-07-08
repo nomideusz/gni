@@ -8,10 +8,11 @@ export const languageStore: Writable<Language> = writable('en');
 // Language context using the store
 export const languageContext = new Context<typeof languageStore>("language");
 
-// Function to switch language and update the store
+// Function to switch language and update the store - simplified for English only
 export function switchLanguage(lang: Language) {
-    language.set(lang);
-    languageStore.set(lang);
+    // Always set to English since we only support English now
+    language.set('en');
+    languageStore.set('en');
 }
 
 // Subscribe to the language store to keep it synced with the language value

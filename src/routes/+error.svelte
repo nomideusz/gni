@@ -89,7 +89,6 @@
 			<div class="navigation-help">
 				<h3>You might be looking for:</h3>
 				<ul class="quick-links">
-					<li><a href="/tests">Tests</a></li>
 					<li><a href="/survey-viewer">Survey Viewer</a></li>
 					<li><a href="/reports">Reports</a></li>
 					<li><a href="/settings">Settings</a></li>

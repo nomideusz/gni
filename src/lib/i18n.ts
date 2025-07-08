@@ -1,12 +1,11 @@
 import { writable, type Writable } from 'svelte/store';
 
-// Define language type
-export type Language = 'en' | 'pl';
+// Define language type - now only English
+export type Language = 'en';
 
-// Define translation structure types
+// Define translation structure types - only English now
 export interface Translations {
   en: TranslationContent;
-  pl: TranslationContent;
 }
 
 export interface TranslationContent {
@@ -15,7 +14,6 @@ export interface TranslationContent {
   nav: {
     main: string;
     dashboard: string;
-    tests: string;
     reports: string;
     users: string;
     settings: string;
@@ -59,83 +57,7 @@ export interface TranslationContent {
     sales: string;
     growth: string;
   };
-  tests: {
-    title: string;
-    description: string;
-    infoPanel: {
-      testInfo: string;
-      currentTest: string;
-      displayingData: string;
-      aboutData: string;
-      aboutDataDescription: string;
-      dataParameters: string;
-      stats: {
-        methane: string;
-        ethane: string;
-        dataPoints: string;
-        averageSpeed: string;
-        range: string;
-        columns: string;
-        max: string;
-        min: string;
-        avg: string;
-        carSpeed: string;
-        windSpeed: string;
-      };
-      parameters: {
-        gpsCoords: string;
-        windComponents: string;
-        carSpeed: string;
-      };
-      summary: {
-        title: string;
-        timeRange: string;
-        minCH4: string;
-        avgCH4: string;
-        maxCH4: string;
-        dataPoints: string;
-        avgCarSpeed: string;
-        avgWind: string;
-      };
-      detailedStats: {
-        title: string;
-        parameter: string;
-        min: string;
-        max: string;
-        average: string;
-      };
-      notes: {
-        title: string;
-        ethaneNegativeTitle: string;
-        ethaneNegativeText: string;
-      };
-    },
-    chart: {
-      title: string;
-      timeSeriesTitle: string;
-      ch4Label: string;
-      c2h6Label: string;
-      timeLabel: string;
-      concentrationLabel: string;
-      dualAxisTitle: string;
-      tooltipTimeLabel: string;
-      methaneOnly: string;
-      methaneTitle: string;
-      gpsTitle: string;
-      gpsTraceTitle: string;
-      longitudeLabel: string;
-      latitudeLabel: string;
-      windRoseTitle: string;
-      carSpeedLabel: string;
-      windSpeedLabel: string;
-      directionLabel: string;
-      colorGradient: {
-        level: string;
-        min: string;
-        max: string;
-      };
-    }
-  };
+
   footer: {
     copyright: string;
     version: string;
@@ -269,18 +191,17 @@ export interface TranslationContent {
   };
 }
 
-// Translations for the application
+// Translations for the application - only English now
 export const translations: Translations = {
   en: {
     // Header
-    appName: 'PSG Dashboard',
-    appDescription: 'Tool for data management and analysis',
+    appName: 'GNI Ireland',
+    appDescription: 'Gas leak detection and monitoring system',
     
     // Navigation
     nav: {
       main: 'Main',
       dashboard: 'Dashboard',
-      tests: 'Tests',
       reports: 'Reports',
       users: 'Users',
       settings: 'Settings',
@@ -320,85 +241,6 @@ export const translations: Translations = {
       indications: 'LISA Indications',
     },
     
-    // Tests section
-    tests: {
-      title: 'Tests',
-      description: 'Gas data visualization tests and experiments',
-      infoPanel: {
-        testInfo: 'Test Information',
-        currentTest: 'Current Test:',
-        displayingData: 'Displaying data from',
-        aboutData: 'About the Data',
-        aboutDataDescription: 'This test measures concentrations of methane (CH4) and ethane (C2H6) along with related parameters.',
-        dataParameters: 'Data Parameters',
-        stats: {
-          methane: 'Methane concentration',
-          ethane: 'Ethane concentration',
-          dataPoints: 'Data points',
-          averageSpeed: 'Average speed',
-          range: 'Range',
-          columns: 'Columns',
-          max: 'Max',
-          min: 'Min',
-          avg: 'Average',
-          carSpeed: 'Car Speed',
-          windSpeed: 'Wind Speed'
-        },
-        parameters: {
-          gpsCoords: 'GPS coordinates',
-          windComponents: 'Wind vector components',
-          carSpeed: 'Vehicle speed'
-        },
-        summary: {
-          title: 'Summary',
-          timeRange: 'Time Range',
-          minCH4: 'Min CH₄',
-          avgCH4: 'Avg. CH₄',
-          maxCH4: 'Max CH₄',
-          dataPoints: 'Data Points',
-          avgCarSpeed: 'Avg. Car Speed',
-          avgWind: 'Avg. Wind'
-        },
-        detailedStats: {
-          title: 'Detailed Statistics',
-          parameter: 'Parameter',
-          min: 'Min',
-          max: 'Max',
-          average: 'Average'
-        },
-        notes: {
-          title: 'Notes',
-          ethaneNegativeTitle: 'About Negative Ethane Values',
-          ethaneNegativeText: 'Negative ethane (C₂H₆) values can occur due to instrument measurement uncertainty when concentrations are near the detection limit. These values are normal and represent background noise rather than true negative concentrations.'
-        }
-      },
-      chart: {
-        title: 'Gas concentrations over time',
-        timeSeriesTitle: 'CH4 and C2H6 Time Series',
-        ch4Label: 'CH4 (ppm)',
-        c2h6Label: 'C2H6 (ppb)',
-        timeLabel: 'Time',
-        concentrationLabel: 'Concentration',
-        dualAxisTitle: 'Gas concentrations (dual scale)',
-        tooltipTimeLabel: 'Time',
-        methaneOnly: 'CH4 Only',
-        methaneTitle: 'Methane Concentration',
-        gpsTitle: 'Vehicle Path with CH4 Readings',
-        gpsTraceTitle: 'GPS Trace',
-        longitudeLabel: 'Longitude',
-        latitudeLabel: 'Latitude',
-        windRoseTitle: 'Wind Rose Chart',
-        carSpeedLabel: 'Car Speed',
-        windSpeedLabel: 'Wind Speed',
-        directionLabel: 'Direction',
-        colorGradient: {
-          level: 'level',
-          min: 'Min',
-          max: 'Max'
-        }
-      }
-    },
-    
     // Data panel
     dataPanel: {
       dataDetails: 'Data Details',
@@ -410,7 +252,7 @@ export const translations: Translations = {
     
     // Footer
     footer: {
-      copyright: '© {year} PSG Dashboard',
+      copyright: '© {year} GNI Ireland',
       version: 'Version'
     },
     
@@ -420,7 +262,7 @@ export const translations: Translations = {
       logout: 'Logout',
       loggingOut: 'Logging out...',
       loading: 'Loading...',
-      title: 'PSG Dashboard'
+      title: 'GNI Ireland'
     },
     
     // Loading
@@ -558,346 +400,41 @@ export const translations: Translations = {
         validationError: 'New passwords do not match'
       }
     }
-  },
-  
-  pl: {
-    // Header
-    appName: 'PSG Dashboard',
-    appDescription: 'Narzędzie do zarządzania i analizy danych',
-    
-    // Navigation
-    nav: {
-      main: 'Główne',
-      dashboard: 'Dashboard',
-      tests: 'Testy',
-      reports: 'Raporty',
-      users: 'Użytkownicy',
-      settings: 'Ustawienia',
-      tools: 'Narzędzia'
-    },
-    
-    // Dashboard
-    dashboard: {
-      overview: 'Przegląd Pulpitu',
-      welcomeMessage: 'Przegląd najważniejszych statystyk',
-      totalReports: 'Wszystkie raporty',
-      finalReports: 'Raporty finalne',
-      draftReports: 'Raporty robocze',
-      statistics: 'Statystyki',
-      lastUpdated: 'Ostatnia aktualizacja',
-      totalDistance: 'Całkowita odległość',
-      jimnyDistance: 'Odległość Suzuki Jimny',
-      torresDistance: 'Odległość Ssanyong Torres',
-      distance: 'Odległość',
-      lisa: 'LISA',
-      lisaPerKm: 'LISA/km',
-      recentReports: 'Ostatnie raporty',
-      viewAllReports: 'Zobacz wszystkie raporty',
-      viewAll: 'Zobacz wszystkie',
-      lastSynced: 'Ostatnia synchronizacja',
-      syncUnavailable: 'Status synchronizacji niedostępny',
-      loadingReports: 'Ładowanie raportów...',
-      reportName: 'Nazwa raportu',
-      reportTitle: 'Tytuł raportu',
-      date: 'Data',
-      assetsCovered: 'Pokryte aktywa',
-      surveyorUnit: 'Jednostka miernicza',
-      status: 'Status',
-      final: 'Finalny',
-      draft: 'Wersja robocza',
-      noReportsFound: 'Nie znaleziono raportów',
-      indications: 'Wskazania LISA',
-    },
-    
-    // Tests section
-    tests: {
-      title: 'Testy',
-      description: 'Wizualizacja danych gazowych i eksperymenty',
-      infoPanel: {
-        testInfo: 'Informacje o teście',
-        currentTest: 'Aktualny test:',
-        displayingData: 'Wyświetlanie danych od',
-        aboutData: 'O danych',
-        aboutDataDescription: 'Ten test mierzy stężenia metanu (CH4) i etanu (C2H6) wraz z powiązanymi parametrami.',
-        dataParameters: 'Parametry danych',
-        stats: {
-          methane: 'Stężenie metanu',
-          ethane: 'Stężenie etanu',
-          dataPoints: 'Punkty danych',
-          averageSpeed: 'Średnia prędkość',
-          range: 'Zakres',
-          columns: 'Kolumny',
-          max: 'Maksimum',
-          min: 'Minimum',
-          avg: 'Średnia',
-          carSpeed: 'Prędkość pojazdu',
-          windSpeed: 'Prędkość wiatru'
-        },
-        parameters: {
-          gpsCoords: 'Współrzędne GPS',
-          windComponents: 'Komponenty wektoru wiatru',
-          carSpeed: 'Prędkość pojazdu'
-        },
-        summary: {
-          title: 'Podsumowanie',
-          timeRange: 'Zakres czasu',
-          minCH4: 'Min CH₄',
-          avgCH4: 'Śr. CH₄',
-          maxCH4: 'Maks CH₄',
-          dataPoints: 'Punkty danych',
-          avgCarSpeed: 'Śr. prędkość pojazdu',
-          avgWind: 'Śr. wiatr'
-        },
-        detailedStats: {
-          title: 'Szczegółowe statystyki',
-          parameter: 'Parametr',
-          min: 'Min',
-          max: 'Maks',
-          average: 'Średnia'
-        },
-        notes: {
-          title: 'Uwagi',
-          ethaneNegativeTitle: 'O ujemnych wartościach etanu',
-          ethaneNegativeText: 'Ujemne wartości etanu (C₂H₆) mogą wystąpić z powodu niepewności pomiarowej przyrządu, gdy stężenia są bliskie granicy wykrywalności. Takie wartości są normalne i reprezentują szum tła, a nie rzeczywiste ujemne stężenia.'
-        }
-      },
-      chart: {
-        title: 'Stężenia gazów w czasie',
-        timeSeriesTitle: 'Szeregi czasowe CH4 i C2H6',
-        ch4Label: 'CH4 (ppm)',
-        c2h6Label: 'C2H6 (ppb)',
-        timeLabel: 'Czas',
-        concentrationLabel: 'Stężenie',
-        dualAxisTitle: 'Stężenia gazów (podwójna skala)',
-        tooltipTimeLabel: 'Czas',
-        methaneOnly: 'Tylko CH4',
-        methaneTitle: 'Stężenie metanu',
-        gpsTitle: 'Ścieżka pojazdu z odczytami CH4',
-        gpsTraceTitle: 'Ślad GPS',
-        longitudeLabel: 'Długość geograficzna',
-        latitudeLabel: 'Szerokość geograficzna',
-        windRoseTitle: 'Wykres Róży Wiatrów',
-        carSpeedLabel: 'Prędkość pojazdu',
-        windSpeedLabel: 'Prędkość wiatru',
-        directionLabel: 'Kierunek',
-        colorGradient: {
-          level: 'poziom',
-          min: 'Min',
-          max: 'Maks'
-        }
-      }
-    },
-    
-    // Data panel
-    dataPanel: {
-      dataDetails: 'Szczegóły danych',
-      id: 'ID',
-      product: 'Produkt',
-      sales: 'Sprzedaż',
-      growth: 'Wzrost'
-    },
-    
-    // Footer
-    footer: {
-      copyright: '© {year} PSG Dashboard',
-      version: 'Wersja'
-    },
-    
-    // Auth
-    auth: {
-      login: 'Zaloguj',
-      logout: 'Wyloguj',
-      loggingOut: 'Wylogowywanie...',
-      loading: 'Ładowanie...',
-      title: 'PSG Dashboard'
-    },
-    
-    // Loading
-    loading: {
-      pageLoading: 'Ładowanie strony...'
-    },
-    
-    // Tools
-    tools: {
-      surveyViewer: 'Przeglądarka pomiarów'
-    },
-    
-    // Login Page
-    loginPage: {
-      title: 'Zaloguj się',
-      email: 'Email',
-      emailPlaceholder: 'twoj@email.com',
-      password: 'Hasło',
-      passwordPlaceholder: 'Twoje hasło',
-      loginButton: 'Zaloguj',
-      loggingIn: 'Logowanie...',
-      forgotPassword: 'Zapomniałeś hasła?',
-      pleaseWait: 'Proszę czekać...',
-      validation: {
-        emailRequired: 'Email jest wymagany',
-        emailInvalid: 'Wprowadź prawidłowy adres email',
-        passwordRequired: 'Hasło jest wymagane'
-      }
-    },
-    
-    // Forgot Password Page
-    forgotPassword: {
-      title: 'Zresetuj swoje hasło',
-      description: 'Wprowadź swój adres email, a my wyślemy Ci instrukcje resetowania hasła.',
-      emailLabel: 'Adres Email',
-      emailPlaceholder: 'Wprowadź swój adres email',
-      sendButton: 'Wyślij instrukcje resetowania',
-      sending: 'Wysyłanie...',
-      backToLogin: 'Powrót do logowania',
-      pleaseWait: 'Proszę czekać...',
-      success: 'Instrukcje resetowania hasła zostały wysłane na Twój email.',
-      returnToLogin: 'Powrót do logowania',
-      validation: {
-        emailRequired: 'Email jest wymagany',
-        emailInvalid: 'Wprowadź prawidłowy adres email'
-      }
-    },
-    
-    // Reports Page
-    reports: {
-      title: 'Raporty',
-      description: 'Przegląd raportów.',
-      status: {
-        final: 'Finalny',
-        draft: 'Wersja robocza',
-        total: 'Suma'
-      },
-      table: {
-        reportName: 'Nazwa raportu',
-        reportTitle: 'Tytuł raportu',
-        date: 'Data',
-        assetsCovered: 'Pokryte aktywa',
-        surveyorUnit: 'Jednostka miernicza',
-        lisa: 'LISA',
-        status: 'Status',
-        noReportsFound: 'Nie znaleziono raportów'
-      },
-      loading: 'Ładowanie raportów...',
-      sync: {
-        lastSynced: 'Ostatnia synchronizacja',
-        unavailable: 'Status synchronizacji niedostępny',
-        never: 'Nigdy',
-        unknown: 'Nieznany'
-      },
-      error: 'Nie udało się załadować raportów'
-    },
-    
-    // Logout
-    logout: {
-      redirecting: 'Przekierowywanie...',
-      error: 'Nie udało się wylogować'
-    },
-    
-    // Reset Password
-    resetPassword: {
-      title: 'Ustaw nowe hasło',
-      description: 'Wprowadź i potwierdź swoje nowe hasło.',
-      invalidToken: 'Nieprawidłowy lub brakujący token resetowania. Proszę poprosić o nowy link resetowania hasła.',
-      requestNewLink: 'Poproś o nowy link',
-      success: 'Twoje hasło zostało pomyślnie zresetowane!',
-      goToLogin: 'Przejdź do logowania',
-      newPassword: 'Nowe hasło',
-      newPasswordPlaceholder: 'Wprowadź swoje nowe hasło',
-      confirmPassword: 'Potwierdź hasło',
-      confirmPasswordPlaceholder: 'Potwierdź swoje nowe hasło',
-      passwordNote: 'Musi mieć co najmniej 8 znaków.',
-      setPasswordButton: 'Ustaw nowe hasło',
-      settingPassword: 'Ustawianie hasła...',
-      backToLogin: 'Powrót do logowania',
-      pleaseWait: 'Proszę czekać...',
-      validation: {
-        passwordRequired: 'Hasło jest wymagane',
-        passwordLength: 'Hasło musi mieć co najmniej 8 znaków',
-        confirmRequired: 'Proszę potwierdzić hasło',
-        passwordsDoNotMatch: 'Hasła nie są zgodne'
-      },
-      error: 'Nie udało się zresetować hasła'
-    },
-    
-    // Settings
-    settings: {
-      title: 'Ustawienia konta',
-      authRequired: 'Musisz być zalogowany, aby uzyskać dostęp do tej strony.',
-      login: 'Zaloguj',
-      profile: {
-        title: 'Informacje o profilu',
-        username: 'Nazwa użytkownika',
-        email: 'Adres email',
-        emailNote: 'Adres email nie może zostać zmieniony.',
-        updateButton: 'Aktualizuj profil',
-        updating: 'Aktualizowanie...',
-        success: 'Profil został zaktualizowany pomyślnie',
-        error: 'Nie udało się zaktualizować profilu'
-      },
-      password: {
-        title: 'Zmień hasło',
-        current: 'Aktualne hasło',
-        new: 'Nowe hasło',
-        confirm: 'Potwierdź nowe hasło',
-        passwordNote: 'Musi mieć co najmniej 8 znaków.',
-        changeButton: 'Zmień hasło',
-        changing: 'Zmienianie...',
-        success: 'Hasło zostało zmienione pomyślnie',
-        error: 'Nie udało się zmienić hasła',
-        validationError: 'Nowe hasła nie są zgodne'
-      }
-    }
   }
 };
 
-// Supported languages
-export const LANGUAGES: Language[] = ['en', 'pl'];
+// Create a writable store for the current language - now always 'en'
+export const language: Writable<Language> = writable('en');
 
-// Initialize language from localStorage or use browser language or default to English
+// Language constants - now only English
+export const LANGUAGES = [
+  { code: 'en' as Language, name: 'English' }
+] as const;
+
+// Initialize language - always English now
 const initLang = (): Language => {
-  if (typeof window !== 'undefined') {
-    const savedLang = localStorage.getItem('language') as Language;
-    if (savedLang && LANGUAGES.includes(savedLang)) {
-      return savedLang;
-    }
-    
-    // Check browser language
-    const browserLang = navigator.language.split('-')[0];
-    if (browserLang === 'pl') {
-      return 'pl';
-    }
-  }
-  
-  return 'en'; // Default to English
+  return 'en';
 };
 
-export const language: Writable<Language> = writable<Language>(initLang());
+// Initialize the language store
+language.set(initLang());
 
-// Update localStorage when language changes
-if (typeof window !== 'undefined') {
-  language.subscribe((value: Language) => {
-    localStorage.setItem('language', value);
-  });
-}
-
-// Helper function to get translated text
+// Translation function - simplified since we only have English
 export function t(key: string, lang: Language): string {
   const keys = key.split('.');
-  let result: any = translations[lang];
+  let current: any = translations[lang];
   
   for (const k of keys) {
-    if (result && result[k] !== undefined) {
-      result = result[k];
+    if (current && typeof current === 'object' && k in current) {
+      current = current[k];
     } else {
-      return key; // Return the key if translation is missing
+      console.warn(`Translation key "${key}" not found for language "${lang}"`);
+      return key; // Return the key if translation not found
     }
   }
   
-  // Handle special variables like {year}
-  if (typeof result === 'string') {
-    const yearStr = String(new Date().getFullYear());
-    result = result.replace('{year}', yearStr);
-  }
-  
-  return result;
-} 
+  return typeof current === 'string' ? current : key;
+}
+
+// Export the current language value (always 'en')
+export const currentLanguage = 'en'; 
