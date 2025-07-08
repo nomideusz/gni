@@ -713,3 +713,219 @@
         flex: 1 1 100%;
     }
 } 
+
+/*---------------------------------------*/
+/* DAILY STATS TABLE                     */
+/*---------------------------------------*/
+
+.daily-stats-table {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.daily-stats-table__element {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px;
+}
+
+.daily-stats-table__header {
+    text-align: left;
+    padding: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    border-bottom: 2px solid var(--border-primary);
+    background-color: var(--bg-tertiary);
+}
+
+.daily-stats-table__row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    transition: background-color 0.2s ease;
+}
+
+.daily-stats-table__row:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.daily-stats-table__row--weekly-summary {
+    background-color: rgba(59, 130, 246, 0.05);
+    border-top: 2px solid var(--accent-primary);
+    border-bottom: 2px solid var(--accent-primary);
+}
+
+.daily-stats-table__row--weekly-summary:hover {
+    background-color: rgba(59, 130, 246, 0.08);
+}
+
+.daily-stats-table__cell {
+    padding: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    vertical-align: top;
+}
+
+.daily-stats-table__cell--summary {
+    font-weight: 600;
+    color: var(--accent-primary);
+}
+
+.daily-stats-table__cell--empty {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 3rem;
+    font-style: italic;
+}
+
+.daily-stats-table__date {
+    font-weight: 600;
+    color: var(--text-primary);
+    display: block;
+}
+
+.daily-stats-table__weekday {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.daily-stats-table__metric {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.daily-stats-table__metric--good {
+    color: var(--success);
+}
+
+.daily-stats-table__metric--medium {
+    color: var(--warning);
+}
+
+.daily-stats-table__metric--low {
+    color: var(--error);
+}
+
+.daily-stats-table__breakdown {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.breakdown-final {
+    color: var(--success);
+    font-weight: 500;
+}
+
+.breakdown-draft {
+    color: var(--warning);
+    font-weight: 500;
+}
+
+.daily-stats-table__count {
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+}
+
+.daily-stats-table__count--final {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.daily-stats-table__count--draft {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.vehicles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.vehicle-badge {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--border-primary);
+}
+
+.vehicle-badge__header {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.vehicle-badge__breakdown {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.7rem;
+}
+
+.vehicles-summary {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Loading states for daily stats table */
+.daily-stats-table__row--loading .skeleton-text {
+    height: 1rem;
+    width: 80%;
+}
+
+/*---------------------------------------*/
+/* RESPONSIVE UPDATES FOR DAILY STATS    */
+/*---------------------------------------*/
+
+@media (max-width: 768px) {
+    .daily-stats-table__element {
+        min-width: 800px;
+        font-size: 0.8rem;
+    }
+    
+    .daily-stats-table__cell {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .daily-stats-table__header {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .vehicles-list {
+        max-width: 120px;
+    }
+    
+    .vehicle-badge {
+        font-size: 0.7rem;
+        padding: 0.4rem;
+    }
+    
+    .vehicle-badge__breakdown {
+        font-size: 0.65rem;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .daily-stats-table__element {
+        min-width: 600px;
+    }
+    
+    /* Hide some columns on very small screens */
+    .daily-stats-table__header:nth-child(7),
+    .daily-stats-table__cell:nth-child(7) {
+        display: none;
+    }
+} 

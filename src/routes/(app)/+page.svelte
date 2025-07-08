@@ -28,6 +28,7 @@
 	// Pre-populate with empty values to ensure immediate rendering with skeletons
 	let reports = $state<Report[]>([]);
 	let recentReports = $state<Report[]>([]);
+	let dailyStats = $state<any[]>([]);
 	let loading = $state(true);
 	let statsLoading = $state(true);
 	let reportsLoading = $state(true);
@@ -100,11 +101,226 @@
 				dailyProgress = apiData.stats.dailyProgress || 0;
 			}
 			
+			// Update reports data
+			if (apiData.reports) {
+				reports = apiData.reports;
+				processDailyStats(apiData.reports);
+			}
+			
 			statsLoading = false;
 		} catch (error) {
 			console.error('Error reloading dashboard data:', error);
 			statsLoading = false;
 		}
+	}
+	
+	// Process reports into daily statistics
+	function processDailyStats(reportsData: any[]) {
+		// Group reports by date
+		const dateGroups = new Map<string, any[]>();
+		
+		reportsData.forEach((report: any) => {
+			const rawDate = report.report_date;
+			if (!rawDate) return;
+			
+			// Normalize date to YYYY-MM-DD format to ensure consistent grouping
+			const date = new Date(rawDate).toISOString().split('T')[0];
+			
+			if (!dateGroups.has(date)) {
+				dateGroups.set(date, []);
+			}
+			dateGroups.get(date)!.push(report);
+		});
+		
+		// Sort dates and create daily stats
+		const sortedDates = Array.from(dateGroups.keys()).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+		const stats: any[] = [];
+		
+		let currentWeekStart: Date | null = null;
+		let weeklyData = {
+			totalDistance: 0,
+			finalDistance: 0,
+			draftDistance: 0,
+			finalReports: 0,
+			draftReports: 0,
+			totalLisas: 0,
+			totalLinearAssetLength: 0,
+			coveredLinearAssetLength: 0,
+			vehicles: new Map() // Will store { total, final, draft } for each vehicle
+		};
+		
+		sortedDates.forEach((date, index) => {
+			const reportsForDate = dateGroups.get(date);
+			if (!reportsForDate) return;
+			
+			const dateObj = new Date(date);
+			const weekday = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+			
+			// Check if we need to start a new week
+			const weekStart = getWeekStart(dateObj);
+			if (currentWeekStart && weekStart.getTime() !== currentWeekStart.getTime()) {
+				// Add weekly summary
+				if (weeklyData.totalLinearAssetLength > 0) {
+					const weekStartDateStr = currentWeekStart ? currentWeekStart.toISOString().split('T')[0] : '';
+					const weeklyAvgCoverage = (weeklyData.coveredLinearAssetLength / weeklyData.totalLinearAssetLength) * 100;
+					stats.push({
+						isWeeklySummary: true,
+						weekLabel: `Week of ${formatDate(weekStartDateStr)}`,
+						totalDistance: weeklyData.totalDistance,
+						finalDistance: weeklyData.finalDistance,
+						draftDistance: weeklyData.draftDistance,
+						avgCoverage: weeklyAvgCoverage,
+						finalReports: weeklyData.finalReports,
+						draftReports: weeklyData.draftReports,
+						totalLisas: weeklyData.totalLisas,
+						vehiclesSummary: Array.from(weeklyData.vehicles.entries())
+							.map(([name, data]) => `${name}: ${data.total.toFixed(1)}km (${data.final.toFixed(1)} final, ${data.draft.toFixed(1)} draft)`)
+							.join(', ')
+					});
+				}
+				
+				// Reset weekly data
+				weeklyData = {
+					totalDistance: 0,
+					finalDistance: 0,
+					draftDistance: 0,
+					finalReports: 0,
+					draftReports: 0,
+					totalLisas: 0,
+					totalLinearAssetLength: 0,
+					coveredLinearAssetLength: 0,
+					vehicles: new Map()
+				};
+			}
+			currentWeekStart = weekStart;
+			
+			// Calculate daily statistics by aggregating all reports for this date
+			let totalDistance = 0;
+			let finalDistance = 0;
+			let draftDistance = 0;
+			let finalReports = 0;
+			let draftReports = 0;
+			let totalLisas = 0;
+			const vehicles = new Map();
+			
+			let totalLinearAssetLength = 0;
+			let coveredLinearAssetLength = 0;
+			
+			// Process all reports for this date
+			reportsForDate.forEach(report => {
+				const distance = Number(report.linear_asset_covered_length || 0);
+				const assetLength = Number(report.linear_asset_length || 0);
+				const lisas = Number(report.indicationsCount || 0);
+				const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
+				const vehicle = report.surveyor_unit_desc || 'Unknown';
+				
+				// Aggregate daily totals
+				totalDistance += distance;
+				if (isFinal) {
+					finalDistance += distance;
+					finalReports++;
+					// Only use final reports for coverage calculation
+					totalLinearAssetLength += assetLength;
+					coveredLinearAssetLength += distance;
+					// Only count LISAs from final reports
+					totalLisas += lisas;
+				} else {
+					draftDistance += distance;
+					draftReports++;
+				}
+				
+				// Vehicle tracking - aggregate by vehicle with final/draft breakdown
+				if (!vehicles.has(vehicle)) {
+					vehicles.set(vehicle, { total: 0, final: 0, draft: 0 });
+				}
+				const vehicleData = vehicles.get(vehicle)!;
+				vehicleData.total += distance;
+				if (isFinal) {
+					vehicleData.final += distance;
+				} else {
+					vehicleData.draft += distance;
+				}
+				
+				// Weekly accumulation
+				weeklyData.totalDistance += distance;
+				if (isFinal) {
+					weeklyData.finalDistance += distance;
+					weeklyData.finalReports++;
+					// Weekly coverage calculation from final reports only
+					weeklyData.totalLinearAssetLength += assetLength;
+					weeklyData.coveredLinearAssetLength += distance;
+					// Only count LISAs from final reports
+					weeklyData.totalLisas += lisas;
+				} else {
+					weeklyData.draftDistance += distance;
+					weeklyData.draftReports++;
+				}
+				
+				// Weekly vehicle tracking with final/draft breakdown
+				if (!weeklyData.vehicles.has(vehicle)) {
+					weeklyData.vehicles.set(vehicle, { total: 0, final: 0, draft: 0 });
+				}
+				const weeklyVehicleData = weeklyData.vehicles.get(vehicle)!;
+				weeklyVehicleData.total += distance;
+				if (isFinal) {
+					weeklyVehicleData.final += distance;
+				} else {
+					weeklyVehicleData.draft += distance;
+				}
+			});
+			
+			// Calculate daily coverage from final reports only
+			const dailyCoverage = totalLinearAssetLength > 0 ? (coveredLinearAssetLength / totalLinearAssetLength) * 100 : 0;
+			
+			stats.push({
+				date,
+				weekday,
+				totalDistance,
+				finalDistance,
+				draftDistance,
+				finalReports,
+				draftReports,
+				totalLisas,
+				avgCoverage: dailyCoverage,
+				vehicles: Array.from(vehicles.entries()).map(([name, data]) => ({
+					name: name.replace('GNI Car #', 'Car '),
+					total: data.total,
+					final: data.final,
+					draft: data.draft
+				})),
+				isWeeklySummary: false
+			});
+		});
+		
+		// Add final weekly summary if needed
+		if (currentWeekStart && weeklyData.totalLinearAssetLength > 0) {
+			const weekStartDate = (currentWeekStart as Date).toISOString().split('T')[0];
+			const finalWeeklyAvgCoverage = (weeklyData.coveredLinearAssetLength / weeklyData.totalLinearAssetLength) * 100;
+			stats.push({
+				isWeeklySummary: true,
+				weekLabel: `Week of ${formatDate(weekStartDate)}`,
+				totalDistance: weeklyData.totalDistance,
+				finalDistance: weeklyData.finalDistance,
+				draftDistance: weeklyData.draftDistance,
+				avgCoverage: finalWeeklyAvgCoverage,
+				finalReports: weeklyData.finalReports,
+				draftReports: weeklyData.draftReports,
+				totalLisas: weeklyData.totalLisas,
+				vehiclesSummary: Array.from(weeklyData.vehicles.entries())
+					.map(([name, data]) => `${name}: ${data.total.toFixed(1)}km (${data.final.toFixed(1)} final, ${data.draft.toFixed(1)} draft)`)
+					.join(', ')
+			});
+		}
+		
+		dailyStats = stats;
+	}
+	
+	// Helper function to get week start (Monday)
+	function getWeekStart(date: Date): Date {
+		const d = new Date(date);
+		const day = d.getDay();
+		const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+		return new Date(d.setDate(diff));
 	}
 
 	// Debug logging using a function to capture current state values
@@ -166,6 +382,7 @@
 					// Set reports data
 					reports = dashData.reports || [];
 					recentReports = dashData.recentReports || [];
+					processDailyStats(dashData.reports || []);
 					reportsLoading = false;
 
 					// Set stats data
@@ -254,6 +471,7 @@
 <PageTemplate 
 	title={t('dashboard.overview', $language)}
 	subtitle={t('dashboard.welcomeMessage', $language)}
+	fullWidth={true}
 >
 	{#snippet pageActions()}
 		<a href="/reports" class="button button--primary">
@@ -453,15 +671,15 @@
 				</div>
 			</div>
 			
-			<!-- Recent Reports Section -->
+			<!-- Daily Progress Section -->
 			<div class="dashboard__reports">
 				<div class="dashboard__reports-header">
 					<h2 class="dashboard__section-title">
 						<Calendar size={20} />
-						{t('dashboard.recentReports', $language)}
+						Daily Progress Breakdown
 					</h2>
 					<a href="/reports" class="dashboard__view-all">
-						{t('dashboard.viewAll', $language)} →
+						View All Reports →
 					</a>
 				</div>
 				
@@ -473,89 +691,132 @@
 								<div class="loading-bar"></div>
 								<div class="loading-bar"></div>
 							</div>
-							<p class="loading-text">{t('dashboard.loadingReports', $language)}</p>
+							<p class="loading-text">Loading daily statistics...</p>
 						</div>
 					{:else if error}
 						<div class="error-container">
 							<p class="error">{error}</p>
 						</div>
 					{:else}
-						<div class="reports-table">
-							<table class="reports-table__element">
+						<div class="daily-stats-table">
+							<table class="daily-stats-table__element">
 								<thead>
 									<tr>
-										<th class="reports-table__header">{t('dashboard.reportTitle', $language)}</th>
-										<th class="reports-table__header">{t('dashboard.reportName', $language)}</th>
-										<th class="reports-table__header">{t('dashboard.date', $language)}</th>
-										<th class="reports-table__header">{t('dashboard.distance', $language)}</th>
-										<th class="reports-table__header">{t('dashboard.surveyorUnit', $language)}</th>
-										<th class="reports-table__header">{t('dashboard.indications', $language)}</th>
-										<th class="reports-table__header reports-table__header--status">{t('dashboard.status', $language)}</th>
+										<th class="daily-stats-table__header">Date</th>
+										<th class="daily-stats-table__header">Distance (km)</th>
+										<th class="daily-stats-table__header">Coverage (%)</th>
+										<th class="daily-stats-table__header">Final Reports</th>
+										<th class="daily-stats-table__header">Draft Reports</th>
+										<th class="daily-stats-table__header">LISA Count</th>
+										<th class="daily-stats-table__header">Vehicles</th>
 									</tr>
 								</thead>
 								<tbody>
 									{#if reportsLoading}
-										{#each Array(5) as _, i}
-											<tr class="reports-table__row reports-table__row--loading">
-												<td class="reports-table__cell reports-table__cell--primary"><div class="skeleton-text"></div></td>
-												<td class="reports-table__cell"><div class="skeleton-text"></div></td>
-												<td class="reports-table__cell"><div class="skeleton-text"></div></td>
-												<td class="reports-table__cell"><div class="skeleton-text"></div></td>
-												<td class="reports-table__cell"><div class="skeleton-text"></div></td>
-												<td class="reports-table__cell"><div class="skeleton-text"></div></td>
-												<td class="reports-table__cell">
-													<div class="skeleton-text skeleton-text--badge"></div>
-												</td>
+										{#each Array(7) as _, i}
+											<tr class="daily-stats-table__row daily-stats-table__row--loading">
+												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
+												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
+												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
+												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
+												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
+												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
+												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
 											</tr>
 										{/each}
-									{:else if recentReports.length > 0}
-										{#each recentReports.slice(0, 10) as report}
-											<tr class="reports-table__row">
-												<td class="reports-table__cell reports-table__cell--primary">
-													<!-- <a href="/reports/{report.id}" class="reports-table__link"> -->
-														{report.report_title}
-													<!-- </a> -->
-												</td>
-												<td class="reports-table__cell reports-table__cell--primary">
-													<!-- <a href="/reports/{report.id}" class="reports-table__link"> -->
-														{report.report_name}
-													<!-- </a> -->
-												</td>
-												<td class="reports-table__cell">
-													<span class="reports-table__date">
-														{formatDate(report.report_date)}
-													</span>
-												</td>
-												<td class="reports-table__cell">
-													{#if report.linear_asset_covered_length}
-														<span class="reports-table__metric">
-															{Number(report.linear_asset_covered_length).toFixed(2)} km
+									{:else if dailyStats.length > 0}
+										{#each dailyStats as stat}
+											{#if stat.isWeeklySummary}
+												<tr class="daily-stats-table__row daily-stats-table__row--weekly-summary">
+													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
+														<strong>{stat.weekLabel}</strong>
+													</td>
+													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
+														<strong>{stat.totalDistance.toFixed(1)} km</strong>
+														<div class="daily-stats-table__breakdown">
+															<span class="breakdown-final">{stat.finalDistance.toFixed(1)} final</span>
+															<span class="breakdown-draft">{stat.draftDistance.toFixed(1)} draft</span>
+														</div>
+													</td>
+													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
+														<strong>{stat.avgCoverage.toFixed(1)}%</strong>
+													</td>
+													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
+														<strong>{stat.finalReports}</strong>
+													</td>
+													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
+														<strong>{stat.draftReports}</strong>
+													</td>
+													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
+														<strong>{stat.totalLisas}</strong>
+													</td>
+													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
+														<span class="vehicles-summary">{stat.vehiclesSummary}</span>
+													</td>
+												</tr>
+											{:else}
+												<tr class="daily-stats-table__row">
+													<td class="daily-stats-table__cell">
+														<span class="daily-stats-table__date">
+															{formatDate(stat.date)}
 														</span>
-													{:else}
-														<span class="reports-table__na">—</span>
-													{/if}
-												</td>
-												<td class="reports-table__cell">
-													<span class="reports-table__unit">
-														{report.surveyor_unit_desc || '—'}
-													</span>
-												</td>
-												<td class="reports-table__cell">
-													<span class="reports-table__metric">
-														{report.indicationsCount || 0}
-													</span>
-												</td>
-												<td class="reports-table__cell">
-													<span class="status-badge status-badge--{report.report_final ? 'success' : 'warning'}">
-														{report.report_final ? 'Final' : 'Draft'}
-													</span>
-												</td>
-											</tr>
+														<span class="daily-stats-table__weekday">
+															{stat.weekday}
+														</span>
+													</td>
+													<td class="daily-stats-table__cell">
+														<span class="daily-stats-table__metric">
+															{stat.totalDistance.toFixed(1)}
+														</span>
+														{#if stat.finalDistance !== stat.totalDistance}
+															<div class="daily-stats-table__breakdown">
+																<span class="breakdown-final">{stat.finalDistance.toFixed(1)} final</span>
+																<span class="breakdown-draft">{stat.draftDistance.toFixed(1)} draft</span>
+															</div>
+														{/if}
+													</td>
+													<td class="daily-stats-table__cell">
+														<span class="daily-stats-table__metric daily-stats-table__metric--{stat.avgCoverage >= 80 ? 'good' : stat.avgCoverage >= 60 ? 'medium' : 'low'}">
+															{stat.avgCoverage.toFixed(1)}%
+														</span>
+													</td>
+													<td class="daily-stats-table__cell">
+														<span class="daily-stats-table__count daily-stats-table__count--final">
+															{stat.finalReports}
+														</span>
+													</td>
+													<td class="daily-stats-table__cell">
+														<span class="daily-stats-table__count daily-stats-table__count--draft">
+															{stat.draftReports}
+														</span>
+													</td>
+													<td class="daily-stats-table__cell">
+														<span class="daily-stats-table__metric">
+															{stat.totalLisas}
+														</span>
+													</td>
+													<td class="daily-stats-table__cell">
+														<div class="vehicles-list">
+															{#each stat.vehicles as vehicle}
+																<div class="vehicle-badge">
+																	<div class="vehicle-badge__header">{vehicle.name}: {vehicle.total.toFixed(1)}km</div>
+																	{#if vehicle.final > 0 || vehicle.draft > 0}
+																		<div class="vehicle-badge__breakdown">
+																			<span class="breakdown-final">{vehicle.final.toFixed(1)} final</span>
+																			<span class="breakdown-draft">{vehicle.draft.toFixed(1)} draft</span>
+																		</div>
+																	{/if}
+																</div>
+															{/each}
+														</div>
+													</td>
+												</tr>
+											{/if}
 										{/each}
 									{:else}
-										<tr class="reports-table__row">
-											<td class="reports-table__cell reports-table__cell--empty" colspan="6">
-												{t('dashboard.noReportsFound', $language)}
+										<tr class="daily-stats-table__row">
+											<td class="daily-stats-table__cell daily-stats-table__cell--empty" colspan="7">
+												No data available for the selected period
 											</td>
 										</tr>
 									{/if}
