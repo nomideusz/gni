@@ -173,9 +173,12 @@
 						finalReports: weeklyData.finalReports,
 						draftReports: weeklyData.draftReports,
 						totalLisas: weeklyData.totalLisas,
-						vehiclesSummary: Array.from(weeklyData.vehicles.entries())
-							.map(([name, data]) => `${name}: ${data.total.toFixed(1)}km (${data.final.toFixed(1)} final, ${data.draft.toFixed(1)} draft)`)
-							.join(', ')
+						vehicles: Array.from(weeklyData.vehicles.entries()).map(([name, data]) => ({
+							name: name.replace('GNI Car #', 'Car '),
+							total: data.total,
+							final: data.final,
+							draft: data.draft
+						}))
 					});
 				}
 				
@@ -306,9 +309,12 @@
 				finalReports: weeklyData.finalReports,
 				draftReports: weeklyData.draftReports,
 				totalLisas: weeklyData.totalLisas,
-				vehiclesSummary: Array.from(weeklyData.vehicles.entries())
-					.map(([name, data]) => `${name}: ${data.total.toFixed(1)}km (${data.final.toFixed(1)} final, ${data.draft.toFixed(1)} draft)`)
-					.join(', ')
+				vehicles: Array.from(weeklyData.vehicles.entries()).map(([name, data]) => ({
+					name: name.replace('GNI Car #', 'Car '),
+					total: data.total,
+					final: data.final,
+					draft: data.draft
+				}))
 			});
 		}
 		
@@ -751,7 +757,19 @@
 														<strong>{stat.totalLisas}</strong>
 													</td>
 													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
-														<span class="vehicles-summary">{stat.vehiclesSummary}</span>
+														<div class="vehicles-list">
+															{#each stat.vehicles as vehicle}
+																<div class="vehicle-badge vehicle-badge--summary">
+																	<div class="vehicle-badge__header">{vehicle.name}: {vehicle.total.toFixed(1)}km</div>
+																	{#if vehicle.final > 0 || vehicle.draft > 0}
+																		<div class="vehicle-badge__breakdown">
+																			<span class="breakdown-final">{vehicle.final.toFixed(1)} final</span>
+																			<span class="breakdown-draft">{vehicle.draft.toFixed(1)} draft</span>
+																		</div>
+																	{/if}
+																</div>
+															{/each}
+														</div>
 													</td>
 												</tr>
 											{:else}
