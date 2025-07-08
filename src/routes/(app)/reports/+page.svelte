@@ -323,7 +323,7 @@
 							<table class="table__element">
 								<thead>
 									<tr>
-										<th class="table__header table__header--sortable" onclick={() => handleSort('report_name')}>
+										<th class="table__header table__header--sortable table__header--report-name" onclick={() => handleSort('report_name')}>
 											<div class="sort-header">
 												<span>Report Name</span>
 												{#if sortColumn === 'report_name'}
@@ -335,7 +335,7 @@
 												{/if}
 											</div>
 										</th>
-										<th class="table__header table__header--sortable" onclick={() => handleSort('report_title')}>
+										<th class="table__header table__header--sortable table__header--report-title" onclick={() => handleSort('report_title')}>
 											<div class="sort-header">
 												<span>Report Title</span>
 												{#if sortColumn === 'report_title'}
@@ -479,8 +479,12 @@
 									{:else if displayedReports.length > 0}
 										{#each displayedReports as report}
 											<tr class="table__row">
-												<td class="table__cell">{report.report_name}</td>
-												<td class="table__cell">{report.report_title}</td>
+												<td class="table__cell table__cell--report-name" title={report.report_name}>
+													<span class="table__cell-content">{report.report_name}</span>
+												</td>
+												<td class="table__cell table__cell--report-title" title={report.report_title}>
+													<span class="table__cell-content">{report.report_title}</span>
+												</td>
 												<td class="table__cell">{formatDate(report.report_date)}</td>
 												<td class="table__cell">{report.linear_asset_covered_length ? `${Number(report.linear_asset_covered_length).toFixed(2)} km` : 'N/A'}</td>
 												<td class="table__cell">{report.linear_asset_length ? `${Number(report.linear_asset_length).toFixed(2)} km` : 'N/A'}</td>
@@ -699,7 +703,7 @@
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.85rem;
-		min-width: 1200px;
+		min-width: 1500px; /* Increased to accommodate wider report columns */
 	}
 
 	.table__header {
@@ -715,6 +719,19 @@
 		min-width: 120px;
 		max-width: 200px;
 		position: relative;
+	}
+
+	/* Wider columns for report name and title */
+	.table__header--report-name {
+		min-width: 200px;
+		max-width: 300px;
+		width: 250px;
+	}
+
+	.table__header--report-title {
+		min-width: 300px;
+		max-width: 500px;
+		width: 400px;
 	}
 
 	.table__row {
@@ -763,6 +780,32 @@
 		text-align: center;
 		color: var(--text-secondary);
 		font-style: italic;
+	}
+
+	/* Specific styling for report name and title cells */
+	.table__cell--report-name {
+		min-width: 200px;
+		max-width: 300px;
+		width: 250px;
+		position: relative;
+		cursor: help;
+	}
+
+	.table__cell--report-title {
+		min-width: 300px;
+		max-width: 500px;
+		width: 400px;
+		position: relative;
+		cursor: help;
+	}
+
+	.table__cell-content {
+		display: block;
+		width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		line-height: 1.4;
 	}
 
 	/* Status container styling */
