@@ -68,11 +68,7 @@
     margin-bottom: 2rem;
 }
 
-/* Primary metrics - 3 columns for main stats */
-.dashboard__metrics--primary {
-    grid-template-columns: repeat(3, 1fr);
-    margin-bottom: 1.5rem;
-}
+
 
 /* Stats metrics - 3 columns for report counts */
 .dashboard__metrics--stats {
@@ -98,11 +94,7 @@
     border-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Primary metric card */
-.metric-card--primary {
-    grid-column: span 1;
-    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(59, 130, 246, 0.05) 100%);
-}
+
 
 /* Compact metric cards */
 .metric-card--compact {
@@ -132,11 +124,7 @@
     transition: all 0.3s ease;
 }
 
-.metric-card__icon--primary {
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-    color: white;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
+
 
 .metric-card__icon--compact {
     width: 40px;
@@ -444,30 +432,15 @@
 /*---------------------------------------*/
 
 @media (max-width: 1200px) {
-    .dashboard__metrics--primary {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
     .dashboard__metrics--stats {
         grid-template-columns: repeat(2, 1fr);
-    }
-    
-    /* Make the primary card span 2 columns on medium screens */
-    .metric-card--primary {
-        grid-column: span 2;
     }
 }
 
 @media (max-width: 768px) {
-    .dashboard__metrics--primary,
     .dashboard__metrics--stats {
         grid-template-columns: 1fr;
         gap: 1rem;
-    }
-    
-    /* Reset grid span on mobile */
-    .metric-card--primary {
-        grid-column: span 1;
     }
     
     .metric-card__value {
