@@ -392,6 +392,54 @@
 }
 
 /*---------------------------------------*/
+/* METRIC CARD STAT LABELS               */
+/*---------------------------------------*/
+
+.metric-card__stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    color: var(--text-secondary);
+    margin-right: 0.25rem;
+}
+
+.metric-card__stat-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.metric-card__stat-value--draft {
+    color: var(--warning);
+}
+
+.metric-card__stat--full {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-primary);
+}
+
+.metric-card__stat--small {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* Adjust metric card footer layout */
+.metric-card__footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.metric-card__stat {
+    width: 100%;
+    justify-content: space-between;
+}
+
+/*---------------------------------------*/
 /* RESPONSIVE DESIGN                     */
 /*---------------------------------------*/
 

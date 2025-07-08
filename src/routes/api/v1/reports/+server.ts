@@ -194,6 +194,13 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             (r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true')
         );
         
+        // ======= DRAFT REPORTS WITH SURVEYS FOR SEPARATE TRACKING =======
+        // Track draft reports separately to show progress before finalization
+        const draftReportsWithSurveys = processedItems.filter((r: any) => 
+            r.has_surveys && 
+            !(r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true')
+        );
+        
         // Count reports by status
         const reportStatusCount = {
             all: processedItems.length,
@@ -201,7 +208,8 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             final: processedItems.filter((r: any) => 
                 r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true'
             ).length,
-            finalWithSurveys: calculationReports.length
+            finalWithSurveys: calculationReports.length,
+            draftWithSurveys: draftReportsWithSurveys.length
         };
         
         // Calculate total distance (only from final reports with surveys)
@@ -219,6 +227,27 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             }, 0);
             
         const car2Distance = calculationReports
+            .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #2')
+            .reduce((sum: number, report: any) => {
+                const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
+                return sum + distance;
+            }, 0);
+        
+        // Calculate total distance for draft reports with surveys
+        const totalDraftDistance = draftReportsWithSurveys.reduce((sum: number, report: any) => {
+            const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
+            return sum + distance;
+        }, 0);
+        
+        // Distance for specific vehicles (from draft reports with surveys)
+        const car1DraftDistance = draftReportsWithSurveys
+            .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #1')
+            .reduce((sum: number, report: any) => {
+                const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
+                return sum + distance;
+            }, 0);
+            
+        const car2DraftDistance = draftReportsWithSurveys
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #2')
             .reduce((sum: number, report: any) => {
                 const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
@@ -274,6 +303,9 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             totalDistance,
             car1Distance,
             car2Distance,
+            totalDraftDistance,
+            car1DraftDistance,
+            car2DraftDistance,
             totalIndications: totalUniqueIndications,
             totalRawIndications: calculationReports.reduce((sum, item: any) => sum + (item.indicationsCount || 0), 0),
             car1LisaCount: uniqueCar1Indications,

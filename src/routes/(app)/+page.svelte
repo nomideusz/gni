@@ -41,6 +41,9 @@
 	let totalDistance = $state(0);
 	let car1Distance = $state(0);
 	let car2Distance = $state(0);
+	let totalDraftDistance = $state(0);
+	let car1DraftDistance = $state(0);
+	let car2DraftDistance = $state(0);
 	let totalIndications = $state(0);
 	let car1LisaCount = $state(0);
 	let car2LisaCount = $state(0);
@@ -60,7 +63,13 @@
 			stats: {
 				totalReports,
 				finalReports,
-				draftReports
+				draftReports,
+				totalDistance,
+				totalDraftDistance,
+				car1Distance,
+				car1DraftDistance,
+				car2Distance,
+				car2DraftDistance
 			},
 			syncInfo,
 			error,
@@ -115,6 +124,9 @@
 						totalDistance = dashData.stats.totalDistance || 0;
 						car1Distance = dashData.stats.car1Distance || 0;
 						car2Distance = dashData.stats.car2Distance || 0;
+						totalDraftDistance = dashData.stats.totalDraftDistance || 0;
+						car1DraftDistance = dashData.stats.car1DraftDistance || 0;
+						car2DraftDistance = dashData.stats.car2DraftDistance || 0;
 						totalIndications = dashData.stats.totalIndications || 0;
 						car1LisaCount = dashData.stats.car1LisaCount || 0;
 						car2LisaCount = dashData.stats.car2LisaCount || 0;
@@ -218,7 +230,7 @@
 						{#if statsLoading}
 							<div class="skeleton-text skeleton-text--large"></div>
 						{:else}
-							{totalDistance.toFixed(2)} <span class="metric-card__unit">km</span>
+							{(totalDistance + totalDraftDistance).toFixed(2)} <span class="metric-card__unit">km</span>
 						{/if}
 					</div>
 					<div class="metric-card__footer">
@@ -226,11 +238,16 @@
 							<div class="skeleton-text skeleton-text--thin"></div>
 						{:else}
 							<div class="metric-card__stat">
-								<Activity size={14} />
-								<span>{totalIndications} {t('dashboard.indications', $language)}</span>
+								<span class="metric-card__stat-label">Final:</span>
+								<span class="metric-card__stat-value">{totalDistance.toFixed(2)} km</span>
 							</div>
 							<div class="metric-card__stat">
-								<span>{totalLisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
+								<span class="metric-card__stat-label">Draft:</span>
+								<span class="metric-card__stat-value metric-card__stat-value--draft">{totalDraftDistance.toFixed(2)} km</span>
+							</div>
+							<div class="metric-card__stat metric-card__stat--full">
+								<Activity size={14} />
+								<span>{totalIndications} {t('dashboard.indications', $language)}</span>
 							</div>
 						{/if}
 					</div>
@@ -248,7 +265,7 @@
 						{#if statsLoading}
 							<div class="skeleton-text skeleton-text--large"></div>
 						{:else}
-							{car1Distance.toFixed(2)} <span class="metric-card__unit">km</span>
+							{(car1Distance + car1DraftDistance).toFixed(2)} <span class="metric-card__unit">km</span>
 						{/if}
 					</div>
 					<div class="metric-card__footer">
@@ -256,10 +273,15 @@
 							<div class="skeleton-text skeleton-text--thin"></div>
 						{:else}
 							<div class="metric-card__stat">
-								<span>{car1LisaCount} {t('dashboard.lisa', $language)}</span>
+								<span class="metric-card__stat-label">Final:</span>
+								<span class="metric-card__stat-value">{car1Distance.toFixed(2)} km</span>
 							</div>
 							<div class="metric-card__stat">
-								<span>{car1LisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
+								<span class="metric-card__stat-label">Draft:</span>
+								<span class="metric-card__stat-value metric-card__stat-value--draft">{car1DraftDistance.toFixed(2)} km</span>
+							</div>
+							<div class="metric-card__stat metric-card__stat--small">
+								<span>{car1LisaCount} LISA</span>
 							</div>
 						{/if}
 					</div>
@@ -276,7 +298,7 @@
 						{#if statsLoading}
 							<div class="skeleton-text skeleton-text--large"></div>
 						{:else}
-							{car2Distance.toFixed(2)} <span class="metric-card__unit">km</span>
+							{(car2Distance + car2DraftDistance).toFixed(2)} <span class="metric-card__unit">km</span>
 						{/if}
 					</div>
 					<div class="metric-card__footer">
@@ -284,10 +306,15 @@
 							<div class="skeleton-text skeleton-text--thin"></div>
 						{:else}
 							<div class="metric-card__stat">
-								<span>{car2LisaCount} {t('dashboard.lisa', $language)}</span>
+								<span class="metric-card__stat-label">Final:</span>
+								<span class="metric-card__stat-value">{car2Distance.toFixed(2)} km</span>
 							</div>
 							<div class="metric-card__stat">
-								<span>{car2LisaPerKm.toFixed(2)} {t('dashboard.lisaPerKm', $language)}</span>
+								<span class="metric-card__stat-label">Draft:</span>
+								<span class="metric-card__stat-value metric-card__stat-value--draft">{car2DraftDistance.toFixed(2)} km</span>
+							</div>
+							<div class="metric-card__stat metric-card__stat--small">
+								<span>{car2LisaCount} LISA</span>
 							</div>
 						{/if}
 					</div>

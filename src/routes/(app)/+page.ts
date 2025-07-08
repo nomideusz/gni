@@ -36,10 +36,14 @@ export interface ApiResponseStats {
         withSurveys: number;
         final: number;
         finalWithSurveys: number;
+        draftWithSurveys: number;
     };
     totalDistance: number;
     car1Distance: number;
     car2Distance: number;
+    totalDraftDistance: number;
+    car1DraftDistance: number;
+    car2DraftDistance: number;
     totalIndications: number;
     car1LisaCount: number;
     car2LisaCount: number;
@@ -63,6 +67,9 @@ export interface DashboardData {
         totalDistance: number;
         car1Distance: number;
         car2Distance: number;
+        totalDraftDistance: number;
+        car1DraftDistance: number;
+        car2DraftDistance: number;
         totalIndications: number;
         car1LisaCount: number;
         car2LisaCount: number;
