@@ -703,7 +703,7 @@
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.85rem;
-		min-width: 1500px; /* Increased to accommodate wider report columns */
+		min-width: 1480px; /* Optimized for narrow report names and wider titles */
 	}
 
 	.table__header {
@@ -721,17 +721,17 @@
 		position: relative;
 	}
 
-	/* Wider columns for report name and title */
+	/* Optimized columns for report name (short codes) and title */
 	.table__header--report-name {
-		min-width: 200px;
-		max-width: 300px;
-		width: 250px;
+		min-width: 120px;
+		max-width: 150px;
+		width: 130px;
 	}
 
 	.table__header--report-title {
-		min-width: 300px;
-		max-width: 500px;
-		width: 400px;
+		min-width: 350px;
+		max-width: 600px;
+		width: 500px;
 	}
 
 	.table__row {
@@ -784,17 +784,17 @@
 
 	/* Specific styling for report name and title cells */
 	.table__cell--report-name {
-		min-width: 200px;
-		max-width: 300px;
-		width: 250px;
+		min-width: 120px;
+		max-width: 150px;
+		width: 130px;
 		position: relative;
 		cursor: help;
 	}
 
 	.table__cell--report-title {
-		min-width: 300px;
-		max-width: 500px;
-		width: 400px;
+		min-width: 350px;
+		max-width: 600px;
+		width: 500px;
 		position: relative;
 		cursor: help;
 	}
