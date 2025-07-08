@@ -109,10 +109,10 @@ async function calculateFromDrivingSessionsBasic(pb: any) {
             totalWorkHours += AVERAGE_SESSION_HOURS;
             
             // Add to vehicle-specific counts
-            if (vehicle.includes('Jimny')) {
+            if (vehicle.includes('Car #1')) {
                 jimnyWorkHours += AVERAGE_SESSION_HOURS;
                 jimnySessionCount++;
-            } else if (vehicle.includes('Torres')) {
+            } else if (vehicle.includes('Car #2')) {
                 torresWorkHours += AVERAGE_SESSION_HOURS;
                 torresSessionCount++;
             }
@@ -158,8 +158,8 @@ async function calculateFromGasReports(pb: any) {
         
         // Set fixed values per report
         const HOURS_PER_REPORT = 8;
-        const JIMNY_RATIO = 0.6; // 60% Jimny
-        const TORRES_RATIO = 0.4; // 40% Torres
+        const JIMNY_RATIO = 0.6; // 60% GNI Car #1
+        const TORRES_RATIO = 0.4; // 40% GNI Car #2
         
         const totalReports = reportsResult.items.length;
         const totalWorkHours = totalReports * HOURS_PER_REPORT;
@@ -178,8 +178,8 @@ async function calculateFromGasReports(pb: any) {
             jimnyWorkHours: parseFloat(formattedJimny),
             torresWorkHours: parseFloat(formattedTorres),
             totalSessions: totalReports * 2, // Assumption: 2 sessions per report
-            jimnySessionCount: Math.round(totalReports * 1.2), // 1.2 Jimny sessions per report
-            torresSessionCount: Math.round(totalReports * 0.8), // 0.8 Torres sessions per report
+            jimnySessionCount: Math.round(totalReports * 1.2), // 1.2 GNI Car #1 sessions per report
+            torresSessionCount: Math.round(totalReports * 0.8), // 0.8 GNI Car #2 sessions per report
             totalBreadcrumbs: 0,
             reportCount: totalReports,
             updated: new Date().toISOString()
