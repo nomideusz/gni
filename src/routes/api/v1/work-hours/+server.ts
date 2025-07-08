@@ -89,9 +89,10 @@ async function calculateFromDrivingSessionsBasic(pb: any) {
     let totalSessions = 0;
     
     try {
-        // Get all driving sessions with minimal fields
+        // Get all driving sessions with minimal fields (only data after July 1st, 2025)
         const sessionsResult = await pb.collection('driving_sessions').getList(1, 100, {
-            fields: 'id,surveyor_unit_desc',
+            fields: 'id,surveyor_unit_desc,created',
+            filter: 'created >= "2025-07-01"',
             sort: '-created'
         });
         
@@ -150,10 +151,11 @@ async function calculateFromGasReports(pb: any) {
     console.log('[API] Calculating work hours from gas reports collection');
     
     try {
-        // Get reports with their driving sessions
+        // Get reports with their driving sessions (only data after July 1st, 2025)
         const reportsResult = await pb.collection('gas_reports').getList(1, 50, {
+            filter: 'report_date >= "2025-07-01"',
             sort: '-created',
-            fields: 'id,report_name'
+            fields: 'id,report_name,report_date'
         });
         
         // Set fixed values per report - equal treatment for all cars

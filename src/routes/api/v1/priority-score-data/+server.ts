@@ -31,21 +31,23 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         
         console.log('API: Priority Score Query parameters:', { limit, page, sort, customer, report });
         
-        // Prepare filtering
-        let filter = '';
+        // Prepare filtering (only data after July 1st, 2025)
+        let filter = 'created >= "2025-07-01"';
+        
         if (customer) {
-            filter += `customer_name~"${customer}"`;
+            filter += ` && customer_name~"${customer}"`;
         }
         
         if (report) {
-            if (filter) filter += ' && ';
-            filter += `report_name~"${report}"`;
+            filter += ` && report_name~"${report}"`;
         }
         
         // Check if the collection exists
         let collectionExists = true;
         try {
-            await pb.collection('priority_score_data').getList(1, 1);
+            await pb.collection('priority_score_data').getList(1, 1, {
+                filter: 'created >= "2025-07-01"'
+            });
         } catch (error) {
             console.error('Priority scores collection check error:', error);
             // Likely collection doesn't exist yet

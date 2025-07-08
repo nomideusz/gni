@@ -33,13 +33,21 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         
         console.log('API: Query parameters:', { limit, page, sort, finalOnly, includeUnitDesc, withSurveys });
         
-        // Prepare filtering for numeric report_final field (0 or 1)
-        const filter = finalOnly ? 'report_final=1' : '';
+        // Prepare filtering with date constraint (only data after July 1st, 2025)
+        const dateFilter = 'report_date >= "2025-07-01"';
+        let filter = dateFilter;
         
-        // Check total number of reports
-        const countAll = await pb.collection('gas_reports').getList(1, 1);
+        // Add final report filter if requested
+        if (finalOnly) {
+            filter += ' && report_final=1';
+        }
+        
+        // Check total number of reports (with date filter)
+        const countAll = await pb.collection('gas_reports').getList(1, 1, {
+            filter: dateFilter
+        });
         const countFinal = finalOnly ? await pb.collection('gas_reports').getList(1, 1, {
-            filter: 'report_final=1'
+            filter: dateFilter + ' && report_final=1'
         }) : { totalItems: countAll.totalItems };
         
         // Use expand to get related driving sessions and indications
@@ -60,10 +68,10 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             expand: expandParam
         };
         
-        // If no final reports but there are any reports, return all
+        // If no final reports but there are any reports, return all (but still with date filter)
         const useAllReports = finalOnly && countFinal.totalItems === 0 && countAll.totalItems > 0;
         if (useAllReports) {
-            queryOptions.filter = '';
+            queryOptions.filter = dateFilter;
         }
         
         const result = await pb.collection('gas_reports').getList(page, limit, queryOptions);

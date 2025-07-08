@@ -25,11 +25,19 @@ export async function GET({ locals }: RequestEvent) {
         
         // First, try to get sync info from gas_reports collection (most accurate)
         try {
-            // Get the most recent report with a last_sync entry
-            const syncReports = await pb.collection('gas_reports').getList(1, 1, {
+            // Get the most recent report with a last_sync entry (prioritize data after July 1st, 2025)
+            let syncReports = await pb.collection('gas_reports').getList(1, 1, {
                 sort: '-last_sync',
-                filter: 'last_sync != ""'  // Only get reports with a last_sync value
+                filter: 'last_sync != "" && report_date >= "2025-07-01"'  // Only get reports with a last_sync value after July 1st
             });
+            
+            // If no recent sync data found, fall back to any sync data for operational continuity
+            if (syncReports.items.length === 0) {
+                syncReports = await pb.collection('gas_reports').getList(1, 1, {
+                    sort: '-last_sync',
+                    filter: 'last_sync != ""'  // Get any reports with sync data
+                });
+            }
             
             if (syncReports.items.length > 0) {
                 const mostRecentReport = syncReports.items[0];

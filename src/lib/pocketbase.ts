@@ -62,7 +62,7 @@ export interface GasReport extends RecordModel {
 // API functions for gas reports with better error handling
 export const gasReportsApi = {
   /**
-   * Get all gas reports
+   * Get all gas reports (only data after July 1st, 2025)
    * @param sortField Optional field to sort by (default: -report_date)
    * @returns Promise with array of gas reports
    */
@@ -75,6 +75,7 @@ export const gasReportsApi = {
     try {
       return await pb.collection('gas_reports').getFullList<GasReport>({
         sort: sortField,
+        filter: 'report_date >= "2025-07-01"'
       });
     } catch (error) {
       console.error('Error fetching gas reports:', error);
@@ -102,7 +103,7 @@ export const gasReportsApi = {
   },
 
   /**
-   * Get filtered gas reports
+   * Get filtered gas reports (only data after July 1st, 2025)
    * @param filter Filter query
    * @param page Page number (default: 1)
    * @param perPage Items per page (default: 50)
@@ -115,8 +116,12 @@ export const gasReportsApi = {
     }
     
     try {
+      // Combine date filter with user provided filter
+      const dateFilter = 'report_date >= "2025-07-01"';
+      const combinedFilter = filter ? `${dateFilter} && (${filter})` : dateFilter;
+      
       return await pb.collection('gas_reports').getList<GasReport>(page, perPage, {
-        filter,
+        filter: combinedFilter,
       });
     } catch (error) {
       console.error('Error fetching filtered gas reports:', error);
