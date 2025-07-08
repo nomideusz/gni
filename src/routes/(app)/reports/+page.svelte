@@ -147,10 +147,15 @@
 		}, 0);
 	});
 
-	// Calculate total coverage
+	// Calculate total coverage (from final reports only)
 	const totalCoverage = $derived(() => {
-		const totalAssets = reports.reduce((sum, report) => sum + (report.linear_asset_length || 0), 0);
-		const coveredAssets = reports.reduce((sum, report) => sum + (report.linear_asset_covered_length || 0), 0);
+		const finalReportsOnly = reports.filter(report => 
+			report.report_final === true || 
+			report.report_final === 1 || 
+			report.report_final === '1'
+		);
+		const totalAssets = finalReportsOnly.reduce((sum, report) => sum + (report.linear_asset_length || 0), 0);
+		const coveredAssets = finalReportsOnly.reduce((sum, report) => sum + (report.linear_asset_covered_length || 0), 0);
 		return totalAssets > 0 ? (coveredAssets / totalAssets) * 100 : 0;
 	});
 
@@ -183,6 +188,7 @@
 				totalReports = result.stats.totalReports;
 				finalReports = result.stats.reportCounts.finalWithSurveys;
 				draftReports = totalReports - finalReports;
+				// totalIndications already comes from final reports only (calculation reports)
 				totalLISAs = result.stats.totalIndications || 0;
 				
 				// Fetch sync info from centralized API
@@ -287,14 +293,14 @@
 						<div class="stats-metric">
 							<div class="stats-content">
 								<div class="stats-value">{totalCoverage().toFixed(1)}%</div>
-								<div class="stats-label">Asset Coverage</div>
+								<div class="stats-label">Coverage (Final)</div>
 							</div>
 						</div>
 						
 						<div class="stats-metric">
 							<div class="stats-content">
 								<div class="stats-value">{totalLISAs}</div>
-								<div class="stats-label">Total LISAs</div>
+								<div class="stats-label">LISAs (Final)</div>
 							</div>
 						</div>
 					</div>
