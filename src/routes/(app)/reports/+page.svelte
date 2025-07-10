@@ -5,7 +5,7 @@
 	import { tick } from 'svelte';
 	import PageTemplate from '$lib/components/PageTemplate.svelte';
 	import SectionContainer from '$lib/components/SectionContainer.svelte';
-	import { ChevronUp, ChevronDown, Database, Clock, CheckCircle, AlertTriangle } from 'lucide-svelte';
+	import { ChevronUp, ChevronDown, Database, Clock, CheckCircle, AlertTriangle, Download, RefreshCw } from 'lucide-svelte';
 
 	// Define Report interface based on the API response
 	interface Report {
@@ -13,9 +13,9 @@
 		report_name: string;
 		report_title: string;
 		report_date: string;
-		linear_asset_length: number;
-		linear_asset_covered_length: number;
-		linear_asset_coverage: number;
+		dist_mains_length: number;
+		dist_mains_covered_length: number;
+		dist_mains_coverage: number;
 		surveyor_unit_desc?: string;
 		report_final: boolean | number | string;
 		indicationsCount?: number;
@@ -48,6 +48,10 @@
 	// Sorting state
 	let sortColumn = $state('report_date');
 	let sortDirection = $state('desc'); // 'asc' or 'desc'
+
+	// Filter state
+	let includeDraftReports = $state(false); // Default to false (only final reports)
+	let searchQuery = $state(''); // Search query
 
 	// Function to force scrollbar refresh - modified to be more reliable
 	async function refreshScrollbars() {
@@ -88,7 +92,31 @@
 
 	// Sort the reports based on current sort column and direction
 	function sortReports() {
-		displayedReports = [...reports].sort((a, b) => {
+		// Filter reports based on the toggle state and search query
+		let filteredReports = [...reports];
+		
+		// Filter by draft/final status
+		if (!includeDraftReports) {
+			// Only show final reports
+			filteredReports = filteredReports.filter(report => 
+				report.report_final === true || 
+				report.report_final === 1 || 
+				report.report_final === '1'
+			);
+		}
+		
+		// Filter by search query
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase();
+			filteredReports = filteredReports.filter(report => 
+				report.report_name?.toLowerCase().includes(query) ||
+				report.report_title?.toLowerCase().includes(query) ||
+				report.surveyor_unit_desc?.toLowerCase().includes(query) ||
+				report.report_date?.toLowerCase().includes(query)
+			);
+		}
+		
+		displayedReports = filteredReports.sort((a, b) => {
 			let valueA = a[sortColumn];
 			let valueB = b[sortColumn];
 
@@ -99,9 +127,9 @@
 			}
 			
 			// Special case for numeric fields
-			if (sortColumn === 'linear_asset_length' || 
-                sortColumn === 'linear_asset_covered_length' || 
-                sortColumn === 'linear_asset_coverage' ||
+			if (sortColumn === 'dist_mains_length' || 
+                sortColumn === 'dist_mains_covered_length' || 
+                sortColumn === 'dist_mains_coverage' ||
                 sortColumn === 'indicationsCount' || 
                 sortColumn === 'total_duration_seconds' ||
                 sortColumn === 'total_distance_km') {
@@ -140,6 +168,75 @@
 		sortReports();
 	}
 
+	// Export functionality
+	async function exportToExcel() {
+		try {
+			// Dynamically import the xlsx library
+			const XLSX = await import('xlsx');
+			
+			// Prepare data for export (using currently displayed/filtered reports)
+			const exportData = displayedReports.map(report => ({
+				'Report Name': report.report_name || '',
+				'Report Title': report.report_title || '',
+				'Report Date': formatDate(report.report_date) || '',
+				'Assets Covered (km)': report.dist_mains_covered_length ? Number(report.dist_mains_covered_length).toFixed(2) : '',
+				'Total Assets (km)': report.dist_mains_length ? Number(report.dist_mains_length).toFixed(2) : '',
+				'Coverage %': report.dist_mains_coverage ? (Number(report.dist_mains_coverage) * 100).toFixed(1) + '%' : '',
+				'Duration': report.formatted_duration || '',
+				'Survey Distance (km)': report.total_distance_km || '',
+				'Surveyor Unit': report.surveyor_unit_desc || '',
+				'LISAs': report.indicationsCount || 0,
+				'Status': (report.report_final === true || report.report_final === 1 || report.report_final === '1') ? 'Final' : 'Draft'
+			}));
+
+			// Create workbook and worksheet
+			const wb = XLSX.utils.book_new();
+			const ws = XLSX.utils.json_to_sheet(exportData);
+
+			// Set column widths for better readability
+			const colWidths = [
+				{ wch: 15 }, // Report Name
+				{ wch: 40 }, // Report Title
+				{ wch: 12 }, // Report Date
+				{ wch: 16 }, // Assets Covered
+				{ wch: 16 }, // Total Assets
+				{ wch: 12 }, // Coverage %
+				{ wch: 10 }, // Duration
+				{ wch: 18 }, // Survey Distance
+				{ wch: 15 }, // Surveyor Unit
+				{ wch: 8 },  // LISAs
+				{ wch: 8 }   // Status
+			];
+			ws['!cols'] = colWidths;
+
+			// Add worksheet to workbook
+			XLSX.utils.book_append_sheet(wb, ws, 'Reports');
+
+			// Generate filename with current date and filter info
+			const now = new Date();
+			const timestamp = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+			const filterInfo = includeDraftReports ? 'All' : 'Final';
+			const searchInfo = searchQuery ? `_Search-${searchQuery.replace(/[^a-zA-Z0-9]/g, '')}` : '';
+			const filename = `GNI_Reports_${filterInfo}${searchInfo}_${timestamp}.xlsx`;
+
+			// Write and download file
+			XLSX.writeFile(wb, filename);
+			
+			console.log(`Exported ${exportData.length} reports to ${filename}`);
+		} catch (error) {
+			console.error('Error exporting to Excel:', error);
+			alert('Error exporting to Excel. Please try again.');
+		}
+	}
+
+	// Reactive statement to re-sort when filters change
+	$effect(() => {
+		// Re-sort when includeDraftReports or searchQuery changes
+		includeDraftReports;
+		searchQuery;
+		sortReports();
+	});
+
 	// Calculate total survey distance
 	const totalSurveyDistance = $derived(() => {
 		return reports.reduce((sum, report) => {
@@ -154,8 +251,8 @@
 			report.report_final === 1 || 
 			report.report_final === '1'
 		);
-		const totalAssets = finalReportsOnly.reduce((sum, report) => sum + (report.linear_asset_length || 0), 0);
-		const coveredAssets = finalReportsOnly.reduce((sum, report) => sum + (report.linear_asset_covered_length || 0), 0);
+		const totalAssets = finalReportsOnly.reduce((sum, report) => sum + (report.dist_mains_length || 0), 0);
+		const coveredAssets = finalReportsOnly.reduce((sum, report) => sum + (report.dist_mains_covered_length || 0), 0);
 		return totalAssets > 0 ? (coveredAssets / totalAssets) * 100 : 0;
 	});
 
@@ -236,7 +333,32 @@
 	});
 </script>
 
-<PageTemplate title={t('reports.title', $language)} showActions={false} fullWidth={true}>
+<PageTemplate title={t('reports.title', $language)} fullWidth={true}>
+	{#snippet pageActions()}
+		<button 
+			class="button button--primary" 
+			onclick={exportToExcel}
+		>
+			<Download size={18} />
+			Export Reports
+		</button>
+		{#if syncInfo}
+			<div class="sync-info">
+				<RefreshCw size={16} class="sync-info__icon" />
+				<span class="sync-info__text">
+					Last synced: {syncInfo.last_sync
+						? formatDateTime(syncInfo.last_sync)
+						: syncInfo.last_sync_success
+							? formatDateTime(syncInfo.last_sync_success)
+							: 'Never'}
+				</span>
+				<span class="sync-info__status sync-info__status--{syncInfo.sync_status || 'pending'}">
+					{syncInfo.sync_status || 'Unknown'}
+				</span>
+			</div>
+		{/if}
+	{/snippet}
+	
 	{#snippet content()}
 		<SectionContainer
 			title="Survey Reports Overview"
@@ -305,22 +427,37 @@
 						</div>
 					</div>
 
-					<!-- Sync Status -->
-					{#if syncInfo !== null}
-						<div class="sync-status">
-							<div class="sync-status-content">
-								<Clock size={16} />
-								<span>Last Sync: {syncInfo.last_sync 
-									? formatDateTime(syncInfo.last_sync) 
-									: (syncInfo.last_sync_success 
-										? formatDateTime(syncInfo.last_sync_success) 
-										: 'Never')}</span>
-								<span class="sync-badge sync-badge--{syncInfo.sync_status || 'pending'}">
-									{syncInfo.sync_status || 'Unknown'}
+					<!-- Filter Controls -->
+					<div class="filter-controls">
+						<div class="filter-row">
+							<div class="filter-item">
+								<label class="toggle-switch">
+									<input 
+										type="checkbox" 
+										bind:checked={includeDraftReports}
+									>
+									<span class="toggle-slider"></span>
+								</label>
+								<span class="filter-label">Include Draft Reports</span>
+								<span class="filter-count">
+									{includeDraftReports ? `(${displayedReports.length} reports)` : `(${finalReports} final reports)`}
 								</span>
 							</div>
+							
+							<div class="filter-item">
+								<label class="search-label" for="search-input">Search Reports:</label>
+								<input 
+									id="search-input"
+									type="text" 
+									class="search-input"
+									placeholder="Search by name, title, unit, or date..."
+									bind:value={searchQuery}
+								>
+							</div>
 						</div>
-					{/if}
+					</div>
+
+
 
 					<p class="table-scroll-hint">Scroll horizontally to view all report data</p>
 					
@@ -365,42 +502,42 @@
 												{/if}
 											</div>
 										</th>
-										<th class="table__header table__header--sortable" onclick={() => handleSort('linear_asset_covered_length')}>
-											<div class="sort-header">
-												<span>Assets Covered</span>
-												{#if sortColumn === 'linear_asset_covered_length'}
-													{#if sortDirection === 'asc'}
-														<ChevronUp size={14} class="table__sort-icon" />
-													{:else}
-														<ChevronDown size={14} class="table__sort-icon" />
-													{/if}
+																			<th class="table__header table__header--sortable" onclick={() => handleSort('dist_mains_covered_length')}>
+										<div class="sort-header">
+											<span>Assets Covered</span>
+											{#if sortColumn === 'dist_mains_covered_length'}
+												{#if sortDirection === 'asc'}
+													<ChevronUp size={14} class="table__sort-icon" />
+												{:else}
+													<ChevronDown size={14} class="table__sort-icon" />
 												{/if}
-											</div>
-										</th>
-										<th class="table__header table__header--sortable" onclick={() => handleSort('linear_asset_length')}>
-											<div class="sort-header">
-												<span>Total Assets</span>
-												{#if sortColumn === 'linear_asset_length'}
-													{#if sortDirection === 'asc'}
-														<ChevronUp size={14} class="table__sort-icon" />
-													{:else}
-														<ChevronDown size={14} class="table__sort-icon" />
-													{/if}
+											{/if}
+										</div>
+									</th>
+									<th class="table__header table__header--sortable" onclick={() => handleSort('dist_mains_length')}>
+										<div class="sort-header">
+											<span>Total Assets</span>
+											{#if sortColumn === 'dist_mains_length'}
+												{#if sortDirection === 'asc'}
+													<ChevronUp size={14} class="table__sort-icon" />
+												{:else}
+													<ChevronDown size={14} class="table__sort-icon" />
 												{/if}
-											</div>
-										</th>
-										<th class="table__header table__header--sortable" onclick={() => handleSort('linear_asset_coverage')}>
-											<div class="sort-header">
-												<span>Coverage %</span>
-												{#if sortColumn === 'linear_asset_coverage'}
-													{#if sortDirection === 'asc'}
-														<ChevronUp size={14} class="table__sort-icon" />
-													{:else}
-														<ChevronDown size={14} class="table__sort-icon" />
-													{/if}
+											{/if}
+										</div>
+									</th>
+									<th class="table__header table__header--sortable" onclick={() => handleSort('dist_mains_coverage')}>
+										<div class="sort-header">
+											<span>Coverage %</span>
+											{#if sortColumn === 'dist_mains_coverage'}
+												{#if sortDirection === 'asc'}
+													<ChevronUp size={14} class="table__sort-icon" />
+												{:else}
+													<ChevronDown size={14} class="table__sort-icon" />
 												{/if}
-											</div>
-										</th>
+											{/if}
+										</div>
+									</th>
 										<th class="table__header table__header--sortable" onclick={() => handleSort('total_duration_seconds')}>
 											<div class="sort-header">
 												<span>Duration</span>
@@ -492,9 +629,9 @@
 													<span class="table__cell-content">{report.report_title}</span>
 												</td>
 												<td class="table__cell">{formatDate(report.report_date)}</td>
-												<td class="table__cell">{report.linear_asset_covered_length ? `${Number(report.linear_asset_covered_length).toFixed(2)} km` : 'N/A'}</td>
-												<td class="table__cell">{report.linear_asset_length ? `${Number(report.linear_asset_length).toFixed(2)} km` : 'N/A'}</td>
-												<td class="table__cell">{report.linear_asset_coverage ? `${Number(report.linear_asset_coverage * 100).toFixed(1)}%` : 'N/A'}</td>
+												<td class="table__cell">{report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}</td>
+												<td class="table__cell">{report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}</td>
+												<td class="table__cell">{report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}</td>
 												<td class="table__cell">{report.formatted_duration || 'N/A'}</td>
 												<td class="table__cell table__cell--highlight">{report.total_distance_km ? `${report.total_distance_km} km` : 'N/A'}</td>
 												<td class="table__cell">{report.surveyor_unit_desc || 'N/A'}</td>
@@ -590,6 +727,168 @@
 	.stats-label {
 		font-size: 0.85rem;
 		opacity: 0.9;
+	}
+
+	/* Filter Controls */
+	.filter-controls {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 6px;
+		padding: 1rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.filter-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 2rem;
+		flex-wrap: wrap;
+	}
+
+	.filter-item {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.filter-label {
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: var(--text-primary);
+	}
+
+	.filter-count {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		font-style: italic;
+	}
+
+	/* Search Input */
+	.search-label {
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: var(--text-primary);
+		white-space: nowrap;
+	}
+
+	.search-input {
+		width: 300px;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--border-primary);
+		border-radius: 4px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		font-size: 0.85rem;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.search-input:focus {
+		outline: none;
+		border-color: var(--accent-primary);
+		box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+	}
+
+	.search-input::placeholder {
+		color: var(--text-secondary);
+		opacity: 0.7;
+	}
+
+	/* Toggle Switch */
+	.toggle-switch {
+		position: relative;
+		display: inline-block;
+		width: 44px;
+		height: 24px;
+		cursor: pointer;
+	}
+
+	.toggle-switch input {
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.toggle-slider {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: var(--border-primary);
+		border-radius: 24px;
+		transition: background-color 0.2s ease;
+	}
+
+	.toggle-slider:before {
+		position: absolute;
+		content: "";
+		height: 18px;
+		width: 18px;
+		left: 3px;
+		bottom: 3px;
+		background-color: white;
+		border-radius: 50%;
+		transition: transform 0.2s ease;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	}
+
+	.toggle-switch input:checked + .toggle-slider {
+		background-color: var(--accent-primary);
+	}
+
+	.toggle-switch input:checked + .toggle-slider:before {
+		transform: translateX(20px);
+	}
+
+	.toggle-switch:hover .toggle-slider {
+		box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+	}
+
+	/* Sync Info in Page Actions */
+	.sync-info {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		background: var(--bg-secondary);
+		padding: 0.5rem 0.75rem;
+		border-radius: 4px;
+		border: 1px solid var(--border-primary);
+	}
+
+	.sync-info__icon {
+		opacity: 0.7;
+	}
+
+	.sync-info__text {
+		white-space: nowrap;
+	}
+
+	.sync-info__status {
+		padding: 0.125rem 0.375rem;
+		border-radius: 12px;
+		font-size: 0.65rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		white-space: nowrap;
+	}
+
+	.sync-info__status--success {
+		background: rgba(34, 197, 94, 0.1);
+		color: var(--success);
+	}
+
+	.sync-info__status--pending {
+		background: rgba(245, 158, 11, 0.1);
+		color: var(--warning);
+	}
+
+	.sync-info__status--failed {
+		background: rgba(239, 68, 68, 0.1);
+		color: var(--error);
 	}
 
 	/* Sync Status */
@@ -932,6 +1231,24 @@
 
 		.stats-value {
 			font-size: 1.25rem;
+		}
+	}
+
+	/* Responsive Filter Controls */
+	@media (max-width: 768px) {
+		.filter-row {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 1rem;
+		}
+
+		.filter-item {
+			justify-content: space-between;
+		}
+
+		.search-input {
+			width: 100%;
+			max-width: none;
 		}
 	}
 

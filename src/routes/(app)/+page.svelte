@@ -211,8 +211,8 @@
 			
 			// Process all reports for this date
 			reportsForDate.forEach(report => {
-				const distance = Number(report.linear_asset_covered_length || 0);
-				const assetLength = Number(report.linear_asset_length || 0);
+				const distance = Number(report.dist_mains_covered_length || 0);
+				const assetLength = Number(report.dist_mains_length || 0);
 				const lisas = Number(report.indicationsCount || 0);
 				const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
 				const vehicle = report.surveyor_unit_desc || 'Unknown';

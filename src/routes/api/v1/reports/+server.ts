@@ -231,7 +231,7 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         
         // Calculate total distance (only from final reports with surveys)
         const totalDistance = calculationReports.reduce((sum: number, report: any) => {
-            const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
+            const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
             return sum + distance;
         }, 0);
         
@@ -239,20 +239,20 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         const car1Distance = calculationReports
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #1')
             .reduce((sum: number, report: any) => {
-                const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
+                const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
                 return sum + distance;
             }, 0);
             
         const car2Distance = calculationReports
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #2')
             .reduce((sum: number, report: any) => {
-                const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
+                const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
                 return sum + distance;
             }, 0);
         
         // Calculate total distance for draft reports with surveys
         const totalDraftDistance = draftReportsWithSurveys.reduce((sum: number, report: any) => {
-            const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
+            const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
             return sum + distance;
         }, 0);
         
@@ -260,14 +260,14 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         const car1DraftDistance = draftReportsWithSurveys
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #1')
             .reduce((sum: number, report: any) => {
-                const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
+                const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
                 return sum + distance;
             }, 0);
             
         const car2DraftDistance = draftReportsWithSurveys
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #2')
             .reduce((sum: number, report: any) => {
-                const distance = report.linear_asset_covered_length ? Number(report.linear_asset_covered_length) : 0;
+                const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
                 return sum + distance;
             }, 0);
         
