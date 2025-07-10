@@ -174,42 +174,102 @@
 			// Dynamically import the xlsx library
 			const XLSX = await import('xlsx');
 			
-			// Prepare data for export (using currently displayed/filtered reports)
-			const exportData = displayedReports.map(report => ({
-				'Report Name': report.report_name || '',
-				'Report Title': report.report_title || '',
-				'Report Date': formatDate(report.report_date) || '',
-				'Assets Covered (km)': report.dist_mains_covered_length ? Number(report.dist_mains_covered_length).toFixed(2) : '',
-				'Total Assets (km)': report.dist_mains_length ? Number(report.dist_mains_length).toFixed(2) : '',
-				'Coverage %': report.dist_mains_coverage ? (Number(report.dist_mains_coverage) * 100).toFixed(1) + '%' : '',
-				'Duration': report.formatted_duration || '',
-				'Survey Distance (km)': report.total_distance_km || '',
-				'Surveyor Unit': report.surveyor_unit_desc || '',
-				'LISAs': report.indicationsCount || 0,
-				'Status': (report.report_final === true || report.report_final === 1 || report.report_final === '1') ? 'Final' : 'Draft'
+			// Sort reports by report title (1st column) before exporting
+			const sortedReports = [...displayedReports].sort((a, b) => {
+				const titleA = (a.report_title || '').toLowerCase();
+				const titleB = (b.report_title || '').toLowerCase();
+				return titleA.localeCompare(titleB);
+			});
+
+			// Prepare data for export (using sorted reports)
+			const exportData = sortedReports.map(report => ({
+				'Boundaries Surveyed': report.report_title || '',
+				'Report name': report.report_name || '',
+				'Network size': report.dist_mains_length ? Number(report.dist_mains_length).toFixed(2) : '',
+				'Network covered': report.dist_mains_covered_length ? Number(report.dist_mains_covered_length).toFixed(2) : '',
+				'Average coverage (%)': report.dist_mains_coverage ? (Number(report.dist_mains_coverage) * 100).toFixed(2) : '',
+				'LISA': report.indicationsCount || 0,
+				'Leaks Found': '',
+				'In Progress': '',
+				'No Gas Found': '',
+				'Not Started': '',
+				'SE Found': ''
 			}));
 
-			// Create workbook and worksheet
-			const wb = XLSX.utils.book_new();
-			const ws = XLSX.utils.json_to_sheet(exportData);
+			// Calculate totals for Network size, Network covered, and LISA
+			const networkSizeTotal = sortedReports.reduce((sum, report) => {
+				return sum + (Number(report.dist_mains_length) || 0);
+			}, 0);
+			
+			const networkCoveredTotal = sortedReports.reduce((sum, report) => {
+				return sum + (Number(report.dist_mains_covered_length) || 0);
+			}, 0);
 
-			// Set column widths for better readability
-			const colWidths = [
-				{ wch: 15 }, // Report Name
-				{ wch: 40 }, // Report Title
-				{ wch: 12 }, // Report Date
-				{ wch: 16 }, // Assets Covered
-				{ wch: 16 }, // Total Assets
-				{ wch: 12 }, // Coverage %
-				{ wch: 10 }, // Duration
-				{ wch: 18 }, // Survey Distance
-				{ wch: 15 }, // Surveyor Unit
-				{ wch: 8 },  // LISAs
-				{ wch: 8 }   // Status
+			const lisaTotal = sortedReports.reduce((sum, report) => {
+				return sum + (Number(report.indicationsCount) || 0);
+			}, 0);
+
+			// Add SUM row to the export data
+			const exportDataWithTotals = [
+				...exportData,
+				{
+					'Boundaries Surveyed': 'TOTAL',
+					'Report name': '',
+					'Network size': networkSizeTotal.toFixed(2),
+					'Network covered': networkCoveredTotal.toFixed(2),
+					'Average coverage (%)': '',
+					'LISA': lisaTotal,
+					'Leaks Found': '',
+					'In Progress': '',
+					'No Gas Found': '',
+					'Not Started': '',
+					'SE Found': ''
+				}
 			];
-			ws['!cols'] = colWidths;
 
-			// Add worksheet to workbook
+			// Create workbook with cellStyles enabled
+			const wb = XLSX.utils.book_new();
+			wb.Props = {
+				Title: "GNI Reports Export",
+				Subject: "Survey Reports",
+				Author: "GNI System",
+				CreatedDate: new Date()
+			};
+
+			// Build the worksheet data as an array of arrays (AOA) format
+			const headers = Object.keys(exportDataWithTotals[0]);
+			
+			const aoa = [
+				// Header row
+				headers,
+				// Data rows
+				...exportDataWithTotals.map((row) => {
+					return headers.map(header => row[header as keyof typeof row]);
+				})
+			];
+
+			// Create worksheet from array of arrays
+			const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+			// Set column widths
+			ws['!cols'] = [
+				{ wch: 70 }, // Boundaries Surveyed (report title) - wider
+				{ wch: 20 }, // Report name
+				{ wch: 15 }, // Network size
+				{ wch: 16 }, // Network covered
+				{ wch: 18 }, // Average coverage (%)
+				{ wch: 10 }, // LISA
+				{ wch: 12 }, // Leaks Found
+				{ wch: 12 }, // In Progress
+				{ wch: 12 }, // No Gas Found
+				{ wch: 12 }, // Not Started
+				{ wch: 10 }  // SE Found
+			];
+
+			// Note: Bold formatting requires xlsx Pro edition or a different library
+			// The visual markers above provide clear distinction instead
+
+			// Add worksheet to workbook with specific options
 			XLSX.utils.book_append_sheet(wb, ws, 'Reports');
 
 			// Generate filename with current date and filter info
@@ -222,7 +282,7 @@
 			// Write and download file
 			XLSX.writeFile(wb, filename);
 			
-			console.log(`Exported ${exportData.length} reports to ${filename}`);
+			console.log(`Exported ${exportData.length} reports (+ totals row with Network size, Network covered, and LISA totals) to ${filename}`);
 		} catch (error) {
 			console.error('Error exporting to Excel:', error);
 			alert('Error exporting to Excel. Please try again.');
