@@ -51,7 +51,7 @@
 	let sortDirection = $state('desc'); // 'asc' or 'desc'
 
 	// Filter state
-	let includeDraftReports = $state(false); // Default to false (only final reports)
+	let reportFilter = $state('final'); // 'final', 'all', 'draft' - default to final reports only
 	let searchQuery = $state(''); // Search query
 
 	// Function to force scrollbar refresh - modified to be more reliable
@@ -97,14 +97,23 @@
 		let filteredReports = [...reports];
 		
 		// Filter by draft/final status
-		if (!includeDraftReports) {
+		if (reportFilter === 'final') {
 			// Only show final reports
 			filteredReports = filteredReports.filter(report => 
 				report.report_final === true || 
 				report.report_final === 1 || 
 				report.report_final === '1'
 			);
+		} else if (reportFilter === 'draft') {
+			// Only show draft reports
+			filteredReports = filteredReports.filter(report => 
+				report.report_final === false || 
+				report.report_final === 0 || 
+				report.report_final === '0' ||
+				!report.report_final
+			);
 		}
+		// If reportFilter === 'all', show all reports (no filtering needed)
 		
 		// Filter by search query
 		if (searchQuery.trim()) {
@@ -284,7 +293,7 @@
 			// Generate filename with current date and filter info
 			const now = new Date();
 			const timestamp = now.toISOString().split('T')[0]; // YYYY-MM-DD format
-			const filterInfo = includeDraftReports ? 'All' : 'Final';
+			const filterInfo = reportFilter === 'all' ? 'All' : reportFilter === 'draft' ? 'Draft' : 'Final';
 			const searchInfo = searchQuery ? `_Search-${searchQuery.replace(/[^a-zA-Z0-9]/g, '')}` : '';
 			const filename = `GNI_Reports_${filterInfo}${searchInfo}_${timestamp}.xlsx`;
 
@@ -301,7 +310,7 @@
 	// Reactive statement to re-sort when filters change
 	$effect(() => {
 		// Re-sort when includeDraftReports or searchQuery changes
-		includeDraftReports;
+		reportFilter;
 		searchQuery;
 		sortReports();
 	});
@@ -499,20 +508,49 @@
 					<!-- Filter Controls -->
 					<div class="filter-controls">
 						<div class="filter-row">
-							<div class="filter-item">
-								<label class="toggle-switch">
-									<input 
-										type="checkbox" 
-										bind:checked={includeDraftReports}
-									>
-									<span class="toggle-slider"></span>
-								</label>
-								<span class="filter-label">Include Draft Reports</span>
-								<span class="filter-count">
-									{includeDraftReports ? `(${displayedReports.length} reports)` : `(${finalReports} final reports)`}
-								</span>
+							<div class="filter-item filter-item--radio-group">
+								<span class="filter-group-label">Report Type:</span>
+								<div class="radio-group">
+									<label class="radio-option">
+										<input 
+											type="radio" 
+											name="reportFilter" 
+											value="final" 
+											bind:group={reportFilter}
+										>
+										<span class="radio-indicator"></span>
+										<span class="radio-label">Final Reports Only</span>
+										<span class="radio-count">({finalReports})</span>
+									</label>
+									
+									<label class="radio-option">
+										<input 
+											type="radio" 
+											name="reportFilter" 
+											value="all" 
+											bind:group={reportFilter}
+										>
+										<span class="radio-indicator"></span>
+										<span class="radio-label">All Reports</span>
+										<span class="radio-count">({totalReports})</span>
+									</label>
+									
+									<label class="radio-option">
+										<input 
+											type="radio" 
+											name="reportFilter" 
+											value="draft" 
+											bind:group={reportFilter}
+										>
+										<span class="radio-indicator"></span>
+										<span class="radio-label">Draft Reports Only</span>
+										<span class="radio-count">({draftReports})</span>
+									</label>
+								</div>
 							</div>
-							
+						</div>
+
+						<div class="filter-row">
 							<div class="filter-item">
 								<label class="search-label" for="search-input">Search Reports:</label>
 								<input 
@@ -835,16 +873,81 @@
 		gap: 0.75rem;
 	}
 
-	.filter-label {
+	.filter-item--radio-group {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
+
+	.filter-group-label {
 		font-size: 0.9rem;
 		font-weight: 500;
 		color: var(--text-primary);
 	}
 
-	.filter-count {
-		font-size: 0.8rem;
+	.radio-group {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+	}
+
+	.radio-option {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		cursor: pointer;
+		user-select: none;
+		position: relative;
+	}
+
+	.radio-option input {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.radio-indicator {
+		width: 16px;
+		height: 16px;
+		border: 2px solid var(--border-primary);
+		border-radius: 50%;
+		background: white;
+		transition: all 0.2s ease;
+		flex-shrink: 0;
+	}
+
+	.radio-option input:checked + .radio-indicator {
+		border-color: var(--accent-primary);
+		background: var(--accent-primary);
+		box-shadow: inset 0 0 0 3px white;
+	}
+
+	.radio-option:hover .radio-indicator {
+		border-color: var(--accent-primary);
+	}
+
+	.radio-label {
+		font-size: 0.85rem;
+		font-weight: 500;
+		color: var(--text-primary);
+		white-space: nowrap;
+	}
+
+	.radio-count {
+		font-size: 0.7rem;
 		color: var(--text-secondary);
 		font-style: italic;
+	}
+
+	.radio-option input:checked + .radio-indicator + .radio-label {
+		font-weight: 600;
+		color: var(--accent-primary);
+	}
+
+	.radio-option input:checked + .radio-indicator + .radio-label + .radio-count {
+		color: var(--accent-primary);
 	}
 
 	/* Search Input */
@@ -1327,6 +1430,26 @@
 
 		.filter-item {
 			justify-content: space-between;
+		}
+
+		.filter-item--radio-group {
+			flex-direction: row;
+			align-items: center;
+			gap: 1.5rem;
+			flex-wrap: wrap;
+		}
+
+		.radio-group {
+			flex-direction: row;
+			align-items: center;
+			gap: 1.5rem;
+			flex-wrap: wrap;
+		}
+
+		.radio-option {
+			flex-direction: row;
+			align-items: center;
+			gap: 0.5rem;
 		}
 
 		.search-input {
