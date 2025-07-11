@@ -19,6 +19,7 @@
 		surveyor_unit_desc?: string;
 		report_final: boolean | number | string;
 		indicationsCount?: number;
+		fieldOfViewGapsCount?: number;
 		driving_sessions?: any[];
 		total_duration_seconds?: number;
 		formatted_duration?: string;
@@ -131,6 +132,7 @@
                 sortColumn === 'dist_mains_covered_length' || 
                 sortColumn === 'dist_mains_coverage' ||
                 sortColumn === 'indicationsCount' || 
+                sortColumn === 'fieldOfViewGapsCount' ||
                 sortColumn === 'total_duration_seconds' ||
                 sortColumn === 'total_distance_km') {
 				valueA = Number(valueA) || 0;
@@ -189,6 +191,7 @@
 				'Network covered': report.dist_mains_covered_length ? Number(report.dist_mains_covered_length).toFixed(2) : '',
 				'Average coverage (%)': report.dist_mains_coverage ? (Number(report.dist_mains_coverage) * 100).toFixed(2) : '',
 				'LISA': report.indicationsCount || 0,
+				'Gaps': report.fieldOfViewGapsCount || 0,
 				'Leaks Found': '',
 				'In Progress': '',
 				'No Gas Found': '',
@@ -196,7 +199,7 @@
 				'SE Found': ''
 			}));
 
-			// Calculate totals for Network size, Network covered, and LISA
+			// Calculate totals for Network size, Network covered, LISA, and Gaps
 			const networkSizeTotal = sortedReports.reduce((sum, report) => {
 				return sum + (Number(report.dist_mains_length) || 0);
 			}, 0);
@@ -209,6 +212,10 @@
 				return sum + (Number(report.indicationsCount) || 0);
 			}, 0);
 
+			const gapsTotal = sortedReports.reduce((sum, report) => {
+				return sum + (Number(report.fieldOfViewGapsCount) || 0);
+			}, 0);
+
 			// Add SUM row to the export data
 			const exportDataWithTotals = [
 				...exportData,
@@ -219,6 +226,7 @@
 					'Network covered': networkCoveredTotal.toFixed(2),
 					'Average coverage (%)': '',
 					'LISA': lisaTotal,
+					'Gaps': gapsTotal,
 					'Leaks Found': '',
 					'In Progress': '',
 					'No Gas Found': '',
@@ -259,6 +267,7 @@
 				{ wch: 16 }, // Network covered
 				{ wch: 18 }, // Average coverage (%)
 				{ wch: 10 }, // LISA
+				{ wch: 10 }, // Gaps
 				{ wch: 12 }, // Leaks Found
 				{ wch: 12 }, // In Progress
 				{ wch: 12 }, // No Gas Found
@@ -646,6 +655,18 @@
 												{/if}
 											</div>
 										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('fieldOfViewGapsCount')}>
+											<div class="sort-header">
+												<span>Gaps</span>
+												{#if sortColumn === 'fieldOfViewGapsCount'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
 										<th class="table__header table__header--sortable" onclick={() => handleSort('report_final')}>
 											<div class="sort-header">
 												<span>Status</span>
@@ -664,6 +685,7 @@
 									{#if reportsLoading}
 										{#each Array(5) as _, i}
 											<tr class="table__row table__row--loading">
+												<td class="table__cell"><div class="skeleton-text"></div></td>
 												<td class="table__cell"><div class="skeleton-text"></div></td>
 												<td class="table__cell"><div class="skeleton-text"></div></td>
 												<td class="table__cell"><div class="skeleton-text"></div></td>
@@ -696,6 +718,7 @@
 												<td class="table__cell table__cell--highlight">{report.total_distance_km ? `${report.total_distance_km} km` : 'N/A'}</td>
 												<td class="table__cell">{report.surveyor_unit_desc || 'N/A'}</td>
 												<td class="table__cell table__cell--center">{report.indicationsCount || 0}</td>
+												<td class="table__cell table__cell--center">{report.fieldOfViewGapsCount || 0}</td>
 												<td class="table__cell table__cell--status">
 													<div class="status-container">
 														<span class="status-indicator {
@@ -714,7 +737,7 @@
 										{/each}
 									{:else}
 										<tr class="table__row">
-											<td class="table__cell table__cell--empty" colspan="11">No reports found</td>
+											<td class="table__cell table__cell--empty" colspan="12">No reports found</td>
 										</tr>
 									{/if}
 								</tbody>
@@ -1068,7 +1091,7 @@
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.85rem;
-		min-width: 1450px; /* Optimized for very narrow report names (100px) and wider titles */
+		min-width: 1560px; /* Increased for the new Gaps column (was 1450px) */
 		table-layout: fixed; /* Force table to respect column widths */
 	}
 

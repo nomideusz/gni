@@ -67,10 +67,10 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             filter: dateFilter + ' && report_final=1'
         }) : { totalItems: countAll.totalItems };
         
-        // Use expand to get related driving sessions and indications
+        // Use expand to get related driving sessions, indications, and field_of_view_gaps
         const expandParam = includeUnitDesc 
-            ? 'driving_sessions,indications_via_report' 
-            : 'indications_via_report';
+            ? 'driving_sessions,indications_via_report,field_of_view_gaps' 
+            : 'indications_via_report,field_of_view_gaps';
         
         console.log('API: Using expand parameter:', expandParam);
         
@@ -194,6 +194,16 @@ export const GET = async ({ url, locals }: RequestEvent) => {
                 
                 // Set the count of unique indications
                 convertedItem.uniqueIndicationsCount = uniqueIndications.size;
+            }
+            
+            // Add field_of_view_gaps count from expanded relation
+            convertedItem.fieldOfViewGapsCount = 0;
+            
+            if (convertedItem.expand && convertedItem.expand.field_of_view_gaps) {
+                const gaps = Array.isArray(convertedItem.expand.field_of_view_gaps) 
+                    ? convertedItem.expand.field_of_view_gaps 
+                    : [];
+                convertedItem.fieldOfViewGapsCount = gaps.length;
             }
                         
             return convertedItem;
