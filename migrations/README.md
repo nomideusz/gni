@@ -108,3 +108,49 @@ If you encounter issues:
 1. **Collection not found**: Ensure the `shared_files` collection exists in PocketBase
 2. **Permission errors**: Check PocketBase collection rules (currently set to allow all operations)
 3. **Connection issues**: Verify `POCKETBASE_URL` environment variable is set correctly 
+
+---
+
+## Fix Field of View Relations Migration
+
+### Issue Description
+The `field_of_view` and `field_of_view_gaps` collections have both a text field `report_id` and a relation field `report`. The external sync process only populates the `report_id` text field, leaving the `report` relation field empty. This breaks the proper database relationships.
+
+### Affected Collections
+- `field_of_view` - Has `report_id` populated but `report` relation empty
+- `field_of_view_gaps` - Has `report_id` populated but `report` relation empty
+- `gas_reports` - May not have all reverse relations populated
+
+### Migration Methods
+
+#### Method 1: JavaScript Migration (Recommended)
+1. Access PocketBase Admin UI at `https://g.zaur.app/_/`
+2. Navigate to **Settings** > **Execute JavaScript**
+3. Copy the contents of `003_fix_field_of_view_relations.js`
+4. Paste and execute the script
+5. Monitor console output for progress
+
+#### Method 2: API Endpoint (For Admin Users)
+```bash
+# Execute the fix via API (requires admin authentication)
+curl -X POST https://your-app.com/api/v1/fix-relations \
+  -H "Authorization: Bearer YOUR_AUTH_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+### What the Migration Does
+1. **field_of_view**: Finds records with `report_id` but no `report` relation, looks up the matching report in `gas_reports` by `report_id`, and updates the relation
+2. **field_of_view_gaps**: Same process as above
+3. **gas_reports**: Updates the reverse relations to ensure all related `field_of_view` and `field_of_view_gaps` records are linked
+
+### Important Notes
+- The migration is idempotent - safe to run multiple times
+- Only affects records with missing relations
+- Processes in batches to avoid timeouts
+- Logs progress and any errors to console
+
+### Preventing Future Issues
+The root cause is the external sync process not populating relation fields. To prevent this:
+1. Update the external sync process to set both `report_id` and `report` fields
+2. Or run this migration periodically as a maintenance task
+3. Consider adding a PocketBase hook to automatically populate the relation when `report_id` is set 

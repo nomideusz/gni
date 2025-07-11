@@ -1,0 +1,40 @@
+{
+  "migration": {
+    "id": "003_fix_field_of_view_relations",
+    "name": "Fix Field of View Relations",
+    "description": "Fixes missing report relations in field_of_view and field_of_view_gaps collections by mapping report_id text fields to actual report relations",
+    "date": "2025-01-10",
+    "collections_affected": [
+      "field_of_view",
+      "field_of_view_gaps",
+      "gas_reports"
+    ],
+    "issues_fixed": [
+      {
+        "issue": "field_of_view records have report_id populated but report relation is empty",
+        "solution": "Find matching report in gas_reports by report_id and update the relation field"
+      },
+      {
+        "issue": "field_of_view_gaps records have report_id populated but report relation is empty",
+        "solution": "Find matching report in gas_reports by report_id and update the relation field"
+      },
+      {
+        "issue": "gas_reports may not have all field_of_view and field_of_view_gaps relations populated",
+        "solution": "Find all related records and update the many-to-many relation fields"
+      }
+    ],
+    "manual_steps": [
+      "1. Access PocketBase Admin UI (https://g.zaur.app/_/)",
+      "2. Navigate to Settings > Execute JavaScript",
+      "3. Copy the contents of 003_fix_field_of_view_relations.js",
+      "4. Paste and execute the script",
+      "5. Monitor the console output for progress and results"
+    ],
+    "rollback": "Relations can be cleared by setting report field to null in affected collections",
+    "notes": [
+      "This migration is idempotent - it can be run multiple times safely",
+      "Only records with report_id but no report relation will be updated",
+      "The script processes records in batches to avoid timeouts"
+    ]
+  }
+} 
