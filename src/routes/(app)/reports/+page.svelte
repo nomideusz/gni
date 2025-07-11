@@ -190,8 +190,8 @@
 				'Network size': report.dist_mains_length ? Number(report.dist_mains_length).toFixed(2) : '',
 				'Network covered': report.dist_mains_covered_length ? Number(report.dist_mains_covered_length).toFixed(2) : '',
 				'Average coverage (%)': report.dist_mains_coverage ? (Number(report.dist_mains_coverage) * 100).toFixed(2) : '',
-				'LISA': report.indicationsCount || 0,
 				'Gaps': report.fieldOfViewGapsCount || 0,
+				'LISA': report.indicationsCount || 0,
 				'Leaks Found': '',
 				'In Progress': '',
 				'No Gas Found': '',
@@ -225,8 +225,8 @@
 					'Network size': networkSizeTotal.toFixed(2),
 					'Network covered': networkCoveredTotal.toFixed(2),
 					'Average coverage (%)': '',
-					'LISA': lisaTotal,
 					'Gaps': gapsTotal,
+					'LISA': lisaTotal,
 					'Leaks Found': '',
 					'In Progress': '',
 					'No Gas Found': '',
@@ -266,8 +266,8 @@
 				{ wch: 15 }, // Network size
 				{ wch: 16 }, // Network covered
 				{ wch: 18 }, // Average coverage (%)
-				{ wch: 10 }, // LISA
 				{ wch: 10 }, // Gaps
+				{ wch: 10 }, // LISA
 				{ wch: 12 }, // Leaks Found
 				{ wch: 12 }, // In Progress
 				{ wch: 12 }, // No Gas Found
@@ -633,20 +633,8 @@
 										</th>
 										<th class="table__header table__header--sortable" onclick={() => handleSort('surveyor_unit_desc')}>
 											<div class="sort-header">
-												<span>Surveyor Unit</span>
+												<span>Vehicle</span>
 												{#if sortColumn === 'surveyor_unit_desc'}
-													{#if sortDirection === 'asc'}
-														<ChevronUp size={14} class="table__sort-icon" />
-													{:else}
-														<ChevronDown size={14} class="table__sort-icon" />
-													{/if}
-												{/if}
-											</div>
-										</th>
-										<th class="table__header table__header--sortable" onclick={() => handleSort('indicationsCount')}>
-											<div class="sort-header">
-												<span>LISAs</span>
-												{#if sortColumn === 'indicationsCount'}
 													{#if sortDirection === 'asc'}
 														<ChevronUp size={14} class="table__sort-icon" />
 													{:else}
@@ -659,6 +647,18 @@
 											<div class="sort-header">
 												<span>Gaps</span>
 												{#if sortColumn === 'fieldOfViewGapsCount'}
+													{#if sortDirection === 'asc'}
+														<ChevronUp size={14} class="table__sort-icon" />
+													{:else}
+														<ChevronDown size={14} class="table__sort-icon" />
+													{/if}
+												{/if}
+											</div>
+										</th>
+										<th class="table__header table__header--sortable" onclick={() => handleSort('indicationsCount')}>
+											<div class="sort-header">
+												<span>LISAs</span>
+												{#if sortColumn === 'indicationsCount'}
 													{#if sortDirection === 'asc'}
 														<ChevronUp size={14} class="table__sort-icon" />
 													{:else}
@@ -717,8 +717,8 @@
 												<td class="table__cell">{report.formatted_duration || 'N/A'}</td>
 												<td class="table__cell table__cell--highlight">{report.total_distance_km ? `${report.total_distance_km} km` : 'N/A'}</td>
 												<td class="table__cell">{report.surveyor_unit_desc || 'N/A'}</td>
-												<td class="table__cell table__cell--center">{report.indicationsCount || 0}</td>
 												<td class="table__cell table__cell--center">{report.fieldOfViewGapsCount || 0}</td>
+												<td class="table__cell table__cell--center">{report.indicationsCount || 0}</td>
 												<td class="table__cell table__cell--status">
 													<div class="status-container">
 														<span class="status-indicator {
