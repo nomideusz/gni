@@ -548,9 +548,7 @@
 									</label>
 								</div>
 							</div>
-						</div>
-
-						<div class="filter-row">
+							
 							<div class="filter-item">
 								<label class="search-label" for="search-input">Search Reports:</label>
 								<input 
@@ -942,7 +940,6 @@
 	}
 
 	.radio-option input:checked + .radio-indicator + .radio-label {
-		font-weight: 600;
 		color: var(--accent-primary);
 	}
 
@@ -1036,10 +1033,10 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		font-size: 0.8rem;
+		font-size: 0.875rem;
 		color: var(--text-secondary);
 		background: var(--bg-secondary);
-		padding: 0.5rem 0.75rem;
+		padding: 0.625rem 1rem;
 		border-radius: 4px;
 		border: 1px solid var(--border-primary);
 	}
