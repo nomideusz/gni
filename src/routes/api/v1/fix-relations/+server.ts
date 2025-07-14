@@ -10,7 +10,7 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ locals }) => {
     try {
         // Check authentication
-        if (!locals.user || !locals.user.isAdmin) {
+        if (!locals.user || !locals.isAdmin) {
             return json({ error: 'Admin access required' }, { status: 403 });
         }
         
