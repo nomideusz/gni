@@ -5,7 +5,7 @@
 	import { tick } from 'svelte';
 	import PageTemplate from '$lib/components/PageTemplate.svelte';
 	import SectionContainer from '$lib/components/SectionContainer.svelte';
-	import { ChevronUp, ChevronDown, ChevronRight, Database, Clock, CheckCircle, AlertTriangle, Download, RefreshCw } from 'lucide-svelte';
+	import { ChevronUp, ChevronDown, ChevronRight, Database, Clock, CheckCircle, AlertTriangle, Download, RefreshCw, Truck, Copy } from 'lucide-svelte';
 
 	// Define Report interface based on the API response
 	interface Report {
@@ -36,7 +36,14 @@
 	let totalReports = $state(0);
 	let draftReports = $state(0);
 	let totalLISAs = $state(0);
+	let totalGaps = $state(0);
 	let syncInfo = $state<any>(null);
+	
+	// Car data (distances only)
+	let car1Distance = $state(0);
+	let car2Distance = $state(0);
+	let car3Distance = $state(0);
+	let car4Distance = $state(0);
 	
 	let reports = $state<Report[]>([]);
 	let displayedReports = $state<Report[]>([]);
@@ -56,6 +63,9 @@
 	
 	// Accordion state - track which reports are expanded
 	let expandedReports = $state<Set<string>>(new Set());
+	
+	// Selection state - track which reports are selected for export
+	let selectedReports = $state<Set<string>>(new Set());
 
 	// LISA modal state
 	let showLisaModal = $state(false);
@@ -72,6 +82,79 @@
 		}
 		expandedReports = newSet;
 	}
+
+	// Selection functions
+	function toggleReportSelection(reportId: string) {
+		const newSet = new Set(selectedReports);
+		if (newSet.has(reportId)) {
+			newSet.delete(reportId);
+		} else {
+			newSet.add(reportId);
+		}
+		selectedReports = newSet;
+	}
+
+	function selectAllReports() {
+		selectedReports = new Set(displayedReports.map(r => r.id));
+	}
+
+	function clearAllSelections() {
+		selectedReports = new Set();
+	}
+
+	// State for copy feedback
+	let copiedItems = $state(new Set());
+
+	// Copy text to clipboard
+	async function copyToClipboard(text: string, type: string, itemId: string) {
+		try {
+			await navigator.clipboard.writeText(text);
+			console.log(`${type} copied to clipboard:`, text);
+			
+			// Show success feedback
+			copiedItems.add(itemId);
+			copiedItems = new Set(copiedItems); // Trigger reactivity
+			
+			// Remove feedback after 1.5 seconds
+			setTimeout(() => {
+				copiedItems.delete(itemId);
+				copiedItems = new Set(copiedItems); // Trigger reactivity
+			}, 1500);
+		} catch (err) {
+			console.error('Failed to copy text: ', err);
+			// Fallback for older browsers
+			const textArea = document.createElement('textarea');
+			textArea.value = text;
+			document.body.appendChild(textArea);
+			textArea.focus();
+			textArea.select();
+			try {
+				document.execCommand('copy');
+				console.log(`${type} copied to clipboard (fallback):`, text);
+				
+				// Show success feedback for fallback too
+				copiedItems.add(itemId);
+				copiedItems = new Set(copiedItems);
+				setTimeout(() => {
+					copiedItems.delete(itemId);
+					copiedItems = new Set(copiedItems);
+				}, 1500);
+			} catch (fallbackErr) {
+				console.error('Fallback copy failed: ', fallbackErr);
+			}
+			document.body.removeChild(textArea);
+		}
+	}
+
+	// Check if all displayed reports are selected
+	const allReportsSelected = $derived(() => {
+		return displayedReports.length > 0 && displayedReports.every(r => selectedReports.has(r.id));
+	});
+
+	// Get selected reports data
+	const selectedReportsData = $derived(() => {
+		return displayedReports.filter(r => selectedReports.has(r.id));
+	});
 
 	// Function to open LISA modal
 	function openLisaModal(report: any) {
@@ -233,8 +316,11 @@
 			// Dynamically import the xlsx library
 			const XLSX = await import('xlsx');
 			
+			// Use selected reports if any are selected, otherwise use all displayed reports
+			const reportsToExport = selectedReports.size > 0 ? selectedReportsData() : displayedReports;
+			
 			// Sort reports by report title (1st column) before exporting
-			const sortedReports = [...displayedReports].sort((a, b) => {
+			const sortedReports = [...reportsToExport].sort((a, b) => {
 				const titleA = (a.report_title || '').toLowerCase();
 				const titleB = (b.report_title || '').toLowerCase();
 				return titleA.localeCompare(titleB);
@@ -343,12 +429,14 @@
 			const timestamp = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 			const filterInfo = reportFilter === 'all' ? 'All' : reportFilter === 'draft' ? 'Draft' : 'Final';
 			const searchInfo = searchQuery ? `_Search-${searchQuery.replace(/[^a-zA-Z0-9]/g, '')}` : '';
-			const filename = `GNI_Reports_${filterInfo}${searchInfo}_${timestamp}.xlsx`;
+			const selectionInfo = selectedReports.size > 0 ? `_Selected-${selectedReports.size}` : '';
+			const filename = `GNI_Reports_${filterInfo}${searchInfo}${selectionInfo}_${timestamp}.xlsx`;
 
 			// Write and download file
 			XLSX.writeFile(wb, filename);
 			
-			console.log(`Exported ${exportData.length} reports (+ totals row with Network size, Network covered, and LISA totals) to ${filename}`);
+			const exportType = selectedReports.size > 0 ? `${selectedReports.size} selected` : 'all displayed';
+			console.log(`Exported ${exportType} reports (+ totals row with Network size, Network covered, and LISA totals) to ${filename}`);
 		} catch (error) {
 			console.error('Error exporting to Excel:', error);
 			alert('Error exporting to Excel. Please try again.');
@@ -361,6 +449,8 @@
 		reportFilter;
 		searchQuery;
 		sortReports();
+		// Clear selections when filters change since displayed reports might change
+		clearAllSelections();
 	});
 
 	// Calculate total survey distance
@@ -413,6 +503,13 @@
 				draftReports = totalReports - finalReports;
 				// totalIndications already comes from final reports only (calculation reports)
 				totalLISAs = result.stats.totalIndications || 0;
+				totalGaps = result.stats.totalGaps || 0;
+				
+				// Load car distance data from API
+				car1Distance = result.stats.car1Distance || 0;
+				car2Distance = result.stats.car2Distance || 0;
+				car3Distance = result.stats.car3Distance || 0;
+				car4Distance = result.stats.car4Distance || 0;
 				
 				// Fetch sync info from centralized API
 				try {
@@ -461,13 +558,36 @@
 
 <PageTemplate title={t('reports.title', $language)} fullWidth={true}>
 	{#snippet pageActions()}
-		<button 
-			class="button button--primary" 
-			onclick={exportToExcel}
-		>
-			<Download size={18} />
-			Export Reports
-		</button>
+		<div class="export-controls">
+			{#if selectedReports.size > 0}
+				<div class="selection-info">
+					<span class="selection-count">
+						{selectedReports.size} 
+						{reportFilter === 'final' ? 'final' : reportFilter === 'draft' ? 'draft' : ''} 
+						{selectedReports.size === 1 ? 'report' : 'reports'} selected
+					</span>
+					<button 
+						class="button button--secondary button--small" 
+						onclick={clearAllSelections}
+					>
+						Clear Selection
+					</button>
+				</div>
+			{/if}
+			<button 
+				class="button button--primary" 
+				onclick={exportToExcel}
+			>
+				<Download size={18} />
+				{#if selectedReports.size > 0}
+					Export Selected {reportFilter === 'final' ? 'Final' : reportFilter === 'draft' ? 'Draft' : ''} 
+					({selectedReports.size})
+				{:else}
+					Export All {reportFilter === 'final' ? 'Final' : reportFilter === 'draft' ? 'Draft' : ''} 
+					({displayedReports.length})
+				{/if}
+			</button>
+		</div>
 		{#if syncInfo}
 			<div class="sync-info">
 				<RefreshCw size={16} class="sync-info__icon" />
@@ -507,48 +627,100 @@
 					</div>
 				{:else}
 					<!-- Stats Header -->
-					<div class="stats-header">
-						<div class="stats-metric stats-metric--primary">
-							<div class="stats-icon">
-								<Database size={24} />
+					<div class="stats-dashboard">
+						<!-- Reports Section -->
+						<div class="stats-section">
+							<div class="stats-section-header">
+								<Database size={18} />
+								<h3>Reports</h3>
 							</div>
-							<div class="stats-content">
-								<div class="stats-value">{totalReports}</div>
-								<div class="stats-label">Total Reports</div>
-							</div>
-						</div>
-						
-						<div class="stats-metric">
-							<div class="stats-icon stats-icon--success">
-								<CheckCircle size={20} />
-							</div>
-							<div class="stats-content">
-								<div class="stats-value">{finalReports}</div>
-								<div class="stats-label">Final Reports</div>
-							</div>
-						</div>
-						
-						<div class="stats-metric">
-							<div class="stats-icon stats-icon--warning">
-								<AlertTriangle size={20} />
-							</div>
-							<div class="stats-content">
-								<div class="stats-value">{draftReports}</div>
-								<div class="stats-label">Draft Reports</div>
-							</div>
-						</div>
-						
-						<div class="stats-metric">
-							<div class="stats-content">
-								<div class="stats-value">{totalCoverage().toFixed(1)}%</div>
-								<div class="stats-label">Coverage (Final)</div>
+							<div class="stats-section-content">
+								<div class="stats-metric">
+									<div class="stats-icon stats-icon--success">
+										<CheckCircle size={20} />
+									</div>
+									<div class="stats-content">
+										<div class="stats-value">{finalReports}</div>
+										<div class="stats-label">Final Reports</div>
+									</div>
+								</div>
+								
+								<div class="stats-metric">
+									<div class="stats-icon stats-icon--warning">
+										<AlertTriangle size={20} />
+									</div>
+									<div class="stats-content">
+										<div class="stats-value">{draftReports}</div>
+										<div class="stats-label">Draft Reports</div>
+									</div>
+								</div>
 							</div>
 						</div>
-						
-						<div class="stats-metric">
-							<div class="stats-content">
-								<div class="stats-value">{totalLISAs}</div>
-								<div class="stats-label">LISAs (Final)</div>
+
+						<!-- Assets Section -->
+						<div class="stats-section">
+							<div class="stats-section-header">
+								<Clock size={18} />
+								<h3>Assets (Final Reports)</h3>
+							</div>
+							<div class="stats-section-content">
+								<div class="stats-metric">
+									<div class="stats-content">
+										<div class="stats-value">{totalCoverage().toFixed(1)}%</div>
+										<div class="stats-label">Coverage</div>
+									</div>
+								</div>
+								
+								<div class="stats-metric">
+									<div class="stats-content">
+										<div class="stats-value">{totalLISAs}</div>
+										<div class="stats-label">LISAs</div>
+									</div>
+								</div>
+								
+								<div class="stats-metric">
+									<div class="stats-content">
+										<div class="stats-value">{totalGaps}</div>
+										<div class="stats-label">Gaps</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Vehicles Section -->
+						<div class="stats-section">
+							<div class="stats-section-header">
+								<Truck size={18} />
+								<h3>Vehicles (Final Reports)</h3>
+							</div>
+							<div class="stats-section-content">
+								<div class="stats-metric stats-metric--vehicle">
+									<div class="stats-content">
+										<div class="stats-value">{car1Distance.toFixed(1)}</div>
+										<div class="stats-label">Car #1 (km)</div>
+									</div>
+								</div>
+								
+								<div class="stats-metric stats-metric--vehicle">
+									<div class="stats-content">
+										<div class="stats-value">{car2Distance.toFixed(1)}</div>
+										<div class="stats-label">Car #2 (km)</div>
+									</div>
+								</div>
+								
+								<div class="stats-metric stats-metric--vehicle">
+									<div class="stats-content">
+										<div class="stats-value">{car3Distance.toFixed(1)}</div>
+										<div class="stats-label">Car #3 (km)</div>
+									</div>
+								</div>
+								
+								<div class="stats-metric stats-metric--vehicle">
+									<div class="stats-content">
+										<div class="stats-value">{car4Distance.toFixed(1)}</div>
+										<div class="stats-label">Car #4 (km)</div>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -615,10 +787,30 @@
 					<p class="table-scroll-hint">Scroll horizontally to view all report data</p>
 					
 					<div class="table-container" bind:this={tableContainer}>
-						<div class="table table--compact">
+						<div class="table table--compact table--reports">
 													<table class="table__element">
 							<thead>
 								<tr>
+									<th class="table__header table__header--expand"></th>
+									<th class="table__header table__header--checkbox">
+										<div class="checkbox-header">
+											<label class="checkbox-wrapper">
+												<input 
+													type="checkbox" 
+													class="checkbox-input" 
+													checked={allReportsSelected()}
+													onchange={() => allReportsSelected() ? clearAllSelections() : selectAllReports()}
+												>
+												<span class="checkbox-custom"></span>
+												<span class="checkbox-label" title="Select all {reportFilter === 'final' ? 'final' : reportFilter === 'draft' ? 'draft' : ''} reports">
+													Select All
+													{#if reportFilter !== 'all'}
+														<br><span class="checkbox-label-filter">({reportFilter === 'final' ? 'Final' : 'Draft'})</span>
+													{/if}
+												</span>
+											</label>
+										</div>
+									</th>
 									<th class="table__header table__header--sortable table__header--report-name" onclick={() => handleSort('report_name')}>
 										<div class="sort-header">
 											<span>Report Name</span>
@@ -643,9 +835,9 @@
 												{/if}
 											</div>
 										</th>
-										<th class="table__header table__header--sortable" onclick={() => handleSort('report_date')}>
-											<div class="sort-header">
-												<span>Report Date</span>
+																			<th class="table__header table__header--sortable table__header--report-date" onclick={() => handleSort('report_date')}>
+										<div class="sort-header">
+											<span>Report Date</span>
 												{#if sortColumn === 'report_date'}
 													{#if sortDirection === 'asc'}
 														<ChevronUp size={14} class="table__sort-icon" />
@@ -769,6 +961,14 @@
 									{#if reportsLoading}
 										{#each Array(5) as _, i}
 											<tr class="table__row table__row--loading">
+												<td class="table__cell table__cell--expand">
+													<div class="skeleton-text" style="width: 14px; height: 14px; border-radius: 3px;"></div>
+												</td>
+												<td class="table__cell table__cell--checkbox">
+													<div class="checkbox-wrapper">
+														<div class="skeleton-text" style="width: 15px; height: 15px; border-radius: 3px;"></div>
+													</div>
+												</td>
 												<td class="table__cell"><div class="skeleton-text"></div></td>
 												<td class="table__cell"><div class="skeleton-text"></div></td>
 												<td class="table__cell"><div class="skeleton-text"></div></td>
@@ -790,35 +990,75 @@
 											{@const hasSurveys = (report.expand?.driving_sessions?.length ?? 0) > 0}
 											{@const isExpanded = expandedReports.has(report.id)}
 											<tr class="table__row">
+												<td class="table__cell table__cell--expand">
+													{#if hasSurveys}
+														<button 
+															class="expand-button"
+															onclick={() => toggleReportExpansion(report.id)}
+															aria-expanded={isExpanded}
+															aria-label="{isExpanded ? 'Collapse' : 'Expand'} surveys for {report.report_name}"
+														>
+															<ChevronRight 
+																size={14} 
+																class="expand-icon {isExpanded ? 'expand-icon--rotated' : ''}"
+															/>
+														</button>
+													{/if}
+												</td>
+												<td class="table__cell table__cell--checkbox">
+													<label class="checkbox-wrapper">
+														<input 
+															type="checkbox" 
+															class="checkbox-input"
+															checked={selectedReports.has(report.id)}
+															onchange={() => toggleReportSelection(report.id)}
+														>
+														<span class="checkbox-custom"></span>
+														<span class="sr-only">Select {report.report_name}</span>
+													</label>
+												</td>
 												<td class="table__cell table__cell--report-name" title={report.report_name}>
-													<div class="report-name-container">
-														{#if hasSurveys}
-															<button 
-																class="expand-button-inline"
-																onclick={() => toggleReportExpansion(report.id)}
-																aria-expanded={isExpanded}
-																aria-label="{isExpanded ? 'Collapse' : 'Expand'} surveys for {report.report_name}"
-															>
-																<ChevronRight 
-																	size={18} 
-																	class="expand-icon {isExpanded ? 'expand-icon--rotated' : ''}"
-																/>
-															</button>
-														{/if}
+													<div class="cell-with-copy">
 														<span class="report-name-text">
 															{report.report_name}
 														</span>
+														<button 
+															class="copy-button"
+															class:copy-button--success={copiedItems.has(`${report.id}-name`)}
+															onclick={() => copyToClipboard(report.report_name, 'Report Name', `${report.id}-name`)}
+															title={copiedItems.has(`${report.id}-name`) ? 'Copied!' : 'Copy Report Name'}
+														>
+															{#if copiedItems.has(`${report.id}-name`)}
+																<CheckCircle size={14} />
+															{:else}
+																<Copy size={14} />
+															{/if}
+														</button>
 													</div>
 												</td>
 												<td class="table__cell table__cell--report-title" title={report.report_title}>
-													<span class="table__cell-content">{report.report_title}</span>
+													<div class="cell-with-copy">
+														<span class="table__cell-content">{report.report_title}</span>
+														<button 
+															class="copy-button"
+															class:copy-button--success={copiedItems.has(`${report.id}-title`)}
+															onclick={() => copyToClipboard(report.report_title, 'Report Title', `${report.id}-title`)}
+															title={copiedItems.has(`${report.id}-title`) ? 'Copied!' : 'Copy Report Title'}
+														>
+															{#if copiedItems.has(`${report.id}-title`)}
+																<CheckCircle size={14} />
+															{:else}
+																<Copy size={14} />
+															{/if}
+														</button>
+													</div>
 												</td>
-												<td class="table__cell">{formatDate(report.report_date)}</td>
+												<td class="table__cell table__cell--report-date">{formatDate(report.report_date)}</td>
 												<td class="table__cell">{report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}</td>
 												<td class="table__cell">{report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}</td>
 												<td class="table__cell">{report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}</td>
 												<td class="table__cell">{report.formatted_duration || 'N/A'}</td>
-												<td class="table__cell table__cell--highlight">{report.total_distance_km ? `${report.total_distance_km} km` : 'N/A'}</td>
+												<td class="table__cell">{report.total_distance_km ? `${report.total_distance_km} km` : 'N/A'}</td>
 												<td class="table__cell">{report.surveyor_unit_desc || 'N/A'}</td>
 												<td class="table__cell table__cell--center">{report.fieldOfViewGapsCount || 0}</td>
 												<td class="table__cell table__cell--center">
@@ -847,7 +1087,7 @@
 											</tr>
 											{#if isExpanded && hasSurveys}
 												<tr class="table__row table__row--expansion">
-													<td colspan="12" class="table__cell table__cell--expansion">
+													<td colspan="14" class="table__cell table__cell--expansion">
 														<div class="surveys-container">
 															<h4 class="surveys-title">Surveys for {report.report_name}</h4>
 															<div class="surveys-grid">
@@ -914,7 +1154,7 @@
 										{/each}
 									{:else}
 										<tr class="table__row">
-											<td class="table__cell table__cell--empty" colspan="12">No reports found</td>
+											<td class="table__cell table__cell--empty" colspan="14">No reports found</td>
 										</tr>
 									{/if}
 								</tbody>
@@ -929,7 +1169,7 @@
 
 <!-- LISA Modal -->
 {#if showLisaModal}
-	<div class="modal-overlay" onclick={closeLisaModal}>
+	<div class="modal-overlay" role="button" tabindex="0" onclick={closeLisaModal} aria-label="Close modal">
 		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
 			<div class="modal-header">
 				<h3>LISA Indications - {selectedReportName}</h3>
@@ -943,32 +1183,44 @@
 						{#each selectedReportIndications as indication, index}
 							<div class="indication-card">
 								<div class="indication-header">
-									<span class="indication-number">#{index + 1}</span>
+									<span class="indication-number">{indication.lisa_id || indication.lisa_name || `#${index + 1}`}</span>
 									<span class="indication-id">{indication.lisa_id || indication.lisa_name || 'Unknown ID'}</span>
 								</div>
 								<div class="indication-details">
-									{#if indication.lisa_name && indication.lisa_name !== indication.lisa_id}
+									{#if indication.lisa_name}
 										<div class="indication-detail">
-											<span class="detail-label">Name:</span>
+											<span class="detail-label">LISA Name:</span>
 											<span class="detail-value">{indication.lisa_name}</span>
-										</div>
-									{/if}
-									{#if indication.indication_type}
-										<div class="indication-detail">
-											<span class="detail-label">Type:</span>
-											<span class="detail-value">{indication.indication_type}</span>
 										</div>
 									{/if}
 									{#if indication.amplitude}
 										<div class="indication-detail">
 											<span class="detail-label">Amplitude:</span>
-											<span class="detail-value">{indication.amplitude}</span>
+											<span class="detail-value">{Number(indication.amplitude).toFixed(2)}</span>
 										</div>
 									{/if}
-									{#if indication.created_date}
+									{#if indication.classification_confidence}
 										<div class="indication-detail">
-											<span class="detail-label">Date:</span>
-											<span class="detail-value">{formatDate(indication.created_date)}</span>
+											<span class="detail-label">Classification Confidence:</span>
+											<span class="detail-value">{Number(indication.classification_confidence).toFixed(2)}</span>
+										</div>
+									{/if}
+									{#if indication.num_peaks}
+										<div class="indication-detail">
+											<span class="detail-label">Number of Peaks:</span>
+											<span class="detail-value">{indication.num_peaks}</span>
+										</div>
+									{/if}
+									{#if indication.rfr_label}
+										<div class="indication-detail">
+											<span class="detail-label">Emission Bin:</span>
+											<span class="detail-value">{indication.rfr_label}</span>
+										</div>
+									{/if}
+									{#if indication.emission_rate}
+										<div class="indication-detail">
+											<span class="detail-label">Emission Rate:</span>
+											<span class="detail-value">{Number(indication.emission_rate).toFixed(2)}</span>
 										</div>
 									{/if}
 								</div>
@@ -982,65 +1234,310 @@
 {/if}
 
 <style>
-	/* Stats Header */
-	.stats-header {
-		background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
-		padding: 1.5rem;
-		border-radius: 8px;
-		margin-bottom: 1.5rem;
+	/* Stats Dashboard */
+	.stats-dashboard {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 		gap: 1.5rem;
-		color: white;
+		margin-bottom: 1.5rem;
+	}
+
+	.stats-section {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 8px;
+		overflow: hidden;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	}
+
+	.stats-section-header {
+		background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+		padding: 1rem 1.5rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		color: white;
+	}
+
+	.stats-section-header h3 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 600;
+		letter-spacing: 0.025em;
+	}
+
+	.stats-section-content {
+		padding: 1.5rem;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+		gap: 1rem;
 	}
 
 	.stats-metric {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
+		padding: 0.75rem;
+		border-radius: 6px;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-secondary);
+		transition: all 0.2s ease;
 	}
 
-	.stats-metric--primary {
-		grid-column: span 2;
-		padding-right: 1.5rem;
-		border-right: 1px solid rgba(255, 255, 255, 0.2);
+	.stats-metric:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--border-primary);
+	}
+
+	.stats-metric--vehicle {
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 0.5rem;
 	}
 
 	.stats-icon {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 40px;
-		height: 40px;
-		background: rgba(255, 255, 255, 0.15);
-		border-radius: 8px;
+		width: 36px;
+		height: 36px;
+		background: var(--bg-tertiary);
+		border-radius: 6px;
 		flex-shrink: 0;
+		border: 1px solid var(--border-secondary);
 	}
 
 	.stats-icon--success {
-		background: rgba(34, 197, 94, 0.2);
+		background: rgba(34, 197, 94, 0.1);
+		border-color: rgba(34, 197, 94, 0.3);
+		color: var(--success);
 	}
 
 	.stats-icon--warning {
-		background: rgba(245, 158, 11, 0.2);
+		background: rgba(245, 158, 11, 0.1);
+		border-color: rgba(245, 158, 11, 0.3);
+		color: var(--warning);
 	}
 
 	.stats-content {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
+		flex: 1;
 	}
 
 	.stats-value {
-		font-size: 1.5rem;
+		font-size: 1.25rem;
 		font-weight: 700;
 		line-height: 1;
+		color: var(--text-primary);
 	}
 
 	.stats-label {
-		font-size: 0.85rem;
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+
+	.stats-sublabel {
+		font-size: 0.75rem;
+		color: var(--accent-primary);
 		opacity: 0.9;
+		margin-top: 0.25rem;
+		font-weight: 500;
+	}
+
+	/* Export Controls */
+	.export-controls {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.selection-info {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+	}
+
+	.selection-count {
+		font-weight: 600;
+		color: var(--accent-primary);
+	}
+
+	.button--small {
+		padding: 0.375rem 0.75rem;
+		font-size: 0.8rem;
+	}
+
+	/* Checkbox Styles */
+	.table__header--checkbox {
+		width: 35px !important;
+		min-width: 35px !important;
+		max-width: 35px !important;
+		text-align: center;
+		padding: 0.5rem 0.125rem !important;
+		border-right: none !important;
+	}
+
+	.table__cell--checkbox {
+		width: 35px !important;
+		min-width: 35px !important;
+		max-width: 35px !important;
+		text-align: center;
+		padding: 0.5rem 0.125rem !important;
+		border-right: none !important;
+	}
+
+	.checkbox-header {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+		width: 100%;
+	}
+
+	.checkbox-wrapper {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.25rem;
+		cursor: pointer;
+		user-select: none;
+		position: relative;
+		width: 100%;
+		height: 100%;
+	}
+
+	.checkbox-input {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.checkbox-custom {
+		width: 15px;
+		height: 15px;
+		border: 2px solid var(--border-primary);
+		border-radius: 3px;
+		background: var(--bg-primary);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s ease;
+		position: relative;
+		flex-shrink: 0;
+	}
+
+	.checkbox-custom::after {
+		content: '';
+		width: 4px;
+		height: 7px;
+		border: solid white;
+		border-width: 0 2px 2px 0;
+		transform: rotate(45deg);
+		opacity: 0;
+		transition: opacity 0.2s ease;
+	}
+
+	.checkbox-input:checked + .checkbox-custom {
+		background: var(--accent-primary);
+		border-color: var(--accent-primary);
+		box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+	}
+
+	.checkbox-input:checked + .checkbox-custom::after {
+		opacity: 1;
+	}
+
+	.checkbox-wrapper:hover .checkbox-custom {
+		border-color: var(--accent-primary);
+		transform: scale(1.05);
+	}
+
+	.checkbox-input:focus + .checkbox-custom {
+		outline: 2px solid var(--accent-primary);
+		outline-offset: 2px;
+	}
+
+	.checkbox-label {
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		white-space: nowrap;
+		display: none; /* Hidden by default due to narrow column */
+		text-align: center;
+		line-height: 1.2;
+	}
+
+	.checkbox-label-filter {
+		font-size: 0.65rem;
+		font-weight: 400;
+		color: var(--accent-primary);
+		opacity: 0.8;
+	}
+
+	.checkbox-wrapper:hover .checkbox-label {
+		color: var(--accent-primary);
+	}
+
+	.checkbox-input:checked + .checkbox-custom + .checkbox-label {
+		color: var(--accent-primary);
+	}
+
+	/* Enhanced hover effects for table rows with checkboxes */
+	.table__row:hover .checkbox-custom {
+		border-color: var(--accent-primary);
+		background: var(--bg-tertiary);
+	}
+
+	.table__row:hover .checkbox-input:checked + .checkbox-custom {
+		background: var(--accent-primary);
+		box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+	}
+
+	/* Expand Column Styles */
+	.table__header--expand {
+		width: 25px !important;
+		min-width: 25px !important;
+		max-width: 25px !important;
+		text-align: center;
+		padding: 0.5rem 0.125rem !important;
+		border-right: none !important;
+	}
+
+	.table__cell--expand {
+		width: 25px !important;
+		min-width: 25px !important;
+		max-width: 25px !important;
+		text-align: center;
+		padding: 0.5rem 0.125rem !important;
+		border-right: none !important;
+	}
+
+	.expand-button {
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0.125rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 3px;
+		transition: background-color 0.2s ease;
+		color: var(--text-secondary);
+		width: 20px;
+		height: 20px;
+	}
+
+	.expand-button:hover {
+		background-color: var(--bg-secondary);
+		color: var(--accent-primary);
 	}
 
 	/* Filter Controls */
@@ -1211,18 +1708,6 @@
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 	}
 
-	.toggle-switch input:checked + .toggle-slider {
-		background-color: var(--accent-primary);
-	}
-
-	.toggle-switch input:checked + .toggle-slider:before {
-		transform: translateX(20px);
-	}
-
-	.toggle-switch:hover .toggle-slider {
-		box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-	}
-
 	/* Sync Info in Page Actions */
 	.sync-info {
 		display: flex;
@@ -1378,44 +1863,79 @@
 		overflow-x: auto;
 	}
 
-	.table {
+	/* Copy button styles */
+	.cell-with-copy {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		width: 100%;
+		gap: 0.5rem;
 	}
 
-	.table__element {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.85rem;
-		min-width: 1560px; /* Decreased since we removed the expand column */
-		table-layout: fixed; /* Force table to respect column widths */
-	}
-
-	.table__header {
-		background: var(--bg-secondary);
-		padding: 0.875rem 0.75rem;
-		text-align: left;
-		font-weight: 600;
-		font-size: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
+	.copy-button {
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0.25rem;
+		border-radius: 4px;
 		color: var(--text-secondary);
-		border-bottom: 1px solid var(--border-primary);
-		min-width: 120px;
-		max-width: 200px;
-		position: relative;
+		transition: all 0.2s ease;
+		opacity: 0;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
-	/* Optimized columns for report name (short codes) and title with inline arrow */
-	.table__header--report-name {
-		min-width: 140px !important;
-		max-width: 140px !important;
-		width: 140px !important;
+	.copy-button:hover {
+		background-color: var(--bg-secondary);
+		color: var(--accent-primary);
+		transform: scale(1.1);
 	}
 
-	.table__header--report-title {
-		min-width: 400px !important;
-		max-width: 400px !important;
-		width: 400px !important;
+	.copy-button:active {
+		transform: scale(0.95);
+	}
+
+	/* Success state styling */
+	.copy-button--success {
+		color: #10b981 !important; /* Green color for success */
+		background-color: rgba(16, 185, 129, 0.1) !important;
+		opacity: 1 !important;
+		animation: copySuccess 0.3s ease-out;
+	}
+
+	.copy-button--success:hover {
+		color: #059669 !important;
+		background-color: rgba(16, 185, 129, 0.15) !important;
+		transform: scale(1.05);
+	}
+
+	@keyframes copySuccess {
+		0% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.2);
+		}
+		100% {
+			transform: scale(1);
+		}
+	}
+
+	/* Show copy button on row hover */
+	.table__row:hover .copy-button {
+		opacity: 1;
+	}
+
+	/* Adjust text containers to allow space for copy button */
+	.cell-with-copy .report-name-text,
+	.cell-with-copy .table__cell-content {
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		min-width: 0;
 	}
 
 
@@ -1605,29 +2125,7 @@
 		border-width: 0;
 	}
 
-	.table__row {
-		border-bottom: 1px solid var(--border-secondary);
-		transition: background-color 0.15s ease;
-	}
 
-	.table__row:hover {
-		background: var(--bg-secondary);
-	}
-
-
-
-	.table__row--loading {
-		background: var(--bg-secondary);
-	}
-
-	.table__row--expansion {
-		background: var(--bg-secondary);
-		border-bottom: 1px solid var(--border-primary);
-	}
-
-	.table__cell--expansion {
-		padding: 0 !important;
-	}
 
 	/* Survey accordion styles */
 	.surveys-container {
@@ -1715,200 +2213,9 @@
 		font-size: 0.8rem;
 	}
 
-	.table__cell {
-		padding: 0.875rem 1rem;
-		vertical-align: middle;
-		height: 3.5rem;
-		box-sizing: border-box;
-		border-right: 1px solid var(--border-secondary);
-		font-size: 0.85rem;
-		color: var(--text-primary);
-		text-overflow: clip;
-	}
 
-	.table__cell:last-child {
-		border-right: none;
-	}
 
-	.table__cell--highlight {
-		background: rgba(37, 99, 235, 0.05);
-		font-weight: 600;
-		color: var(--accent-primary);
-	}
 
-	.table__cell--center {
-		text-align: center;
-	}
-
-	.table__cell--status {
-		text-align: center;
-		padding: 0.75rem;
-	}
-
-	.table__cell--empty {
-		text-align: center;
-		color: var(--text-secondary);
-		font-style: italic;
-	}
-
-	/* Specific styling for report name and title cells */
-	.table__cell--report-name {
-		min-width: 140px !important;
-		max-width: 140px !important;
-		width: 140px !important;
-		position: relative;
-		cursor: help;
-		overflow: hidden;
-		padding: 0.875rem 1rem 0.875rem 0 !important;
-	}
-
-	.report-name-container {
-		display: flex;
-		align-items: center;
-		gap: 0;
-		width: 100%;
-		height: 100%;
-		line-height: 1.2;
-	}
-
-	.expand-button-inline {
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 0.25rem;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 4px;
-		transition: background-color 0.2s ease;
-		flex-shrink: 0;
-		margin-left: 0.5rem;
-		margin-right: 0.25rem;
-		height: 28px;
-		width: 28px;
-	}
-
-	.expand-button-inline:hover {
-		background-color: var(--bg-secondary);
-	}
-
-	.report-name-text {
-		color: var(--text-primary);
-		font-weight: 500;
-		line-height: 1.4;
-		display: flex;
-		align-items: center;
-	}
-
-	.table__cell--report-title {
-		min-width: 400px !important;
-		max-width: 400px !important;
-		width: 400px !important;
-		position: relative;
-		cursor: help;
-		overflow: hidden;
-	}
-
-	.table__cell-content {
-		display: block;
-		width: 100%;
-		line-height: 1.4;
-	}
-
-	/* Status container styling */
-	.status-container {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		height: 100%;
-	}
-
-	.status-indicator {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		flex-shrink: 0;
-	}
-
-	.status-indicator--final {
-		background: var(--success);
-		box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
-	}
-
-	.status-indicator--draft {
-		background: var(--warning);
-		box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-	}
-
-	.status-text {
-		font-size: 0.8rem;
-		font-weight: 500;
-	}
-
-	/* Sort header styling */
-	.sort-header {
-		display: flex;
-		align-items: flex-start;
-		gap: 0.5rem;
-		width: 100%;
-		cursor: pointer;
-		user-select: none;
-		line-height: 1.3;
-	}
-
-	.sort-header span {
-		flex: 1;
-		word-wrap: break-word;
-		overflow-wrap: break-word;
-		hyphens: auto;
-	}
-
-	.table__header--sortable {
-		cursor: pointer;
-		transition: background-color 0.15s ease;
-	}
-
-	.table__header--sortable:hover {
-		background-color: rgba(0, 0, 0, 0.05);
-	}
-
-	.table__sort-icon {
-		color: var(--accent-primary);
-		flex-shrink: 0;
-		margin-top: 0.1rem;
-		opacity: 0.8;
-	}
-
-	.table__header--sortable:hover .table__sort-icon {
-		opacity: 1;
-	}
-
-	.table__header--center {
-		text-align: center !important;
-	}
-
-	.table__header--center .sort-header {
-		justify-content: center;
-	}
-
-	/* Skeleton loading */
-	.skeleton-text {
-		height: 1rem;
-		background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
-		background-size: 200% 100%;
-		border-radius: 4px;
-		animation: skeleton-loading 1.5s infinite;
-	}
-
-	@keyframes skeleton-loading {
-		0% {
-			background-position: 200% 0;
-		}
-		100% {
-			background-position: -200% 0;
-		}
-	}
 
 	/* Table scroll hint */
 	.table-scroll-hint {
@@ -1925,19 +2232,23 @@
 
 	/* Responsive Design */
 	@media (max-width: 1024px) {
-		.stats-header {
-			grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+		.stats-dashboard {
+			grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 			gap: 1rem;
 		}
 
-		.stats-metric--primary {
-			grid-column: span 1;
-			border-right: none;
-			padding-right: 0;
+		.stats-section-content {
+			grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+			gap: 0.75rem;
+			padding: 1rem;
 		}
 
 		.stats-value {
-			font-size: 1.25rem;
+			font-size: 1.1rem;
+		}
+		
+		.checkbox-label {
+			display: none;
 		}
 	}
 
@@ -1980,18 +2291,47 @@
 	}
 
 	@media (max-width: 640px) {
-		.stats-header {
-			grid-template-columns: 1fr 1fr;
+		.stats-dashboard {
+			grid-template-columns: 1fr;
 			gap: 0.75rem;
-			padding: 1rem;
+		}
+
+		.stats-section-content {
+			grid-template-columns: 1fr 1fr;
+			gap: 0.5rem;
+			padding: 0.75rem;
 		}
 
 		.stats-value {
-			font-size: 1.1rem;
+			font-size: 1rem;
 		}
 
 		.stats-label {
 			font-size: 0.75rem;
+		}
+
+		.stats-sublabel {
+			font-size: 0.65rem;
+		}
+
+		.checkbox-label {
+			display: none;
+		}
+		
+		.checkbox-custom {
+			width: 12px;
+			height: 12px;
+		}
+		
+		.checkbox-custom::after {
+			width: 3px;
+			height: 5px;
+		}
+
+		.expand-button {
+			padding: 0.0625rem;
+			width: 16px;
+			height: 16px;
 		}
 
 		.surveys-grid {

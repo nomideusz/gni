@@ -43,13 +43,19 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             const today = now.toISOString().split('T')[0];
             dateFilter += ` && report_date >= "${today}"`;
         } else if (timePeriod === 'week') {
-            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            const weekAgoStr = weekAgo.toISOString().split('T')[0];
-            dateFilter += ` && report_date >= "${weekAgoStr}"`;
+            // Get start of current week (Monday)
+            const startOfWeek = new Date(now);
+            const dayOfWeek = startOfWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Handle Sunday case
+            startOfWeek.setDate(startOfWeek.getDate() - daysFromMonday);
+            startOfWeek.setHours(0, 0, 0, 0);
+            const weekStartStr = startOfWeek.toISOString().split('T')[0];
+            dateFilter += ` && report_date >= "${weekStartStr}"`;
         } else if (timePeriod === 'month') {
-            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            const monthAgoStr = monthAgo.toISOString().split('T')[0];
-            dateFilter += ` && report_date >= "${monthAgoStr}"`;
+            // Get start of current month
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const monthStartStr = startOfMonth.toISOString().split('T')[0];
+            dateFilter += ` && report_date >= "${monthStartStr}"`;
         }
         
         let filter = dateFilter;
@@ -259,6 +265,20 @@ export const GET = async ({ url, locals }: RequestEvent) => {
                 const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
                 return sum + distance;
             }, 0);
+
+        const car3Distance = calculationReports
+            .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #3')
+            .reduce((sum: number, report: any) => {
+                const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
+                return sum + distance;
+            }, 0);
+
+        const car4Distance = calculationReports
+            .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #4')
+            .reduce((sum: number, report: any) => {
+                const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
+                return sum + distance;
+            }, 0);
         
         // Calculate total distance for draft reports with surveys
         const totalDraftDistance = draftReportsWithSurveys.reduce((sum: number, report: any) => {
@@ -276,6 +296,20 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             
         const car2DraftDistance = draftReportsWithSurveys
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #2')
+            .reduce((sum: number, report: any) => {
+                const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
+                return sum + distance;
+            }, 0);
+
+        const car3DraftDistance = draftReportsWithSurveys
+            .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #3')
+            .reduce((sum: number, report: any) => {
+                const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
+                return sum + distance;
+            }, 0);
+
+        const car4DraftDistance = draftReportsWithSurveys
+            .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #4')
             .reduce((sum: number, report: any) => {
                 const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
                 return sum + distance;
@@ -311,16 +345,33 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         const uniqueCar2Indications = uniqueIndicationsArray.filter(
             (indication: any) => indication.surveyor_unit_desc === 'GNI Car #2'
         ).length;
+
+        const uniqueCar3Indications = uniqueIndicationsArray.filter(
+            (indication: any) => indication.surveyor_unit_desc === 'GNI Car #3'
+        ).length;
+
+        const uniqueCar4Indications = uniqueIndicationsArray.filter(
+            (indication: any) => indication.surveyor_unit_desc === 'GNI Car #4'
+        ).length;
         
         // Calculate LISA per km metrics using unique indications
         const totalLisaPerKm = totalDistance > 0 ? (totalUniqueIndications / totalDistance) : 0;
         const car1LisaPerKm = car1Distance > 0 ? (uniqueCar1Indications / car1Distance) : 0;
         const car2LisaPerKm = car2Distance > 0 ? (uniqueCar2Indications / car2Distance) : 0;
+        const car3LisaPerKm = car3Distance > 0 ? (uniqueCar3Indications / car3Distance) : 0;
+        const car4LisaPerKm = car4Distance > 0 ? (uniqueCar4Indications / car4Distance) : 0;
         
+        // Calculate total gaps from calculation reports
+        const totalGaps = calculationReports.reduce((sum: number, report: any) => {
+            return sum + (report.fieldOfViewGapsCount || 0);
+        }, 0);
+
         // Placeholder for work hours - will be loaded from separate API
         const totalWorkHours = 0;
         const car1WorkHours = 0;
         const car2WorkHours = 0;
+        const car3WorkHours = 0;
+        const car4WorkHours = 0;
         
         // Weekly targets (configurable)
         const WEEKLY_TARGET_KM = 200; // Client's weekly target in km
@@ -338,19 +389,30 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             totalDistance,
             car1Distance,
             car2Distance,
+            car3Distance,
+            car4Distance,
             totalDraftDistance,
             car1DraftDistance,
             car2DraftDistance,
+            car3DraftDistance,
+            car4DraftDistance,
+            totalGaps,
             totalIndications: totalUniqueIndications,
             totalRawIndications: calculationReports.reduce((sum, item: any) => sum + (item.indicationsCount || 0), 0),
             car1LisaCount: uniqueCar1Indications,
             car2LisaCount: uniqueCar2Indications,
+            car3LisaCount: uniqueCar3Indications,
+            car4LisaCount: uniqueCar4Indications,
             totalLisaPerKm,
             car1LisaPerKm,
             car2LisaPerKm,
+            car3LisaPerKm,
+            car4LisaPerKm,
             totalWorkHours,
             car1WorkHours,
             car2WorkHours,
+            car3WorkHours,
+            car4WorkHours,
             // Target tracking
             weeklyTargetKm: WEEKLY_TARGET_KM,
             dailyTargetKm: DAILY_TARGET_KM,

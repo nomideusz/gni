@@ -129,32 +129,32 @@
     text-overflow: ellipsis;
 }
 
-/* Row hover effects */
-.table__row:hover {
+/* Row hover effects - exclude reports table */
+.table:not(.table--reports) .table__row:hover {
     background-color: rgba(56, 189, 248, 0.15) !important;
     transition: background-color 0.15s ease-in-out;
 }
 
-/* Ensure hover background works on cells */
-.table__row:hover .table__cell {
+/* Ensure hover background works on cells - exclude reports table */
+.table:not(.table--reports) .table__row:hover .table__cell {
     background-color: rgba(56, 189, 248, 0.15) !important;
 }
 
-/* Filtered row hover - maintain distinction */
-.table__row--filtered:hover {
+/* Filtered row hover - maintain distinction - exclude reports table */
+.table:not(.table--reports) .table__row--filtered:hover {
     background-color: rgba(240, 240, 245, 0.3) !important;
 }
 
-.table__row--filtered:hover .table__cell {
+.table:not(.table--reports) .table__row--filtered:hover .table__cell {
     background-color: rgba(240, 240, 245, 0.3) !important;
 }
 
-/* Alternating row colors for better readability */
-.table__row:nth-child(odd) {
+/* Alternating row colors for better readability - exclude reports table */
+.table:not(.table--reports) .table__row:nth-child(odd) {
     background-color: var(--bg-secondary) !important;
 }
 
-.table__row:nth-child(even) {
+.table:not(.table--reports) .table__row:nth-child(even) {
     background-color: rgba(0, 0, 0, 0.1) !important;
 }
 
@@ -340,8 +340,8 @@
     width: 7%; /* Report Date */
 }
 
-.table--compact .table__header:nth-child(4),
-.table--compact .table__cell:nth-child(4) {
+.table--compact:not(.table--reports) .table__header:nth-child(4),
+.table--compact:not(.table--reports) .table__cell:nth-child(4) {
     width: 7%; /* CH4 Max Amplitude (ppm) - matched with Emission Rate */
     background-color: rgba(59, 130, 246, 0.08) !important; /* Subtle blue highlight */
     border-left: 2px solid rgba(59, 130, 246, 0.3);
@@ -373,8 +373,8 @@
     width: 6%; /* Persistence */
 }
 
-.table--compact .table__header:nth-child(10),
-.table--compact .table__cell:nth-child(10) {
+.table--compact:not(.table--reports) .table__header:nth-child(10),
+.table--compact:not(.table--reports) .table__cell:nth-child(10) {
     width: 7%; /* Emission Rate (SCFH) */
     background-color: rgba(59, 130, 246, 0.08) !important; /* Subtle blue highlight */
     border-left: 2px solid rgba(59, 130, 246, 0.3);
@@ -553,20 +553,478 @@
 }
 
 /* Maintain highlighting on hover for key threshold columns */
-.table--compact .table__row:hover .table__cell:nth-child(4),
-.table--compact .table__row:hover .table__cell:nth-child(10) {
+.table--compact:not(.table--reports) .table__row:hover .table__cell:nth-child(4),
+.table--compact:not(.table--reports) .table__row:hover .table__cell:nth-child(10) {
     background-color: rgba(59, 130, 246, 0.15) !important; /* Slightly stronger highlight on hover */
 }
 
 /* Maintain highlighting for filtered rows */
-.table--compact .table__row--filtered .table__cell:nth-child(4),
-.table--compact .table__row--filtered .table__cell:nth-child(10) {
+.table--compact:not(.table--reports) .table__row--filtered .table__cell:nth-child(4),
+.table--compact:not(.table--reports) .table__row--filtered .table__cell:nth-child(10) {
     background-color: rgba(59, 130, 246, 0.06) !important; /* Dimmed highlight for filtered rows */
 }
 
-.table--compact .table__row--filtered:hover .table__cell:nth-child(4),
-.table--compact .table__row--filtered:hover .table__cell:nth-child(10) {
+.table--compact:not(.table--reports) .table__row--filtered:hover .table__cell:nth-child(4),
+.table--compact:not(.table--reports) .table__row--filtered:hover .table__cell:nth-child(10) {
     background-color: rgba(59, 130, 246, 0.12) !important; /* Moderate highlight for filtered row hover */
+}
+
+/*---------------------------------------*/
+/* REPORTS TABLE STYLES                  */
+/*---------------------------------------*/
+
+/* Reports table specific layout */
+.table--reports {
+    margin-bottom: 0;
+}
+
+.table--reports .table__element {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 1315px; /* Calculated total of all column widths */
+    table-layout: fixed; /* Force table to respect column widths */
+}
+
+/* Reports table headers */
+.table--reports .table__header {
+    background: var(--bg-secondary);
+    padding: 0.875rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    min-width: 80px;
+    max-width: 200px;
+    position: relative;
+}
+
+/* Reports table cells */
+.table--reports .table__cell {
+    padding: 0.875rem 1rem;
+    vertical-align: middle;
+    height: 3.5rem;
+    box-sizing: border-box;
+    border-right: 1px solid var(--border-secondary);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    text-overflow: clip;
+}
+
+.table--reports .table__cell:last-child {
+    border-right: none;
+}
+
+/* Reports table specific column widths */
+/* Column 1: Expand arrow */
+.table--reports .table__element th:nth-child(1),
+.table--reports .table__element td:nth-child(1) {
+    width: 30px !important;
+    min-width: 30px !important;
+    max-width: 30px !important;
+}
+
+/* Column 2: Checkbox */
+.table--reports .table__element th:nth-child(2),
+.table--reports .table__element td:nth-child(2) {
+    width: 20px !important;
+    min-width: 20px !important;
+    max-width: 20px !important;
+}
+
+/* Column 6: Assets Covered */
+.table--reports .table__element th:nth-child(6),
+.table--reports .table__element td:nth-child(6) {
+    width: 70px !important;
+    min-width: 70px !important;
+    max-width: 70px !important;
+    text-align: center;
+}
+
+/* Column 7: Total Assets */
+.table--reports .table__element th:nth-child(7),
+.table--reports .table__element td:nth-child(7) {
+    width: 70px !important;
+    min-width: 70px !important;
+    max-width: 70px !important;
+    text-align: center;
+}
+
+/* Column 8: Coverage % */
+.table--reports .table__element th:nth-child(8),
+.table--reports .table__element td:nth-child(8) {
+    width: 75px !important;
+    min-width: 75px !important;
+    max-width: 75px !important;
+    text-align: center;
+}
+
+/* Column 9: Duration */
+.table--reports .table__element th:nth-child(9),
+.table--reports .table__element td:nth-child(9) {
+    width: 65px !important;
+    min-width: 65px !important;
+    max-width: 65px !important;
+    text-align: center;
+}
+
+/* Column 10: Survey Distance */
+.table--reports .table__element th:nth-child(10),
+.table--reports .table__element td:nth-child(10) {
+    width: 70px !important;
+    min-width: 70px !important;
+    max-width: 70px !important;
+    text-align: center;
+}
+
+/* Column 11: Vehicle */
+.table--reports .table__element th:nth-child(11),
+.table--reports .table__element td:nth-child(11) {
+    width: 60px !important;
+    min-width: 60px !important;
+    max-width: 60px !important;
+    text-align: center;
+}
+
+/* Column 12: Gaps */
+.table--reports .table__element th:nth-child(12),
+.table--reports .table__element td:nth-child(12) {
+    width: 45px !important;
+    min-width: 45px !important;
+    max-width: 45px !important;
+    text-align: center;
+}
+
+/* Column 13: LISAs */
+.table--reports .table__element th:nth-child(13),
+.table--reports .table__element td:nth-child(13) {
+    width: 45px !important;
+    min-width: 45px !important;
+    max-width: 45px !important;
+    text-align: center;
+}
+
+/* Column 14: Status */
+.table--reports .table__element th:nth-child(14),
+.table--reports .table__element td:nth-child(14) {
+    width: 60px !important;
+    min-width: 60px !important;
+    max-width: 60px !important;
+    text-align: center;
+}
+
+/* Reports table header modifiers */
+.table--reports .table__header--report-name {
+    min-width: 90px !important;
+    max-width: 90px !important;
+    width: 90px !important;
+}
+
+.table--reports .table__header--report-title {
+    min-width: 500px !important;
+    max-width: 500px !important;
+    width: 500px !important;
+    padding-right: 1.5rem !important;
+}
+
+.table--reports .table__header--report-date {
+    min-width: 85px !important;
+    max-width: 85px !important;
+    width: 85px !important;
+}
+
+/* Reports table cell modifiers */
+.table--reports .table__cell--report-name {
+    min-width: 90px !important;
+    max-width: 90px !important;
+    width: 90px !important;
+    position: relative;
+    cursor: help;
+    overflow: hidden;
+}
+
+.table--reports .table__cell--report-title {
+    min-width: 500px !important;
+    max-width: 500px !important;
+    width: 500px !important;
+    position: relative;
+    cursor: help;
+    overflow: hidden;
+    padding-right: 1.5rem !important;
+}
+
+.table--reports .table__cell--report-date {
+    min-width: 85px !important;
+    max-width: 85px !important;
+    width: 85px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Standard border styling for report table columns */
+.table--reports .table__element .table__header:nth-child(4), 
+.table--reports .table__element .table__cell:nth-child(4),
+.table--reports .table__element .table__header:nth-child(5), 
+.table--reports .table__element .table__cell:nth-child(5),
+.table--reports .table__element .table__header:nth-child(7),
+.table--reports .table__element .table__cell:nth-child(7),
+.table--reports .table__element .table__header:nth-child(9),
+.table--reports .table__element .table__cell:nth-child(9),
+.table--reports .table__element .table__header:nth-child(10), 
+.table--reports .table__element .table__cell:nth-child(10),
+.table--reports .table__element .table__header:nth-child(11), 
+.table--reports .table__element .table__cell:nth-child(11),
+.table--reports .table__element .table__header:nth-child(12), 
+.table--reports .table__element .table__cell:nth-child(12),
+.table--reports .table__element .table__header:nth-child(13), 
+.table--reports .table__element .table__cell:nth-child(13),
+.table--reports .table__element .table__header:nth-child(14), 
+.table--reports .table__element .table__cell:nth-child(14) {
+    border-left: 1px solid var(--border-secondary);
+    border-right: 1px solid var(--border-secondary);
+}
+
+/* Highlight Assets Covered and Coverage % columns */
+.table--reports .table__element .table__header:nth-child(6), 
+.table--reports .table__element .table__cell:nth-child(6),
+.table--reports .table__element .table__header:nth-child(8), 
+.table--reports .table__element .table__cell:nth-child(8) {
+    background-color: rgba(37, 99, 235, 0.08) !important;
+    border-left: 2px solid rgba(37, 99, 235, 0.25) !important;
+    border-right: 2px solid rgba(37, 99, 235, 0.25) !important;
+    font-weight: 600 !important;
+}
+
+/* Reports table basic row styles */
+.table--reports .table__row {
+    border-bottom: 1px solid var(--border-secondary);
+    transition: background-color 0.15s ease;
+    background-color: transparent;
+}
+
+/* Reports table hover effects */
+.table--reports .table__row:hover {
+    background-color: var(--bg-secondary) !important;
+}
+
+.table--reports .table__row:hover .table__cell {
+    background-color: var(--bg-secondary) !important;
+}
+
+/* Higher specificity hover for all cells - multiple selectors for maximum coverage */
+.table--reports .table__element .table__row:hover .table__cell,
+.table--reports .table__element .table__row:hover td,
+.table--reports .table__row:hover .table__cell,
+.table--reports .table__row:hover td {
+    background-color: rgba(95, 115, 140, 0.15) !important; /* Teal-gray hover for all columns */
+}
+
+/* Specific overrides for all columns on hover */
+.table--reports .table__element .table__row:hover .table__cell:nth-child(1),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(2),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(3),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(4),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(5),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(6),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(7),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(8),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(9),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(10),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(11),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(12),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(13),
+.table--reports .table__element .table__row:hover .table__cell:nth-child(14) {
+    background-color: rgba(95, 115, 140, 0.15) !important; /* Teal-gray hover for all columns */
+}
+
+/* Ensure consistent teal-gray hover for columns 6 and 8 - maximum specificity */
+.table--reports .table__element tbody .table__row:hover .table__cell:nth-child(6),
+.table--reports .table__element tbody .table__row:hover .table__cell:nth-child(8),
+.table--reports .table--compact .table__element .table__row:hover .table__cell:nth-child(6),
+.table--reports .table--compact .table__element .table__row:hover .table__cell:nth-child(8),
+.table--reports .table__element tbody tr:hover td:nth-child(6),
+.table--reports .table__element tbody tr:hover td:nth-child(8),
+.table--reports .table__element tr:hover td:nth-child(6),
+.table--reports .table__element tr:hover td:nth-child(8) {
+    background-color: rgba(37, 99, 235, 0.2) !important; /* More visible blue hover */}
+
+/* Reports table row states */
+.table--reports .table__row--loading {
+    background: var(--bg-secondary);
+}
+
+.table--reports .table__row--loading:hover {
+    background: var(--bg-secondary) !important;
+}
+
+.table--reports .table__row--expansion {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.table--reports .table__row--expansion:hover {
+    background: var(--bg-secondary) !important;
+}
+
+.table--reports .table__cell--expansion {
+    padding: 0 !important;
+}
+
+/* Generic table utilities */
+.table__cell--center {
+    text-align: center;
+}
+
+.table__cell--empty {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.table__cell--highlight {
+    background: transparent;
+    font-weight: normal;
+    color: var(--text-primary);
+}
+
+.table__header--center {
+    text-align: center !important;
+}
+
+.table__header--center .sort-header {
+    justify-content: center;
+}
+
+/* Sort header styling */
+.sort-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.3;
+}
+
+.sort-header span {
+    flex: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+.table__sort-icon {
+    color: var(--accent-primary);
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+    opacity: 0.8;
+}
+
+/* Skeleton loading */
+.skeleton-text {
+    height: 1rem;
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+    background-size: 200% 100%;
+    border-radius: 4px;
+    animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Table cell content utilities */
+.table__cell-content {
+    display: block;
+    width: 100%;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.report-name-text {
+    color: var(--text-primary);
+    font-weight: 500;
+    line-height: 1.4;
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Status container styling */
+.status-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 100%;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-indicator--final {
+    background: var(--success);
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.status-indicator--draft {
+    background: var(--warning);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.status-text {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Responsive styles for reports table */
+@media (max-width: 1024px) {
+    .table--reports .table__header--checkbox,
+    .table--reports .table__cell--checkbox {
+        width: 30px !important;
+        min-width: 30px !important;
+        max-width: 30px !important;
+    }
+
+    .table--reports .table__header--expand,
+    .table--reports .table__cell--expand {
+        width: 20px !important;
+        min-width: 20px !important;
+        max-width: 20px !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .table--reports .table__header--checkbox,
+    .table--reports .table__cell--checkbox {
+        width: 25px !important;
+        min-width: 25px !important;
+        max-width: 25px !important;
+    }
+
+    .table--reports .table__header--expand,
+    .table--reports .table__cell--expand {
+        width: 20px !important;
+        min-width: 20px !important;
+        max-width: 20px !important;
+    }
 }
 
  

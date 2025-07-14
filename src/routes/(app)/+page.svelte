@@ -19,8 +19,9 @@
 	import FileText from 'lucide-svelte/icons/file-text';
 	import FileCheck from 'lucide-svelte/icons/file-check';
 	import Activity from 'lucide-svelte/icons/activity';
-	import Calendar from 'lucide-svelte/icons/calendar';
-	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
+import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
+import Calendar from 'lucide-svelte/icons/calendar';
+import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 
 	// Recommended way to access data in SvelteKit with Svelte 5
 	const { data } = $props();
@@ -46,6 +47,7 @@
 	let car1DraftDistance = $state(0);
 	let car2DraftDistance = $state(0);
 	let totalIndications = $state(0);
+	let totalGaps = $state(0);
 	let car1LisaCount = $state(0);
 	let car2LisaCount = $state(0);
 	let totalLisaPerKm = $state(0);
@@ -90,6 +92,7 @@
 				car1DraftDistance = apiData.stats.car1DraftDistance || 0;
 				car2DraftDistance = apiData.stats.car2DraftDistance || 0;
 				totalIndications = apiData.stats.totalIndications || 0;
+				totalGaps = apiData.stats.totalGaps || 0;
 				car1LisaCount = apiData.stats.car1LisaCount || 0;
 				car2LisaCount = apiData.stats.car2LisaCount || 0;
 				totalLisaPerKm = apiData.stats.totalLisaPerKm || 0;
@@ -144,6 +147,7 @@
 			finalReports: 0,
 			draftReports: 0,
 			totalLisas: 0,
+			totalGaps: 0,
 			totalLinearAssetLength: 0,
 			coveredLinearAssetLength: 0,
 			vehicles: new Map() // Will store { total, final, draft } for each vehicle
@@ -173,6 +177,7 @@
 						finalReports: weeklyData.finalReports,
 						draftReports: weeklyData.draftReports,
 						totalLisas: weeklyData.totalLisas,
+						totalGaps: weeklyData.totalGaps,
 						vehicles: Array.from(weeklyData.vehicles.entries()).map(([name, data]) => ({
 							name: name.replace('GNI Car #', 'Car '),
 							total: data.total,
@@ -190,6 +195,7 @@
 					finalReports: 0,
 					draftReports: 0,
 					totalLisas: 0,
+					totalGaps: 0,
 					totalLinearAssetLength: 0,
 					coveredLinearAssetLength: 0,
 					vehicles: new Map()
@@ -204,6 +210,7 @@
 			let finalReports = 0;
 			let draftReports = 0;
 			let totalLisas = 0;
+			let totalGaps = 0;
 			const vehicles = new Map();
 			
 			let totalLinearAssetLength = 0;
@@ -214,6 +221,7 @@
 				const distance = Number(report.dist_mains_covered_length || 0);
 				const assetLength = Number(report.dist_mains_length || 0);
 				const lisas = Number(report.indicationsCount || 0);
+				const gaps = Number(report.fieldOfViewGapsCount || 0);
 				const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
 				const vehicle = report.surveyor_unit_desc || 'Unknown';
 				
@@ -225,8 +233,9 @@
 					// Only use final reports for coverage calculation
 					totalLinearAssetLength += assetLength;
 					coveredLinearAssetLength += distance;
-					// Only count LISAs from final reports
+					// Only count LISAs and gaps from final reports
 					totalLisas += lisas;
+					totalGaps += gaps;
 				} else {
 					draftDistance += distance;
 					draftReports++;
@@ -252,8 +261,9 @@
 					// Weekly coverage calculation from final reports only
 					weeklyData.totalLinearAssetLength += assetLength;
 					weeklyData.coveredLinearAssetLength += distance;
-					// Only count LISAs from final reports
+					// Only count LISAs and gaps from final reports
 					weeklyData.totalLisas += lisas;
+					weeklyData.totalGaps += gaps;
 				} else {
 					weeklyData.draftDistance += distance;
 					weeklyData.draftReports++;
@@ -284,6 +294,7 @@
 				finalReports,
 				draftReports,
 				totalLisas,
+				totalGaps,
 				avgCoverage: dailyCoverage,
 				vehicles: Array.from(vehicles.entries()).map(([name, data]) => ({
 					name: name.replace('GNI Car #', 'Car '),
@@ -309,6 +320,7 @@
 				finalReports: weeklyData.finalReports,
 				draftReports: weeklyData.draftReports,
 				totalLisas: weeklyData.totalLisas,
+				totalGaps: weeklyData.totalGaps,
 				vehicles: Array.from(weeklyData.vehicles.entries()).map(([name, data]) => ({
 					name: name.replace('GNI Car #', 'Car '),
 					total: data.total,
@@ -403,6 +415,7 @@
 						car1DraftDistance = dashData.stats.car1DraftDistance || 0;
 						car2DraftDistance = dashData.stats.car2DraftDistance || 0;
 						totalIndications = dashData.stats.totalIndications || 0;
+				totalGaps = dashData.stats.totalGaps || 0;
 						car1LisaCount = dashData.stats.car1LisaCount || 0;
 						car2LisaCount = dashData.stats.car2LisaCount || 0;
 						totalLisaPerKm = dashData.stats.totalLisaPerKm || 0;
@@ -623,6 +636,23 @@
 							</div>
 						</div>
 					</div>
+
+					<!-- Gaps Metrics -->
+					<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
+						<div class="metric-card__icon metric-card__icon--compact metric-card__icon--warning">
+							<AlertTriangle size={20} />
+						</div>
+						<div class="metric-card__content">
+							<span class="metric-card__label">Gaps</span>
+							<div class="metric-card__value metric-card__value--compact">
+								{#if statsLoading}
+									<div class="skeleton-text"></div>
+								{:else}
+									{totalGaps}
+								{/if}
+							</div>
+						</div>
+					</div>
 				</div>
 				
 				<!-- Report Stats Row -->
@@ -714,6 +744,7 @@
 										<th class="daily-stats-table__header">Final Reports</th>
 										<th class="daily-stats-table__header">Draft Reports</th>
 										<th class="daily-stats-table__header">LISA Count</th>
+										<th class="daily-stats-table__header">Gaps</th>
 										<th class="daily-stats-table__header">Vehicles</th>
 									</tr>
 								</thead>
@@ -721,6 +752,7 @@
 									{#if reportsLoading}
 										{#each Array(7) as _, i}
 											<tr class="daily-stats-table__row daily-stats-table__row--loading">
+												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
 												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
 												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
 												<td class="daily-stats-table__cell"><div class="skeleton-text"></div></td>
@@ -755,6 +787,9 @@
 													</td>
 													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
 														<strong>{stat.totalLisas}</strong>
+													</td>
+													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
+														<strong>{stat.totalGaps}</strong>
 													</td>
 													<td class="daily-stats-table__cell daily-stats-table__cell--summary">
 														<div class="vehicles-list">
@@ -814,6 +849,11 @@
 														</span>
 													</td>
 													<td class="daily-stats-table__cell">
+														<span class="daily-stats-table__metric">
+															{stat.totalGaps}
+														</span>
+													</td>
+													<td class="daily-stats-table__cell">
 														<div class="vehicles-list">
 															{#each stat.vehicles as vehicle}
 																<div class="vehicle-badge">
@@ -833,7 +873,7 @@
 										{/each}
 									{:else}
 										<tr class="daily-stats-table__row">
-											<td class="daily-stats-table__cell daily-stats-table__cell--empty" colspan="7">
+											<td class="daily-stats-table__cell daily-stats-table__cell--empty" colspan="8">
 												No data available for the selected period
 											</td>
 										</tr>

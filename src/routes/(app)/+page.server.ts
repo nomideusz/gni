@@ -49,6 +49,7 @@ export const load: PageServerLoad = async ({ locals, fetch, depends }) => {
                     car1DraftDistance: apiData.stats.car1DraftDistance || 0,
                     car2DraftDistance: apiData.stats.car2DraftDistance || 0,
                     totalIndications: apiData.stats.totalIndications,
+                    totalGaps: apiData.stats.totalGaps,
                     car1LisaCount: apiData.stats.car1LisaCount,
                     car2LisaCount: apiData.stats.car2LisaCount,
                     totalLisaPerKm: apiData.stats.totalLisaPerKm,
