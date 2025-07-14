@@ -959,12 +959,6 @@
 											<span class="detail-value">{indication.indication_type}</span>
 										</div>
 									{/if}
-									{#if indication.latitude && indication.longitude}
-										<div class="indication-detail">
-											<span class="detail-label">Location:</span>
-											<span class="detail-value">{indication.latitude?.toFixed(6)}, {indication.longitude?.toFixed(6)}</span>
-										</div>
-									{/if}
 									{#if indication.amplitude}
 										<div class="indication-detail">
 											<span class="detail-label">Amplitude:</span>
