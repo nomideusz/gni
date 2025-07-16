@@ -54,9 +54,13 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	let totalGaps = $state(0);
 	let car1LisaCount = $state(0);
 	let car2LisaCount = $state(0);
+	let car3LisaCount = $state(0);
+	let car4LisaCount = $state(0);
 	let totalLisaPerKm = $state(0);
 	let car1LisaPerKm = $state(0);
 	let car2LisaPerKm = $state(0);
+	let car3LisaPerKm = $state(0);
+	let car4LisaPerKm = $state(0);
 	let weeklyTargetKm = $state(200);
 	let dailyTargetKm = $state(40);
 	let weeklyProgress = $state(0);
@@ -92,24 +96,24 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 				totalDistance = apiData.stats.totalDistance || 0;
 				car1Distance = apiData.stats.car1Distance || 0;
 				car2Distance = apiData.stats.car2Distance || 0;
-				// @ts-ignore - New car properties that might not exist in backend yet
 				car3Distance = apiData.stats.car3Distance || 0;
-				// @ts-ignore - New car properties that might not exist in backend yet
 				car4Distance = apiData.stats.car4Distance || 0;
 				totalDraftDistance = apiData.stats.totalDraftDistance || 0;
 				car1DraftDistance = apiData.stats.car1DraftDistance || 0;
 				car2DraftDistance = apiData.stats.car2DraftDistance || 0;
-				// @ts-ignore - New car properties that might not exist in backend yet
 				car3DraftDistance = apiData.stats.car3DraftDistance || 0;
-				// @ts-ignore - New car properties that might not exist in backend yet
 				car4DraftDistance = apiData.stats.car4DraftDistance || 0;
 				totalIndications = apiData.stats.totalIndications || 0;
 				totalGaps = apiData.stats.totalGaps || 0;
 				car1LisaCount = apiData.stats.car1LisaCount || 0;
 				car2LisaCount = apiData.stats.car2LisaCount || 0;
+				car3LisaCount = apiData.stats.car3LisaCount || 0;
+				car4LisaCount = apiData.stats.car4LisaCount || 0;
 				totalLisaPerKm = apiData.stats.totalLisaPerKm || 0;
 				car1LisaPerKm = apiData.stats.car1LisaPerKm || 0;
 				car2LisaPerKm = apiData.stats.car2LisaPerKm || 0;
+				car3LisaPerKm = apiData.stats.car3LisaPerKm || 0;
+				car4LisaPerKm = apiData.stats.car4LisaPerKm || 0;
 				weeklyTargetKm = apiData.stats.weeklyTargetKm || 200;
 				dailyTargetKm = apiData.stats.dailyTargetKm || 40;
 				weeklyProgress = apiData.stats.weeklyProgress || 0;
@@ -429,35 +433,30 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 						totalDistance = dashData.stats.totalDistance || 0;
 						car1Distance = dashData.stats.car1Distance || 0;
 						car2Distance = dashData.stats.car2Distance || 0;
-						// @ts-ignore - New car properties that might not exist in backend yet
 						car3Distance = dashData.stats.car3Distance || 0;
-						// @ts-ignore - New car properties that might not exist in backend yet
 						car4Distance = dashData.stats.car4Distance || 0;
 						totalDraftDistance = dashData.stats.totalDraftDistance || 0;
 						car1DraftDistance = dashData.stats.car1DraftDistance || 0;
 						car2DraftDistance = dashData.stats.car2DraftDistance || 0;
-						// @ts-ignore - New car properties that might not exist in backend yet
 						car3DraftDistance = dashData.stats.car3DraftDistance || 0;
-						// @ts-ignore - New car properties that might not exist in backend yet
 						car4DraftDistance = dashData.stats.car4DraftDistance || 0;
 						totalIndications = dashData.stats.totalIndications || 0;
-				totalGaps = dashData.stats.totalGaps || 0;
+						totalGaps = dashData.stats.totalGaps || 0;
 						car1LisaCount = dashData.stats.car1LisaCount || 0;
 						car2LisaCount = dashData.stats.car2LisaCount || 0;
+						car3LisaCount = dashData.stats.car3LisaCount || 0;
+						car4LisaCount = dashData.stats.car4LisaCount || 0;
 						totalLisaPerKm = dashData.stats.totalLisaPerKm || 0;
 						car1LisaPerKm = dashData.stats.car1LisaPerKm || 0;
 						car2LisaPerKm = dashData.stats.car2LisaPerKm || 0;
+						car3LisaPerKm = dashData.stats.car3LisaPerKm || 0;
+						car4LisaPerKm = dashData.stats.car4LisaPerKm || 0;
 						// These fields might not exist on initial load from server
-						// @ts-ignore - new fields not yet in type definition
-						weeklyTargetKm = dashData.stats?.weeklyTargetKm || 200;
-						// @ts-ignore
-						dailyTargetKm = dashData.stats?.dailyTargetKm || 40;
-						// @ts-ignore
-						weeklyProgress = dashData.stats?.weeklyProgress || 0;
-						// @ts-ignore
-						dailyProgress = dashData.stats?.dailyProgress || 0;
-						// @ts-ignore
-						timePeriod = dashData.stats?.timePeriod || 'all';
+						weeklyTargetKm = (dashData.stats as any).weeklyTargetKm || 200;
+						dailyTargetKm = (dashData.stats as any).dailyTargetKm || 40;
+						weeklyProgress = (dashData.stats as any).weeklyProgress || 0;
+						dailyProgress = (dashData.stats as any).dailyProgress || 0;
+						timePeriod = (dashData.stats as any).timePeriod || 'all';
 						statsLoading = false;
 					}
 

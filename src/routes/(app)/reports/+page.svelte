@@ -5,7 +5,7 @@
 	import { tick } from 'svelte';
 	import PageTemplate from '$lib/components/PageTemplate.svelte';
 	import SectionContainer from '$lib/components/SectionContainer.svelte';
-	import { ChevronUp, ChevronDown, ChevronRight, Database, Clock, CheckCircle, AlertTriangle, Download, RefreshCw, Truck, Copy } from 'lucide-svelte';
+	import { ChevronUp, ChevronDown, ChevronRight, CheckCircle, AlertTriangle, Download, RefreshCw, Copy, Activity, TrendingUp } from 'lucide-svelte';
 
 	// Define Report interface based on the API response
 	interface Report {
@@ -631,24 +631,17 @@
 						<!-- Reports Section -->
 						<div class="stats-section">
 							<div class="stats-section-header">
-								<Database size={18} />
 								<h3>Reports</h3>
 							</div>
 							<div class="stats-section-content">
 								<div class="stats-metric">
-									<div class="stats-icon stats-icon--success">
-										<CheckCircle size={20} />
-									</div>
 									<div class="stats-content">
 										<div class="stats-value">{finalReports}</div>
 										<div class="stats-label">Final Reports</div>
 									</div>
 								</div>
 								
-								<div class="stats-metric">
-									<div class="stats-icon stats-icon--warning">
-										<AlertTriangle size={20} />
-									</div>
+								<div class="stats-metric stats-metric--dimmed">
 									<div class="stats-content">
 										<div class="stats-value">{draftReports}</div>
 										<div class="stats-label">Draft Reports</div>
@@ -660,7 +653,6 @@
 						<!-- Assets Section -->
 						<div class="stats-section">
 							<div class="stats-section-header">
-								<Clock size={18} />
 								<h3>Assets (Final Reports)</h3>
 							</div>
 							<div class="stats-section-content">
@@ -690,7 +682,6 @@
 						<!-- Vehicles Section -->
 						<div class="stats-section">
 							<div class="stats-section-header">
-								<Truck size={18} />
 								<h3>Vehicles (Final Reports)</h3>
 							</div>
 							<div class="stats-section-content">
@@ -811,7 +802,7 @@
 											</label>
 										</div>
 									</th>
-									<th class="table__header table__header--sortable table__header--report-name" onclick={() => handleSort('report_name')}>
+									<th class="table__header table__header--sortable table__header--report-name" role="button" tabindex="0" onclick={() => handleSort('report_name')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_name')}>
 										<div class="sort-header">
 											<span>Report Name</span>
 											{#if sortColumn === 'report_name'}
@@ -823,7 +814,7 @@
 											{/if}
 										</div>
 									</th>
-										<th class="table__header table__header--sortable table__header--report-title" onclick={() => handleSort('report_title')}>
+										<th class="table__header table__header--sortable table__header--report-title" role="button" tabindex="0" onclick={() => handleSort('report_title')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_title')}>
 											<div class="sort-header">
 												<span>Report Title</span>
 												{#if sortColumn === 'report_title'}
@@ -835,7 +826,7 @@
 												{/if}
 											</div>
 										</th>
-																			<th class="table__header table__header--sortable table__header--report-date" onclick={() => handleSort('report_date')}>
+																			<th class="table__header table__header--sortable table__header--report-date" role="button" tabindex="0" onclick={() => handleSort('report_date')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_date')}>
 										<div class="sort-header">
 											<span>Report Date</span>
 												{#if sortColumn === 'report_date'}
@@ -847,7 +838,7 @@
 												{/if}
 											</div>
 										</th>
-																			<th class="table__header table__header--sortable" onclick={() => handleSort('dist_mains_covered_length')}>
+																			<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('dist_mains_covered_length')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('dist_mains_covered_length')}>
 										<div class="sort-header">
 											<span>Assets Covered</span>
 											{#if sortColumn === 'dist_mains_covered_length'}
@@ -859,7 +850,7 @@
 											{/if}
 										</div>
 									</th>
-									<th class="table__header table__header--sortable" onclick={() => handleSort('dist_mains_length')}>
+									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('dist_mains_length')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('dist_mains_length')}>
 										<div class="sort-header">
 											<span>Total Assets</span>
 											{#if sortColumn === 'dist_mains_length'}
@@ -871,7 +862,7 @@
 											{/if}
 										</div>
 									</th>
-									<th class="table__header table__header--sortable" onclick={() => handleSort('dist_mains_coverage')}>
+									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('dist_mains_coverage')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('dist_mains_coverage')}>
 										<div class="sort-header">
 											<span>Coverage %</span>
 											{#if sortColumn === 'dist_mains_coverage'}
@@ -883,7 +874,7 @@
 											{/if}
 										</div>
 									</th>
-										<th class="table__header table__header--sortable" onclick={() => handleSort('total_duration_seconds')}>
+										<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('total_duration_seconds')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('total_duration_seconds')}>
 											<div class="sort-header">
 												<span>Duration</span>
 												{#if sortColumn === 'total_duration_seconds'}
@@ -895,7 +886,7 @@
 												{/if}
 											</div>
 										</th>
-										<th class="table__header table__header--sortable" onclick={() => handleSort('total_distance_km')}>
+										<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('total_distance_km')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('total_distance_km')}>
 											<div class="sort-header">
 												<span>Survey Distance</span>
 												{#if sortColumn === 'total_distance_km'}
@@ -907,7 +898,7 @@
 												{/if}
 											</div>
 										</th>
-										<th class="table__header table__header--sortable" onclick={() => handleSort('surveyor_unit_desc')}>
+										<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('surveyor_unit_desc')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('surveyor_unit_desc')}>
 											<div class="sort-header">
 												<span>Vehicle</span>
 												{#if sortColumn === 'surveyor_unit_desc'}
@@ -919,7 +910,7 @@
 												{/if}
 											</div>
 										</th>
-																			<th class="table__header table__header--sortable table__header--center" onclick={() => handleSort('fieldOfViewGapsCount')}>
+																			<th class="table__header table__header--sortable table__header--center" role="button" tabindex="0" onclick={() => handleSort('fieldOfViewGapsCount')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('fieldOfViewGapsCount')}>
 										<div class="sort-header">
 											<span>Gaps</span>
 											{#if sortColumn === 'fieldOfViewGapsCount'}
@@ -931,7 +922,7 @@
 											{/if}
 										</div>
 									</th>
-									<th class="table__header table__header--sortable table__header--center" onclick={() => handleSort('indicationsCount')}>
+									<th class="table__header table__header--sortable table__header--center" role="button" tabindex="0" onclick={() => handleSort('indicationsCount')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('indicationsCount')}>
 										<div class="sort-header">
 											<span>LISAs</span>
 											{#if sortColumn === 'indicationsCount'}
@@ -943,7 +934,7 @@
 											{/if}
 										</div>
 									</th>
-									<th class="table__header table__header--sortable table__header--center" onclick={() => handleSort('report_final')}>
+									<th class="table__header table__header--sortable table__header--center" role="button" tabindex="0" onclick={() => handleSort('report_final')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_final')}>
 										<div class="sort-header">
 											<span>Status</span>
 											{#if sortColumn === 'report_final'}
@@ -1056,11 +1047,19 @@
 												<td class="table__cell table__cell--report-date">{formatDate(report.report_date)}</td>
 												<td class="table__cell">{report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}</td>
 												<td class="table__cell">{report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}</td>
-												<td class="table__cell">{report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}</td>
+												<td class="table__cell">
+													<span class:value--high-quality={(report.dist_mains_coverage || 0) > 0.9}>
+														{report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}
+													</span>
+												</td>
 												<td class="table__cell">{report.formatted_duration || 'N/A'}</td>
 												<td class="table__cell">{report.total_distance_km ? `${report.total_distance_km} km` : 'N/A'}</td>
 												<td class="table__cell">{report.surveyor_unit_desc || 'N/A'}</td>
-												<td class="table__cell table__cell--center">{report.fieldOfViewGapsCount || 0}</td>
+												<td class="table__cell table__cell--center">
+													<span class:value--high-quality={(report.fieldOfViewGapsCount || 0) < 50}>
+														{report.fieldOfViewGapsCount || 0}
+													</span>
+												</td>
 												<td class="table__cell table__cell--center">
 													<button 
 														class="lisa-count-button {(report.indicationsCount || 0) > 0 ? 'lisa-count-button--active' : ''}"
@@ -1169,60 +1168,90 @@
 
 <!-- LISA Modal -->
 {#if showLisaModal}
-	<div class="modal-overlay" role="button" tabindex="0" onclick={closeLisaModal} aria-label="Close modal">
-		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
+	<div class="modal-overlay" role="button" tabindex="0" onclick={closeLisaModal} onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? closeLisaModal() : null} aria-label="Close modal">
+		<div class="modal-content" role="dialog" tabindex="-1" aria-labelledby="modal-title" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
 			<div class="modal-header">
-				<h3>LISA Indications - {selectedReportName}</h3>
+				<h3 id="modal-title">LISA Indications - {selectedReportName}</h3>
 				<button class="modal-close" onclick={closeLisaModal}>×</button>
 			</div>
 			<div class="modal-body">
 				{#if selectedReportIndications.length === 0}
-					<p class="no-indications">No indications found for this report.</p>
+					<div class="no-indications">
+						<AlertTriangle size={48} class="no-indications-icon" />
+						<h4>No LISA Indications Found</h4>
+						<p>This report does not contain any LISA indications.</p>
+					</div>
 				{:else}
+					
 					<div class="indications-list">
 						{#each selectedReportIndications as indication, index}
-							<div class="indication-card">
+							{@const confidence = Number(indication.classification_confidence || 0)}
+							{@const emissionRate = Number(indication.emission_rate || 0)}
+							{@const amplitude = Number(indication.amplitude || 0)}
+							
+							<div class="indication-card {confidence > 0.8 ? 'indication-card--high-confidence' : confidence > 0.6 ? 'indication-card--medium-confidence' : 'indication-card--low-confidence'}">
 								<div class="indication-header">
-									<span class="indication-number">{indication.lisa_id || indication.lisa_name || `#${index + 1}`}</span>
-									<span class="indication-id">{indication.lisa_id || indication.lisa_name || 'Unknown ID'}</span>
+														<div class="indication-title">
+						<span class="indication-number">#{index + 1}</span>
+						{#if indication.lisa_name}
+							<div class="indication-id-section">
+								<span class="indication-name">{indication.lisa_name}</span>
+							</div>
+						{/if}
+					</div>
+									<div class="indication-badges">
+										{#if indication.rfr_label}
+											<span class="emission-badge">Emission Bin: {indication.rfr_label}</span>
+										{/if}
+									</div>
 								</div>
-								<div class="indication-details">
-									{#if indication.lisa_name}
-										<div class="indication-detail">
-											<span class="detail-label">LISA Name:</span>
-											<span class="detail-value">{indication.lisa_name}</span>
+								
+								<div class="indication-content">
+									<!-- Primary Metrics -->
+									<div class="metric-group metric-group--primary">
+										<div class="metrics-grid">
+											{#if indication.amplitude}
+												<div class="metric-card">
+													<div class="metric-content">
+														<span class="metric-label">Amplitude</span>
+														<span class="metric-value metric-value--{amplitude > 20 ? 'high' : amplitude > 10 ? 'medium' : 'low'}">{amplitude.toFixed(3)} <span class="metric-unit">ppm</span></span>
+													</div>
+												</div>
+											{/if}
+											
+											{#if indication.classification_confidence}
+												<div class="metric-card">
+													<div class="metric-content">
+														<span class="metric-label">Confidence</span>
+														<div class="metric-value-with-bar">
+															<span class="metric-value">{(confidence * 100).toFixed(1)}%</span>
+															<div class="confidence-bar">
+																<div class="confidence-fill confidence-fill--{confidence > 0.8 ? 'high' : confidence > 0.6 ? 'medium' : 'low'}" style="width: {confidence * 100}%"></div>
+															</div>
+														</div>
+													</div>
+												</div>
+											{/if}
+											
+											{#if indication.emission_rate}
+												<div class="metric-card">
+													<div class="metric-content">
+														<span class="metric-label">Emission Rate</span>
+														<span class="metric-value metric-value--{emissionRate > 1 ? 'high' : emissionRate > 0.5 ? 'medium' : 'low'}">{emissionRate.toFixed(3)} <span class="metric-unit">SCFH</span></span>
+													</div>
+												</div>
+											{/if}
+											
+											{#if indication.num_peaks}
+												<div class="metric-card">
+													<div class="metric-content">
+														<span class="metric-label">Number of Peaks</span>
+														<span class="metric-value">{indication.num_peaks}</span>
+													</div>
+												</div>
+											{/if}
 										</div>
-									{/if}
-									{#if indication.amplitude}
-										<div class="indication-detail">
-											<span class="detail-label">Amplitude:</span>
-											<span class="detail-value">{Number(indication.amplitude).toFixed(2)}</span>
-										</div>
-									{/if}
-									{#if indication.classification_confidence}
-										<div class="indication-detail">
-											<span class="detail-label">Classification Confidence:</span>
-											<span class="detail-value">{Number(indication.classification_confidence).toFixed(2)}</span>
-										</div>
-									{/if}
-									{#if indication.num_peaks}
-										<div class="indication-detail">
-											<span class="detail-label">Number of Peaks:</span>
-											<span class="detail-value">{indication.num_peaks}</span>
-										</div>
-									{/if}
-									{#if indication.rfr_label}
-										<div class="indication-detail">
-											<span class="detail-label">Emission Bin:</span>
-											<span class="detail-value">{indication.rfr_label}</span>
-										</div>
-									{/if}
-									{#if indication.emission_rate}
-										<div class="indication-detail">
-											<span class="detail-label">Emission Rate:</span>
-											<span class="detail-value">{Number(indication.emission_rate).toFixed(2)}</span>
-										</div>
-									{/if}
+									</div>
 								</div>
 							</div>
 						{/each}
@@ -1294,6 +1323,19 @@
 		align-items: center;
 		text-align: center;
 		gap: 0.5rem;
+	}
+
+	.stats-metric--dimmed {
+		opacity: 0.6;
+	}
+
+	.stats-metric--dimmed .stats-value {
+		color: var(--text-secondary);
+	}
+
+	.stats-metric--dimmed .stats-label {
+		color: var(--text-secondary);
+		opacity: 0.7;
 	}
 
 	.stats-icon {
@@ -1678,12 +1720,6 @@
 		cursor: pointer;
 	}
 
-	.toggle-switch input {
-		opacity: 0;
-		width: 0;
-		height: 0;
-	}
-
 	.toggle-slider {
 		position: absolute;
 		top: 0;
@@ -1928,6 +1964,12 @@
 		opacity: 1;
 	}
 
+	/* Green text for high quality values */
+	.value--high-quality {
+		color: #15803d !important;
+		font-weight: 600;
+	}
+
 	/* Adjust text containers to allow space for copy button */
 	.cell-with-copy .report-name-text,
 	.cell-with-copy .table__cell-content {
@@ -1994,8 +2036,8 @@
 		background: var(--bg-primary);
 		border-radius: 12px;
 		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-		max-width: 800px;
-		width: 90vw;
+		max-width: 1200px;
+		width: 95vw;
 		max-height: 80vh;
 		overflow: hidden;
 		border: 1px solid var(--border-primary);
@@ -2040,11 +2082,34 @@
 	}
 
 	.no-indications {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 		text-align: center;
 		color: var(--text-secondary);
-		font-style: italic;
-		margin: 2rem 0;
+		padding: 3rem 2rem;
+		gap: 1rem;
 	}
+
+	.no-indications h4 {
+		color: var(--text-primary);
+		margin: 0;
+		font-size: 1.125rem;
+	}
+
+	.no-indications p {
+		margin: 0;
+		opacity: 0.8;
+	}
+
+	:global(.no-indications-icon) {
+		color: var(--text-secondary);
+		opacity: 0.6;
+	}
+
+
+
+
 
 	.indications-list {
 		display: flex;
@@ -2054,63 +2119,266 @@
 
 	.indication-card {
 		border: 1px solid var(--border-primary);
-		border-radius: 8px;
-		padding: 1rem;
-		background: var(--bg-secondary);
-		transition: border-color 0.2s ease;
+		border-radius: 12px;
+		overflow: hidden;
+		background: var(--bg-primary);
+		transition: all 0.3s ease;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 	}
 
 	.indication-card:hover {
-		border-color: var(--accent-primary);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+	}
+
+	.indication-card--high-confidence {
+		border-left: 4px solid var(--success);
+	}
+
+	.indication-card--medium-confidence {
+		border-left: 4px solid var(--warning);
+	}
+
+	.indication-card--low-confidence {
+		border-left: 4px solid var(--error);
 	}
 
 	.indication-header {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 0.75rem;
-		padding-bottom: 0.5rem;
+		align-items: flex-start;
+		padding: 1rem 1rem 0.75rem;
+		background: var(--bg-secondary);
 		border-bottom: 1px solid var(--border-primary);
+	}
+
+	.indication-title {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
 	}
 
 	.indication-number {
 		background: var(--accent-primary);
 		color: white;
-		padding: 0.25rem 0.5rem;
-		border-radius: 4px;
-		font-size: 0.75rem;
+		padding: 0.5rem 0.75rem;
+		border-radius: 8px;
+		font-size: 0.875rem;
 		font-weight: 600;
+		min-width: 2.5rem;
+		text-align: center;
 	}
 
-	.indication-id {
-		font-weight: 600;
-		color: var(--text-primary);
-		font-family: monospace;
-	}
-
-	.indication-details {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 0.5rem;
-	}
-
-	.indication-detail {
+	.indication-id-section {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
 	}
 
-	.detail-label {
+	.indication-id {
+		font-weight: 600;
+		color: var(--text-primary);
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.875rem;
+		padding: 0.25rem 0.5rem;
+		background: rgba(var(--accent-primary-rgb), 0.1);
+		border-radius: 4px;
+	}
+
+	.indication-name {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+
+	.indication-badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: flex-start;
+	}
+
+	.confidence-badge {
+		padding: 0.25rem 0.75rem;
+		border-radius: 20px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.confidence-badge--high {
+		background: rgba(34, 197, 94, 0.15);
+		color: var(--success);
+		border: 1px solid rgba(34, 197, 94, 0.3);
+	}
+
+	.confidence-badge--medium {
+		background: rgba(245, 158, 11, 0.15);
+		color: var(--warning);
+		border: 1px solid rgba(245, 158, 11, 0.3);
+	}
+
+	.confidence-badge--low {
+		background: rgba(239, 68, 68, 0.15);
+		color: var(--error);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+	}
+
+	.emission-badge {
+		padding: 0.25rem 0.75rem;
+		border-radius: 20px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		background: rgba(var(--accent-primary-rgb), 0.15);
+		color: var(--accent-primary);
+		border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
+	}
+
+	.indication-content {
+		padding: 1rem;
+	}
+
+	.metric-group {
+		margin-bottom: 1rem;
+	}
+
+	.metric-group:last-child {
+		margin-bottom: 0;
+	}
+
+	.metric-group-title {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin: 0 0 0.75rem 0;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.metrics-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 0.75rem;
+	}
+
+	.metric-card {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.75rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 6px;
+		transition: all 0.2s ease;
+	}
+
+	.metric-card:hover {
+		border-color: var(--accent-primary);
+		transform: translateY(-1px);
+	}
+
+	.metric-card--simple {
+		padding: 0.75rem;
+	}
+
+	.metric-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.5rem;
+		height: 2.5rem;
+		background: rgba(var(--accent-primary-rgb), 0.1);
+		color: var(--accent-primary);
+		border-radius: 8px;
+		flex-shrink: 0;
+	}
+
+	.metric-icon--high {
+		background: rgba(239, 68, 68, 0.1);
+		color: var(--error);
+	}
+
+	.metric-icon--medium {
+		background: rgba(245, 158, 11, 0.1);
+		color: var(--warning);
+	}
+
+	.metric-icon--low {
+		background: rgba(255, 255, 255, 0.1);
+		color: white;
+	}
+
+	.metric-content {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.metric-label {
+		display: block;
 		font-size: 0.75rem;
 		color: var(--text-secondary);
 		font-weight: 500;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
+		margin-bottom: 0.25rem;
 	}
 
-	.detail-value {
+	.metric-value {
+		display: block;
+		font-weight: 600;
 		color: var(--text-primary);
-		font-weight: 500;
+		font-size: 1rem;
+	}
+
+	.metric-value--high {
+		color: var(--error);
+	}
+
+	.metric-value--medium {
+		color: var(--warning);
+	}
+
+	.metric-value--low {
+		color: white;
+	}
+
+	.metric-unit {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		font-weight: 400;
+	}
+
+	.metric-value-with-bar {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.confidence-bar {
+		width: 100%;
+		height: 4px;
+		background: var(--border-primary);
+		border-radius: 2px;
+		overflow: hidden;
+	}
+
+	.confidence-fill {
+		height: 100%;
+		border-radius: 2px;
+		transition: width 0.3s ease;
+	}
+
+	.confidence-fill--high {
+		background: var(--success);
+	}
+
+	.confidence-fill--medium {
+		background: var(--warning);
+	}
+
+	.confidence-fill--low {
+		background: var(--error);
 	}
 
 	.sr-only {
@@ -2355,6 +2623,8 @@
 			gap: 0.75rem;
 		}
 	}
+
+
 
 	@media (max-width: 480px) {
 		.surveys-grid {
