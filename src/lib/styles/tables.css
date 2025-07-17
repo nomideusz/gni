@@ -718,9 +718,9 @@
 
 /* Reports table header modifiers */
 .table--reports .table__header--report-name {
-    min-width: 90px !important;
-    max-width: 90px !important;
-    width: 90px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+    width: 100px !important;
 }
 
 .table--reports .table__header--report-title {
@@ -738,9 +738,9 @@
 
 /* Reports table cell modifiers */
 .table--reports .table__cell--report-name {
-    min-width: 90px !important;
-    max-width: 90px !important;
-    width: 90px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+    width: 100px !important;
     position: relative;
     cursor: help;
     overflow: hidden;

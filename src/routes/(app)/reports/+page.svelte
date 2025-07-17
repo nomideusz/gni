@@ -61,6 +61,7 @@
 	// Filter state
 	let reportFilter = $state('final'); // 'final', 'all', 'draft' - default to final reports only
 	let searchQuery = $state(''); // Search query
+	let includeSurveysOnly = $state(true); // Show only reports with surveys
 	
 	// Accordion state - track which reports are expanded
 	let expandedReports = $state<Set<string>>(new Set());
@@ -157,6 +158,97 @@
 		return displayedReports.filter(r => selectedReports.has(r.id));
 	});
 
+	// Helper function to determine if a report is deletable
+	function isReportDeletable(report: Report): { isDeletable: boolean; reason: string } {
+		const reportTitle = report.report_title || '';
+		const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
+		const isDraft = report.report_final === false || report.report_final === 0 || report.report_final === '0' || !report.report_final;
+		
+		// Check for exact title duplicates with conflicting final/draft states
+		const hasExactDuplicate = reports.some(otherReport => 
+			otherReport.id !== report.id && 
+			otherReport.report_title === reportTitle &&
+			reportTitle.trim() !== '' && // Don't match empty titles
+			((isFinal && (otherReport.report_final === false || otherReport.report_final === 0 || otherReport.report_final === '0' || !otherReport.report_final)) ||
+			 (isDraft && (otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1')))
+		);
+		
+		if (hasExactDuplicate) {
+			return { isDeletable: true, reason: 'Duplicate title with conflicting status' };
+		}
+		
+		// Check for temporary reports
+		const tempPatterns = [
+			/\s+Temp\s*$/i,           // " Temp"
+			/\s+Temp\s+\d+S\s*$/i,    // " Temp 1S", " Temp 2S", etc.
+			/\s+Temp\d+\s*$/i,        // " Temp1", " Temp2", etc.
+			/\s+TEMP\s*$/i,           // " TEMP" (uppercase)
+			/\s+TEMP\s+\d+S\s*$/i,    // " TEMP 1S", " TEMP 2S", etc.
+		];
+		
+		const isTempReport = tempPatterns.some(pattern => pattern.test(reportTitle));
+		
+		if (isTempReport) {
+			// Extract base title
+			let baseTitle = reportTitle;
+			for (const pattern of tempPatterns) {
+				if (pattern.test(reportTitle)) {
+					baseTitle = reportTitle.replace(pattern, '').trim();
+					break;
+				}
+			}
+			
+			// Check if there's a corresponding final report
+			const hasFinalVersion = reports.some(otherReport => {
+				const otherIsFinal = otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1';
+				if (!otherIsFinal) return false;
+				
+				return otherReport.id !== report.id && (
+					otherReport.report_title === baseTitle || // Exact match
+					otherReport.report_title === baseTitle + " Final" // Match with " Final" suffix
+				);
+			});
+			
+			if (hasFinalVersion) {
+				return { isDeletable: true, reason: 'Temp report with final version available' };
+			}
+			
+			// Check if this is an older temporary report
+			const tempReportGroups = new Map();
+			reports.forEach(r => {
+				const rTitle = r.report_title || '';
+				const isTemp = tempPatterns.some(pattern => pattern.test(rTitle));
+				
+				if (isTemp) {
+					let rBaseTitle = rTitle;
+					for (const pattern of tempPatterns) {
+						if (pattern.test(rTitle)) {
+							rBaseTitle = rTitle.replace(pattern, '').trim();
+							break;
+						}
+					}
+					
+					if (!tempReportGroups.has(rBaseTitle)) {
+						tempReportGroups.set(rBaseTitle, []);
+					}
+					tempReportGroups.get(rBaseTitle).push(r);
+				}
+			});
+			
+			const tempGroup = tempReportGroups.get(baseTitle);
+			if (tempGroup && tempGroup.length > 1) {
+				// Sort by date (newest first)
+				tempGroup.sort((a: Report, b: Report) => new Date(b.report_date).getTime() - new Date(a.report_date).getTime());
+				const reportIndex = tempGroup.findIndex((r: Report) => r.id === report.id);
+				if (reportIndex > 0) {
+					return { isDeletable: true, reason: `Older temp report (${reportIndex + 1} of ${tempGroup.length})` };
+				}
+			}
+		}
+		
+		return { isDeletable: false, reason: '' };
+	}
+
 	// Function to open LISA modal
 	function openLisaModal(report: any) {
 		selectedReportIndications = report.indications || [];
@@ -245,23 +337,108 @@
 				!report.report_final
 			);
 		} else if (reportFilter === 'final-and-draft') {
-			// Show reports that have conflicting final/draft states (potentially deletable)
+			// Show reports that are potentially deletable:
+			// 1. Reports with conflicting final/draft states (exact name duplicates)
+			// 2. Temporary reports (with "Temp", "Temp 1S", etc.) that have corresponding final versions
+			// 3. Older temporary reports when there are multiple temp reports for the same base title
+			// console.log('DEBUG: Filtering for deletable reports. Total reports:', reports.length);
+			
+			// Pre-process: Group temporary reports by base title to find duplicates
+			const tempPatterns = [
+				/\s+Temp\s*$/i,           // " Temp"
+				/\s+Temp\s+\d+S\s*$/i,    // " Temp 1S", " Temp 2S", etc.
+				/\s+Temp\d+\s*$/i,        // " Temp1", " Temp2", etc.
+				/\s+TEMP\s*$/i,           // " TEMP" (uppercase)
+				/\s+TEMP\s+\d+S\s*$/i,    // " TEMP 1S", " TEMP 2S", etc.
+			];
+			
+			const tempReportGroups = new Map();
+			reports.forEach(report => {
+				const reportTitle = report.report_title || '';
+				const isTempReport = tempPatterns.some(pattern => pattern.test(reportTitle));
+				
+				if (isTempReport) {
+					let baseTitle = reportTitle;
+					for (const pattern of tempPatterns) {
+						if (pattern.test(reportTitle)) {
+							baseTitle = reportTitle.replace(pattern, '').trim();
+							break;
+						}
+					}
+					
+					if (!tempReportGroups.has(baseTitle)) {
+						tempReportGroups.set(baseTitle, []);
+					}
+					tempReportGroups.get(baseTitle).push(report);
+				}
+			});
+			
+			// Sort each group by date (newest first) to identify older reports for deletion
+			tempReportGroups.forEach((reportsInGroup, baseTitle) => {
+				if (reportsInGroup.length > 1) {
+					reportsInGroup.sort((a: Report, b: Report) => new Date(b.report_date).getTime() - new Date(a.report_date).getTime());
+					// console.log(`DEBUG: Found ${reportsInGroup.length} temp reports for "${baseTitle}":`, 
+					//	reportsInGroup.map((r: Report) => `"${r.report_title}" (${r.report_date})`));
+				}
+			});
+			
 			filteredReports = filteredReports.filter(report => {
-				// Check for any conflicting states or duplicate report names that might indicate both final and draft versions exist
+				const reportName = report.report_name || '';
+				const reportTitle = report.report_title || '';
 				const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
 				const isDraft = report.report_final === false || report.report_final === 0 || report.report_final === '0' || !report.report_final;
 				
-				// For now, we'll identify potential duplicates by checking if there are multiple reports with similar names
-				// This is a heuristic approach - you might need to adjust based on your data structure
-				const reportName = report.report_name || '';
-				const hasLikelyDuplicate = reports.some(otherReport => 
+				// Check for exact title duplicates with conflicting final/draft states (using report_title)
+				const hasExactDuplicate = reports.some(otherReport => 
 					otherReport.id !== report.id && 
-					otherReport.report_name === reportName &&
+					otherReport.report_title === reportTitle &&
+					reportTitle.trim() !== '' && // Don't match empty titles
 					((isFinal && (otherReport.report_final === false || otherReport.report_final === 0 || otherReport.report_final === '0' || !otherReport.report_final)) ||
 					 (isDraft && (otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1')))
 				);
 				
-				return hasLikelyDuplicate;
+				// Check for temporary reports that can be deleted (using report_title for long descriptive names)
+				const isTempReport = tempPatterns.some(pattern => pattern.test(reportTitle));
+				
+				let hasFinalVersion = false;
+				let isOlderTempReport = false;
+				
+				if (isTempReport) {
+					// Try multiple patterns to extract base title
+					let baseTitle = reportTitle;
+					for (const pattern of tempPatterns) {
+						if (pattern.test(reportTitle)) {
+							baseTitle = reportTitle.replace(pattern, '').trim();
+							break;
+						}
+					}
+					
+					// Check if there's a final report with the base title
+					// Final reports might have " Final" suffix, so check both base title and base title + " Final"
+					hasFinalVersion = reports.some(otherReport => {
+						const otherIsFinal = otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1';
+						if (!otherIsFinal) return false;
+						
+						const match = otherReport.id !== report.id && (
+							otherReport.report_title === baseTitle || // Exact match
+							otherReport.report_title === baseTitle + " Final" // Match with " Final" suffix
+						);
+						
+						return match;
+					});
+					
+					// Check if this is an older temporary report (when there are multiple temp reports for same base title)
+					const tempGroup = tempReportGroups.get(baseTitle);
+					if (tempGroup && tempGroup.length > 1) {
+						// If this report is not the newest (index > 0 in sorted array), it's deletable
+						const reportIndex = tempGroup.findIndex((r: Report) => r.id === report.id);
+						isOlderTempReport = reportIndex > 0; // Keep only the newest (index 0)
+					}
+				}
+				
+				const isDeleteable = hasExactDuplicate || (isTempReport && hasFinalVersion) || isOlderTempReport;
+				
+				return isDeleteable;
 			});
 		}
 		// If reportFilter === 'all', show all reports (no filtering needed)
@@ -451,9 +628,10 @@
 							   reportFilter === 'draft' ? 'Draft' : 
 							   reportFilter === 'final-and-draft' ? 'FinalAndDraft' : 
 							   'Final';
+			const surveysInfo = includeSurveysOnly ? '' : '_AllReports';
 			const searchInfo = searchQuery ? `_Search-${searchQuery.replace(/[^a-zA-Z0-9]/g, '')}` : '';
 			const selectionInfo = selectedReports.size > 0 ? `_Selected-${selectedReports.size}` : '';
-			const filename = `GNI_Reports_${filterInfo}${searchInfo}${selectionInfo}_${timestamp}.xlsx`;
+			const filename = `GNI_Reports_${filterInfo}${surveysInfo}${searchInfo}${selectionInfo}_${timestamp}.xlsx`;
 
 			// Write and download file
 			XLSX.writeFile(wb, filename);
@@ -472,6 +650,12 @@
 			sortReports();
 			clearAllSelections();
 		}
+	}
+	
+	// Function to handle survey filter change (needs to reload data)
+	function handleSurveyFilterChange() {
+		// Reload data when survey filter changes
+		loadData();
 	}
 
 	// Calculate total survey distance
@@ -493,91 +677,170 @@
 		return totalAssets > 0 ? (coveredAssets / totalAssets) * 100 : 0;
 	});
 
-	onMount(() => {
-		const loadData = async () => {
-			try {
-				// Fetch reports using our API service
-				const result = await reportsApi.getAll({
-					limit: 500,
-					page: 1,
-					sort: '-report_date',
-					finalOnly: false, // Show all reports including drafts
-					includeUnitDesc: true, // Include unit descriptions
-					withSurveys: true // Only show reports with surveys
-				});
+	// Function to load data
+	const loadData = async () => {
+		loading = true;
+		reportsLoading = true;
+		try {
+			// Fetch reports using our API service
+			const result = await reportsApi.getAll({
+				limit: 500,
+				page: 1,
+				sort: '-report_date',
+				finalOnly: false, // Show all reports including drafts
+				includeUnitDesc: true, // Include unit descriptions
+				withSurveys: includeSurveysOnly // Show only reports with surveys based on toggle
+			});
 
-				// Log the first report to debug structure
-				if (result.reports.length > 0) {
-					console.log('First report structure:', result.reports[0]);
+			
+			// We no longer need to filter for driving sessions as the API does this for us
+			reports = result.reports;
+			meta = result.meta;
+			
+			// Apply initial sorting
+			sortReports();
+			
+			// Use the stats data from the API
+			totalReports = result.stats.totalReports;
+			finalReports = result.stats.reportCounts.finalWithSurveys;
+			draftReports = totalReports - finalReports;
+			
+			// Calculate final-and-draft reports (potentially deletable)
+			// 1. Reports with conflicting final/draft states (exact name duplicates)
+			// 2. Temporary reports (with "Temp", "Temp 1S", etc.) that have corresponding final versions
+			// 3. Older temporary reports when there are multiple temp reports for the same base title
+			
+			// Pre-process: Group temporary reports by base title to find duplicates (for count calculation)
+			const tempPatternsForCount = [
+				/\s+Temp\s*$/i,           // " Temp"
+				/\s+Temp\s+\d+S\s*$/i,    // " Temp 1S", " Temp 2S", etc.
+				/\s+Temp\d+\s*$/i,        // " Temp1", " Temp2", etc.
+				/\s+TEMP\s*$/i,           // " TEMP" (uppercase)
+				/\s+TEMP\s+\d+S\s*$/i,    // " TEMP 1S", " TEMP 2S", etc.
+			];
+			
+			const tempReportGroupsForCount = new Map();
+			reports.forEach(report => {
+				const reportTitle = report.report_title || '';
+				const isTempReport = tempPatternsForCount.some(pattern => pattern.test(reportTitle));
+				
+				if (isTempReport) {
+					let baseTitle = reportTitle;
+					for (const pattern of tempPatternsForCount) {
+						if (pattern.test(reportTitle)) {
+							baseTitle = reportTitle.replace(pattern, '').trim();
+							break;
+						}
+					}
+					
+					if (!tempReportGroupsForCount.has(baseTitle)) {
+						tempReportGroupsForCount.set(baseTitle, []);
+					}
+					tempReportGroupsForCount.get(baseTitle).push(report);
+				}
+			});
+			
+			// Sort each group by date (newest first) to identify older reports for deletion
+			tempReportGroupsForCount.forEach((reportsInGroup) => {
+				if (reportsInGroup.length > 1) {
+					reportsInGroup.sort((a: Report, b: Report) => new Date(b.report_date).getTime() - new Date(a.report_date).getTime());
+				}
+			});
+			
+			finalAndDraftReports = reports.filter(report => {
+				const reportName = report.report_name || '';
+				const reportTitle = report.report_title || '';
+				const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
+				const isDraft = report.report_final === false || report.report_final === 0 || report.report_final === '0' || !report.report_final;
+				
+				// Check for exact title duplicates with conflicting final/draft states (using report_title)
+				const hasExactDuplicate = reports.some(otherReport => 
+					otherReport.id !== report.id && 
+					otherReport.report_title === reportTitle &&
+					reportTitle.trim() !== '' && // Don't match empty titles
+					((isFinal && (otherReport.report_final === false || otherReport.report_final === 0 || otherReport.report_final === '0' || !otherReport.report_final)) ||
+					 (isDraft && (otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1')))
+				);
+				
+				// Check for temporary reports that can be deleted (using report_title for long descriptive names)
+				const isTempReport = tempPatternsForCount.some(pattern => pattern.test(reportTitle));
+				
+				let hasFinalVersion = false;
+				let isOlderTempReport = false;
+				
+				if (isTempReport) {
+					// Try multiple patterns to extract base title
+					let baseTitle = reportTitle;
+					for (const pattern of tempPatternsForCount) {
+						if (pattern.test(reportTitle)) {
+							baseTitle = reportTitle.replace(pattern, '').trim();
+							break;
+						}
+					}
+					
+					// Check if there's a final report with the base title
+					// Final reports might have " Final" suffix, so check both base title and base title + " Final"
+					hasFinalVersion = reports.some(otherReport => {
+						const otherIsFinal = otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1';
+						if (!otherIsFinal) return false;
+						
+						return otherReport.id !== report.id && (
+							otherReport.report_title === baseTitle || // Exact match
+							otherReport.report_title === baseTitle + " Final" // Match with " Final" suffix
+						);
+					});
+					
+					// Check if this is an older temporary report (when there are multiple temp reports for same base title)
+					const tempGroup = tempReportGroupsForCount.get(baseTitle);
+					if (tempGroup && tempGroup.length > 1) {
+						// If this report is not the newest (index > 0 in sorted array), it's deletable
+						const reportIndex = tempGroup.findIndex((r: Report) => r.id === report.id);
+						isOlderTempReport = reportIndex > 0; // Keep only the newest (index 0)
+					}
 				}
 				
-				// We no longer need to filter for driving sessions as the API does this for us
-				reports = result.reports;
-				meta = result.meta;
-				
-				// Apply initial sorting
-				sortReports();
-				
-				// Use the stats data from the API
-				totalReports = result.stats.totalReports;
-				finalReports = result.stats.reportCounts.finalWithSurveys;
-				draftReports = totalReports - finalReports;
-				
-				// Calculate final-and-draft reports (potentially deletable duplicates)
-				finalAndDraftReports = reports.filter(report => {
-					const reportName = report.report_name || '';
-					const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
-					const isDraft = report.report_final === false || report.report_final === 0 || report.report_final === '0' || !report.report_final;
-					
-					const hasLikelyDuplicate = reports.some(otherReport => 
-						otherReport.id !== report.id && 
-						otherReport.report_name === reportName &&
-						((isFinal && (otherReport.report_final === false || otherReport.report_final === 0 || otherReport.report_final === '0' || !otherReport.report_final)) ||
-						 (isDraft && (otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1')))
-					);
-					
-					return hasLikelyDuplicate;
-				}).length;
-				
-				// totalIndications already comes from final reports only (calculation reports)
-				totalLISAs = result.stats.totalIndications || 0;
-				totalGaps = result.stats.totalGaps || 0;
-				
-				// Load car distance data from API
-				car1Distance = result.stats.car1Distance || 0;
-				car2Distance = result.stats.car2Distance || 0;
-				car3Distance = result.stats.car3Distance || 0;
-				car4Distance = result.stats.car4Distance || 0;
-				
-				// Fetch sync info from centralized API
-				try {
+				return hasExactDuplicate || (isTempReport && hasFinalVersion) || isOlderTempReport;
+			}).length;
+			
+			// totalIndications already comes from final reports only (calculation reports)
+			totalLISAs = result.stats.totalIndications || 0;
+			totalGaps = result.stats.totalGaps || 0;
+			
+			// Load car distance data from API
+			car1Distance = result.stats.car1Distance || 0;
+			car2Distance = result.stats.car2Distance || 0;
+			car3Distance = result.stats.car3Distance || 0;
+			car4Distance = result.stats.car4Distance || 0;
+			
+			// Fetch sync info from centralized API
+							try {
 					const syncResponse = await fetch('/api/v1/sync-status');
 					if (syncResponse.ok) {
 						syncInfo = await syncResponse.json();
-						console.log('Sync info from API:', syncInfo);
 					} else {
 						console.error('Error fetching sync status:', syncResponse.status, syncResponse.statusText);
 					}
 				} catch (syncErr) {
 					console.error('Error fetching sync status:', syncErr);
 				}
-				
-				console.log(`Loaded ${reports.length} reports with driving sessions (calculation reports: ${result.meta.calculationReportsCount})`);
-			} catch (err) {
-				console.error('Error fetching reports:', err);
-				error = t('reports.error', $language);
-			} finally {
-				loading = false;
-				reportsLoading = false;
-				
-				// Multiple attempts at refreshing scrollbars to ensure they appear
-				refreshScrollbars();
-				setTimeout(refreshScrollbars, 100);
-				setTimeout(refreshScrollbars, 500);
-				setTimeout(refreshScrollbars, 1000);
-			}
-		};
-		
+			
+
+		} catch (err) {
+			console.error('Error fetching reports:', err);
+			error = t('reports.error', $language);
+		} finally {
+			loading = false;
+			reportsLoading = false;
+			
+			// Multiple attempts at refreshing scrollbars to ensure they appear
+			refreshScrollbars();
+			setTimeout(refreshScrollbars, 100);
+			setTimeout(refreshScrollbars, 500);
+			setTimeout(refreshScrollbars, 1000);
+		}
+	};
+
+	onMount(() => {
 		loadData();
 		
 		// Add window resize listener to handle responsive behavior
@@ -624,11 +887,13 @@
 									 reportFilter === 'draft' ? 'Draft' : 
 									 reportFilter === 'final-and-draft' ? 'Final & Draft' : ''} 
 					({selectedReports.size})
+					{#if !includeSurveysOnly}<span class="export-note">(All Reports)</span>{/if}
 				{:else}
 					Export All {reportFilter === 'final' ? 'Final' : 
 								reportFilter === 'draft' ? 'Draft' : 
 								reportFilter === 'final-and-draft' ? 'Final & Draft' : ''} 
 					({displayedReports.length})
+					{#if !includeSurveysOnly}<span class="export-note">(All Reports)</span>{/if}
 				{/if}
 			</button>
 		</div>
@@ -830,6 +1095,19 @@
 									bind:value={searchQuery}
 									oninput={handleFilterChange}
 								>
+							</div>
+							
+							<div class="filter-item">
+								<label class="toggle-label">
+									<input 
+										type="checkbox" 
+										class="toggle-checkbox"
+										bind:checked={includeSurveysOnly}
+										onchange={handleSurveyFilterChange}
+									>
+									<span class="toggle-slider"></span>
+									<span class="toggle-text">Reports with surveys only</span>
+								</label>
 							</div>
 						</div>
 					</div>
@@ -1041,6 +1319,7 @@
 										{#each displayedReports as report}
 											{@const hasSurveys = (report.expand?.driving_sessions?.length ?? 0) > 0}
 											{@const isExpanded = expandedReports.has(report.id)}
+											{@const deletableInfo = isReportDeletable(report)}
 											<tr class="table__row">
 												<td class="table__cell table__cell--expand">
 													{#if hasSurveys}
@@ -1091,6 +1370,14 @@
 												<td class="table__cell table__cell--report-title" title={report.report_title}>
 													<div class="cell-with-copy">
 														<span class="table__cell-content">{report.report_title}</span>
+														{#if deletableInfo.isDeletable}
+															<span 
+																class="deletable-badge" 
+																title={deletableInfo.reason}
+															>
+																⚠️
+															</span>
+														{/if}
 														<button 
 															class="copy-button"
 															class:copy-button--success={copiedItems.has(`${report.id}-title`)}
@@ -1459,6 +1746,12 @@
 		flex-wrap: wrap;
 	}
 
+	.export-note {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		font-weight: 400;
+	}
+
 	.selection-info {
 		display: flex;
 		align-items: center;
@@ -1781,15 +2074,32 @@
 		cursor: pointer;
 	}
 
-	.toggle-slider {
+	.toggle-label {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		cursor: pointer;
+		user-select: none;
+		font-size: 0.9rem;
+		color: var(--text-primary);
+	}
+
+	.toggle-checkbox {
 		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.toggle-slider {
+		position: relative;
+		display: inline-block;
+		width: 44px;
+		height: 24px;
 		background-color: var(--border-primary);
 		border-radius: 24px;
 		transition: background-color 0.2s ease;
+		flex-shrink: 0;
 	}
 
 	.toggle-slider:before {
@@ -1803,6 +2113,19 @@
 		border-radius: 50%;
 		transition: transform 0.2s ease;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	}
+
+	.toggle-checkbox:checked + .toggle-slider {
+		background-color: var(--accent-primary);
+	}
+
+	.toggle-checkbox:checked + .toggle-slider:before {
+		transform: translateX(20px);
+	}
+
+	.toggle-text {
+		font-weight: 500;
+		white-space: nowrap;
 	}
 
 	/* Sync Info in Page Actions */
@@ -2039,6 +2362,29 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		min-width: 0;
+	}
+
+	/* Deletable badge styling */
+	.deletable-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.8rem;
+		margin-left: 0.5rem;
+		padding: 0.125rem 0.25rem;
+		border-radius: 4px;
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		cursor: help;
+		flex-shrink: 0;
+		transition: all 0.2s ease;
+		line-height: 1;
+	}
+
+	.deletable-badge:hover {
+		background: rgba(239, 68, 68, 0.15);
+		border-color: rgba(239, 68, 68, 0.4);
+		transform: scale(1.05);
 	}
 
 
