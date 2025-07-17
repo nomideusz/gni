@@ -466,15 +466,13 @@
 		}
 	}
 
-	// Reactive statement to re-sort when filters change
-	$effect(() => {
-		// Re-sort when includeDraftReports or searchQuery changes
-		reportFilter;
-		searchQuery;
-		sortReports();
-		// Clear selections when filters change since displayed reports might change
-		clearAllSelections();
-	});
+	// Function to handle filter changes
+	function handleFilterChange() {
+		if (reports.length > 0) {
+			sortReports();
+			clearAllSelections();
+		}
+	}
 
 	// Calculate total survey distance
 	const totalSurveyDistance = $derived(() => {
@@ -774,6 +772,7 @@
 											name="reportFilter" 
 											value="final" 
 											bind:group={reportFilter}
+											onchange={handleFilterChange}
 										>
 										<span class="radio-indicator"></span>
 										<span class="radio-label">Final Reports Only</span>
@@ -786,6 +785,7 @@
 											name="reportFilter" 
 											value="all" 
 											bind:group={reportFilter}
+											onchange={handleFilterChange}
 										>
 										<span class="radio-indicator"></span>
 										<span class="radio-label">All Reports</span>
@@ -798,6 +798,7 @@
 											name="reportFilter" 
 											value="draft" 
 											bind:group={reportFilter}
+											onchange={handleFilterChange}
 										>
 										<span class="radio-indicator"></span>
 										<span class="radio-label">Draft Reports Only</span>
@@ -810,6 +811,7 @@
 											name="reportFilter" 
 											value="final-and-draft" 
 											bind:group={reportFilter}
+											onchange={handleFilterChange}
 										>
 										<span class="radio-indicator"></span>
 										<span class="radio-label">Final & Draft (Deletable)</span>
@@ -826,6 +828,7 @@
 									class="search-input"
 									placeholder="Search by name, title, unit, or date..."
 									bind:value={searchQuery}
+									oninput={handleFilterChange}
 								>
 							</div>
 						</div>
