@@ -35,6 +35,7 @@
 	let finalReports = $state(0);
 	let totalReports = $state(0);
 	let draftReports = $state(0);
+	let finalAndDraftReports = $state(0);
 	let totalLISAs = $state(0);
 	let totalGaps = $state(0);
 	let syncInfo = $state<any>(null);
@@ -243,6 +244,25 @@
 				report.report_final === '0' ||
 				!report.report_final
 			);
+		} else if (reportFilter === 'final-and-draft') {
+			// Show reports that have conflicting final/draft states (potentially deletable)
+			filteredReports = filteredReports.filter(report => {
+				// Check for any conflicting states or duplicate report names that might indicate both final and draft versions exist
+				const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
+				const isDraft = report.report_final === false || report.report_final === 0 || report.report_final === '0' || !report.report_final;
+				
+				// For now, we'll identify potential duplicates by checking if there are multiple reports with similar names
+				// This is a heuristic approach - you might need to adjust based on your data structure
+				const reportName = report.report_name || '';
+				const hasLikelyDuplicate = reports.some(otherReport => 
+					otherReport.id !== report.id && 
+					otherReport.report_name === reportName &&
+					((isFinal && (otherReport.report_final === false || otherReport.report_final === 0 || otherReport.report_final === '0' || !otherReport.report_final)) ||
+					 (isDraft && (otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1')))
+				);
+				
+				return hasLikelyDuplicate;
+			});
 		}
 		// If reportFilter === 'all', show all reports (no filtering needed)
 		
@@ -427,7 +447,10 @@
 			// Generate filename with current date and filter info
 			const now = new Date();
 			const timestamp = now.toISOString().split('T')[0]; // YYYY-MM-DD format
-			const filterInfo = reportFilter === 'all' ? 'All' : reportFilter === 'draft' ? 'Draft' : 'Final';
+			const filterInfo = reportFilter === 'all' ? 'All' : 
+							   reportFilter === 'draft' ? 'Draft' : 
+							   reportFilter === 'final-and-draft' ? 'FinalAndDraft' : 
+							   'Final';
 			const searchInfo = searchQuery ? `_Search-${searchQuery.replace(/[^a-zA-Z0-9]/g, '')}` : '';
 			const selectionInfo = selectedReports.size > 0 ? `_Selected-${selectedReports.size}` : '';
 			const filename = `GNI_Reports_${filterInfo}${searchInfo}${selectionInfo}_${timestamp}.xlsx`;
@@ -501,6 +524,23 @@
 				totalReports = result.stats.totalReports;
 				finalReports = result.stats.reportCounts.finalWithSurveys;
 				draftReports = totalReports - finalReports;
+				
+				// Calculate final-and-draft reports (potentially deletable duplicates)
+				finalAndDraftReports = reports.filter(report => {
+					const reportName = report.report_name || '';
+					const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
+					const isDraft = report.report_final === false || report.report_final === 0 || report.report_final === '0' || !report.report_final;
+					
+					const hasLikelyDuplicate = reports.some(otherReport => 
+						otherReport.id !== report.id && 
+						otherReport.report_name === reportName &&
+						((isFinal && (otherReport.report_final === false || otherReport.report_final === 0 || otherReport.report_final === '0' || !otherReport.report_final)) ||
+						 (isDraft && (otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1')))
+					);
+					
+					return hasLikelyDuplicate;
+				}).length;
+				
 				// totalIndications already comes from final reports only (calculation reports)
 				totalLISAs = result.stats.totalIndications || 0;
 				totalGaps = result.stats.totalGaps || 0;
@@ -563,7 +603,9 @@
 				<div class="selection-info">
 					<span class="selection-count">
 						{selectedReports.size} 
-						{reportFilter === 'final' ? 'final' : reportFilter === 'draft' ? 'draft' : ''} 
+						{reportFilter === 'final' ? 'final' : 
+						 reportFilter === 'draft' ? 'draft' : 
+						 reportFilter === 'final-and-draft' ? 'final & draft' : ''} 
 						{selectedReports.size === 1 ? 'report' : 'reports'} selected
 					</span>
 					<button 
@@ -580,10 +622,14 @@
 			>
 				<Download size={18} />
 				{#if selectedReports.size > 0}
-					Export Selected {reportFilter === 'final' ? 'Final' : reportFilter === 'draft' ? 'Draft' : ''} 
+					Export Selected {reportFilter === 'final' ? 'Final' : 
+									 reportFilter === 'draft' ? 'Draft' : 
+									 reportFilter === 'final-and-draft' ? 'Final & Draft' : ''} 
 					({selectedReports.size})
 				{:else}
-					Export All {reportFilter === 'final' ? 'Final' : reportFilter === 'draft' ? 'Draft' : ''} 
+					Export All {reportFilter === 'final' ? 'Final' : 
+								reportFilter === 'draft' ? 'Draft' : 
+								reportFilter === 'final-and-draft' ? 'Final & Draft' : ''} 
 					({displayedReports.length})
 				{/if}
 			</button>
@@ -757,6 +803,18 @@
 										<span class="radio-label">Draft Reports Only</span>
 										<span class="radio-count">({draftReports})</span>
 									</label>
+									
+									<label class="radio-option">
+										<input 
+											type="radio" 
+											name="reportFilter" 
+											value="final-and-draft" 
+											bind:group={reportFilter}
+										>
+										<span class="radio-indicator"></span>
+										<span class="radio-label">Final & Draft (Deletable)</span>
+										<span class="radio-count">({finalAndDraftReports})</span>
+									</label>
 								</div>
 							</div>
 							
@@ -793,10 +851,10 @@
 													onchange={() => allReportsSelected() ? clearAllSelections() : selectAllReports()}
 												>
 												<span class="checkbox-custom"></span>
-												<span class="checkbox-label" title="Select all {reportFilter === 'final' ? 'final' : reportFilter === 'draft' ? 'draft' : ''} reports">
+												<span class="checkbox-label" title="Select all {reportFilter === 'final' ? 'final' : reportFilter === 'draft' ? 'draft' : reportFilter === 'final-and-draft' ? 'final & draft' : ''} reports">
 													Select All
 													{#if reportFilter !== 'all'}
-														<br><span class="checkbox-label-filter">({reportFilter === 'final' ? 'Final' : 'Draft'})</span>
+														<br><span class="checkbox-label-filter">({reportFilter === 'final' ? 'Final' : reportFilter === 'draft' ? 'Draft' : reportFilter === 'final-and-draft' ? 'F&D' : ''})</span>
 													{/if}
 												</span>
 											</label>
