@@ -702,7 +702,7 @@
 			
 			// Use the stats data from the API
 			totalReports = result.stats.totalReports;
-			finalReports = result.stats.reportCounts.finalWithSurveys;
+			finalReports = result.stats.reportCounts.final; // All final reports (with or without surveys)
 			draftReports = totalReports - finalReports;
 			
 			// Calculate final-and-draft reports (potentially deletable)

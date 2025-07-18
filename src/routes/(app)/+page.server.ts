@@ -40,8 +40,8 @@ export const load: PageServerLoad = async ({ locals, fetch, depends }) => {
                 recentReports: apiData.reports.slice(0, 5),
                 stats: {
                     totalReports: apiData.stats.totalReports,
-                    finalReports: apiData.stats.reportCounts.finalWithSurveys,
-                    draftReports: apiData.stats.totalReports - apiData.stats.reportCounts.finalWithSurveys,
+                    finalReports: apiData.stats.reportCounts.final, // All final reports (with or without surveys)
+                    draftReports: apiData.stats.totalReports - apiData.stats.reportCounts.final,
                     totalDistance: apiData.stats.totalDistance,
                     car1Distance: apiData.stats.car1Distance,
                     car2Distance: apiData.stats.car2Distance,

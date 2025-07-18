@@ -220,9 +220,15 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             ? processedItems.filter((item: any) => item.has_surveys) 
             : processedItems;
         
-        // ======= ONLY USE FINAL REPORTS WITH SURVEYS FOR CALCULATIONS =======
-        // These are the only reports that should be used for calculations
+        // ======= USE ALL FINAL REPORTS FOR CALCULATIONS (WITH OR WITHOUT SURVEYS) =======
+        // Include all final reports in calculations to ensure complete statistics
         const calculationReports = processedItems.filter((r: any) => 
+            (r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true')
+        );
+        
+        // ======= FINAL REPORTS WITH SURVEYS FOR DETAILED ANALYTICS =======
+        // Track final reports with surveys for detailed analytics like LISA counting
+        const finalReportsWithSurveys = processedItems.filter((r: any) => 
             r.has_surveys && 
             (r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true')
         );
@@ -238,10 +244,8 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         const reportStatusCount = {
             all: processedItems.length,
             withSurveys: processedItems.filter((r: any) => r.has_surveys).length,
-            final: processedItems.filter((r: any) => 
-                r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true'
-            ).length,
-            finalWithSurveys: calculationReports.length,
+            final: calculationReports.length, // All final reports (with or without surveys)
+            finalWithSurveys: finalReportsWithSurveys.length,
             draftWithSurveys: draftReportsWithSurveys.length
         };
         
@@ -315,11 +319,11 @@ export const GET = async ({ url, locals }: RequestEvent) => {
                 return sum + distance;
             }, 0);
         
-        // Get all unique LISAs from calculation reports
+        // Get all unique LISAs from final reports with surveys (LISA data only comes from surveys)
         const allUniqueIndications = new Map();
         
-        // Process all LISA indications from all calculation reports
-        calculationReports.forEach(report => {
+        // Process all LISA indications from final reports with surveys only
+        finalReportsWithSurveys.forEach(report => {
             if (report.indications && Array.isArray(report.indications)) {
                 report.indications.forEach((indication: any) => {
                     // Use lisa_id if available, otherwise use lisa_name
@@ -361,8 +365,8 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         const car3LisaPerKm = car3Distance > 0 ? (uniqueCar3Indications / car3Distance) : 0;
         const car4LisaPerKm = car4Distance > 0 ? (uniqueCar4Indications / car4Distance) : 0;
         
-        // Calculate total gaps from calculation reports
-        const totalGaps = calculationReports.reduce((sum: number, report: any) => {
+        // Calculate total gaps from final reports with surveys (gaps data only comes from surveys)
+        const totalGaps = finalReportsWithSurveys.reduce((sum: number, report: any) => {
             return sum + (report.fieldOfViewGapsCount || 0);
         }, 0);
 
@@ -398,7 +402,7 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             car4DraftDistance,
             totalGaps,
             totalIndications: totalUniqueIndications,
-            totalRawIndications: calculationReports.reduce((sum, item: any) => sum + (item.indicationsCount || 0), 0),
+            totalRawIndications: finalReportsWithSurveys.reduce((sum, item: any) => sum + (item.indicationsCount || 0), 0),
             car1LisaCount: uniqueCar1Indications,
             car2LisaCount: uniqueCar2Indications,
             car3LisaCount: uniqueCar3Indications,
@@ -424,7 +428,8 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         // Log processed data summary
         console.log('API: Processed reports summary:', {
             total: processedItems.length,
-            finalWithSurveys: calculationReports.length,
+            allFinalReports: calculationReports.length,
+            finalWithSurveys: finalReportsWithSurveys.length,
             filtered: filteredItems.length,
             rawIndicationsCount: stats.totalRawIndications,
             uniqueIndicationsCount: totalUniqueIndications

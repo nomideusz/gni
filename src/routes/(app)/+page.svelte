@@ -91,8 +91,8 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 			// Update stats with new data
 			if (apiData.stats) {
 				totalReports = apiData.stats.totalReports || 0;
-				finalReports = apiData.stats.reportCounts.finalWithSurveys || 0;
-				draftReports = apiData.stats.reportCounts.draftWithSurveys || 0;
+				finalReports = apiData.stats.reportCounts.final || 0; // All final reports (with or without surveys)
+				draftReports = apiData.stats.totalReports - apiData.stats.reportCounts.final || 0;
 				totalDistance = apiData.stats.totalDistance || 0;
 				car1Distance = apiData.stats.car1Distance || 0;
 				car2Distance = apiData.stats.car2Distance || 0;
