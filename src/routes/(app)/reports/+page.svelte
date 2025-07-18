@@ -61,7 +61,7 @@
 	// Filter state
 	let reportFilter = $state('final'); // 'final', 'all', 'draft' - default to final reports only
 	let searchQuery = $state(''); // Search query
-	let includeSurveysOnly = $state(true); // Show only reports with surveys
+	let includeSurveysOnly = $state(false); // Show all reports by default
 	
 	// Accordion state - track which reports are expanded
 	let expandedReports = $state<Set<string>>(new Set());
