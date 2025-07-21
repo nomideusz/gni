@@ -5,7 +5,11 @@
 	import { tick } from 'svelte';
 	import PageTemplate from '$lib/components/PageTemplate.svelte';
 	import SectionContainer from '$lib/components/SectionContainer.svelte';
-	import { ChevronUp, ChevronDown, ChevronRight, CheckCircle, AlertTriangle, Download, RefreshCw, Copy, Activity, TrendingUp } from 'lucide-svelte';
+	import { ChevronUp, ChevronDown, ChevronRight, AlertTriangle, Download, RefreshCw, Activity, TrendingUp } from 'lucide-svelte';
+	import LisaModal from '$lib/components/LisaModal.svelte';
+	import ReportsStatsCard from '$lib/components/ReportsStatsCard.svelte';
+	import ExportControls from '$lib/components/ExportControls.svelte';
+	import ReportsFilters from '$lib/components/ReportsFilters.svelte';
 
 	// Define Report interface based on the API response
 	interface Report {
@@ -61,7 +65,7 @@
 	// Filter state
 	let reportFilter = $state('final'); // 'final', 'all', 'draft' - default to final reports only
 	let searchQuery = $state(''); // Search query
-	let includeSurveysOnly = $state(false); // Show all reports by default
+	let includeSurveysOnly = $state(true); // Show reports with surveys by default
 	
 	// Accordion state - track which reports are expanded
 	let expandedReports = $state<Set<string>>(new Set());
@@ -69,10 +73,31 @@
 	// Selection state - track which reports are selected for export
 	let selectedReports = $state<Set<string>>(new Set());
 
+	// Column resizing state
+	let columnWidths = $state<Map<string, number>>(new Map([
+		['expand', 35],
+		['checkbox', 45],
+		['report_date', 120],
+		['report_title', 300],
+		['report_name', 200],
+		['dist_mains_length', 120],
+		['dist_mains_coverage', 100],
+		['dist_mains_covered_length', 140],
+		['fieldOfViewGapsCount', 80],
+		['indicationsCount', 80],
+		['total_duration_seconds', 100],
+		['total_distance_km', 140],
+		['surveyor_unit_desc', 100],
+		['report_final', 80]
+	]));
+	let isResizing = $state(false);
+	let resizingColumn = $state<string | null>(null);
+	let startX = $state(0);
+	let startWidth = $state(0);
+
 	// LISA modal state
 	let showLisaModal = $state(false);
-	let selectedReportIndications = $state<any[]>([]);
-	let selectedReportName = $state('');
+	let currentLisaReport = $state<any>(null);
 
 	// Function to toggle report expansion
 	function toggleReportExpansion(reportId: string) {
@@ -251,31 +276,75 @@
 
 	// Function to open LISA modal
 	function openLisaModal(report: any) {
-		selectedReportIndications = report.indications || [];
-		selectedReportName = report.report_name;
+		currentLisaReport = report;
 		showLisaModal = true;
 	}
 
 	// Function to close LISA modal
 	function closeLisaModal() {
 		showLisaModal = false;
-		selectedReportIndications = [];
-		selectedReportName = '';
+		currentLisaReport = null;
 	}
 
-	// Handle keyboard events for modal
-	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && showLisaModal) {
-			closeLisaModal();
+	// Column resizing functions
+	function startResize(event: MouseEvent, columnKey: string) {
+		event.preventDefault();
+		event.stopPropagation(); // Prevent sorting from being triggered
+		event.stopImmediatePropagation(); // Stop all other event handlers
+		isResizing = true;
+		resizingColumn = columnKey;
+		startX = event.clientX;
+		startWidth = columnWidths.get(columnKey) || 100;
+		
+		document.addEventListener('mousemove', handleResize);
+		document.addEventListener('mouseup', stopResize);
+		document.body.style.cursor = 'col-resize';
+		document.body.style.userSelect = 'none';
+	}
+
+	function handleResize(event: MouseEvent) {
+		if (!isResizing || !resizingColumn) return;
+		
+		const deltaX = event.clientX - startX;
+		const newWidth = Math.max(50, startWidth + deltaX); // Minimum width of 50px
+		
+		columnWidths.set(resizingColumn, newWidth);
+		columnWidths = new Map(columnWidths); // Trigger reactivity
+	}
+
+	function stopResize() {
+		document.removeEventListener('mousemove', handleResize);
+		document.removeEventListener('mouseup', stopResize);
+		document.body.style.cursor = '';
+		document.body.style.userSelect = '';
+		
+		// Save to localStorage
+		const widthsObject = Object.fromEntries(columnWidths);
+		localStorage.setItem('reports-column-widths', JSON.stringify(widthsObject));
+		
+		// Small delay before clearing resize state to prevent accidental sorting
+		setTimeout(() => {
+			isResizing = false;
+			resizingColumn = null;
+		}, 50);
+	}
+
+	// Load column widths from localStorage
+	function loadColumnWidths() {
+		try {
+			const saved = localStorage.getItem('reports-column-widths');
+			if (saved) {
+				const widthsObject = JSON.parse(saved);
+				columnWidths = new Map(Object.entries(widthsObject).map(([key, value]) => [key, Number(value)]));
+			}
+		} catch (error) {
+			console.error('Error loading column widths:', error);
 		}
 	}
 
-	// Add keyboard event listener
+	// Load column widths on mount
 	onMount(() => {
-		window.addEventListener('keydown', handleKeydown);
-		return () => {
-			window.removeEventListener('keydown', handleKeydown);
-		};
+		loadColumnWidths();
 	});
 
 	// Function to force scrollbar refresh - modified to be more reliable
@@ -496,6 +565,11 @@
 
 	// Handle column header click to change sort
 	function handleSort(column: string) {
+		// Don't sort if we're currently resizing
+		if (isResizing) {
+			return;
+		}
+		
 		if (sortColumn === column) {
 			// Toggle direction if same column
 			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -700,9 +774,13 @@
 			// Apply initial sorting
 			sortReports();
 			
-			// Use the stats data from the API
-			totalReports = result.stats.totalReports;
-			finalReports = result.stats.reportCounts.final; // All final reports (with or without surveys)
+			// Calculate stats from the filtered reports data (since we're using withSurveys filter)
+			totalReports = reports.length;
+			finalReports = reports.filter(report => 
+				report.report_final === true || 
+				report.report_final === 1 || 
+				report.report_final === '1'
+			).length;
 			draftReports = totalReports - finalReports;
 			
 			// Calculate final-and-draft reports (potentially deletable)
@@ -855,63 +933,29 @@
 			window.removeEventListener('resize', handleResize);
 		};
 	});
+
+	// Update CSS custom properties when column widths change
+	$effect(() => {
+		if (typeof document !== 'undefined' && tableContainer) {
+			const root = tableContainer;
+			columnWidths.forEach((width, key) => {
+				root.style.setProperty(`--col-${key}-width`, `${width}px`);
+			});
+		}
+	});
 </script>
 
 <PageTemplate title={t('reports.title', $language)} fullWidth={true}>
 	{#snippet pageActions()}
-		<div class="export-controls">
-			{#if selectedReports.size > 0}
-				<div class="selection-info">
-					<span class="selection-count">
-						{selectedReports.size} 
-						{reportFilter === 'final' ? 'final' : 
-						 reportFilter === 'draft' ? 'draft' : 
-						 reportFilter === 'final-and-draft' ? 'final & draft' : ''} 
-						{selectedReports.size === 1 ? 'report' : 'reports'} selected
-					</span>
-					<button 
-						class="button button--secondary button--small" 
-						onclick={clearAllSelections}
-					>
-						Clear Selection
-					</button>
-				</div>
-			{/if}
-			<button 
-				class="button button--primary" 
-				onclick={exportToExcel}
-			>
-				<Download size={18} />
-				{#if selectedReports.size > 0}
-					Export Selected {reportFilter === 'final' ? 'Final' : 
-									 reportFilter === 'draft' ? 'Draft' : 
-									 reportFilter === 'final-and-draft' ? 'Final & Draft' : ''} 
-					({selectedReports.size})
-					{#if !includeSurveysOnly}<span class="export-note">(All Reports)</span>{/if}
-				{:else}
-					Export All {reportFilter === 'final' ? 'Final' : 
-								reportFilter === 'draft' ? 'Draft' : 
-								reportFilter === 'final-and-draft' ? 'Final & Draft' : ''} 
-					({displayedReports.length})
-					{#if !includeSurveysOnly}<span class="export-note">(All Reports)</span>{/if}
-				{/if}
-			</button>
-		</div>
-		{#if syncInfo}
-			<div class="sync-info">
-				<RefreshCw size={16} class="sync-info__icon" />
-				<span class="sync-info__text">
-					Last synced: {syncInfo.last_sync
-						? formatDateTime(syncInfo.last_sync)
-						: syncInfo.last_sync_success
-							? formatDateTime(syncInfo.last_sync_success)
-							: 'Never'}
-				</span>
-				<span class="sync-info__status sync-info__status--{syncInfo.sync_status || 'pending'}">
-					{syncInfo.sync_status || 'Unknown'}
-				</span>
-			</div>
-		{/if}
+		<ExportControls 
+			{selectedReports}
+			{reportFilter}
+			{includeSurveysOnly}
+			{displayedReports}
+			{syncInfo}
+			onClearSelections={clearAllSelections}
+			onExport={exportToExcel}
+		/>
 	{/snippet}
 	
 	{#snippet content()}
@@ -936,192 +980,43 @@
 					</div>
 				{:else}
 					<!-- Stats Header -->
-					<div class="stats-dashboard">
-						<!-- Reports Section -->
-						<div class="stats-section">
-							<div class="stats-section-header">
-								<h3>Reports</h3>
-							</div>
-							<div class="stats-section-content">
-								<div class="stats-metric">
-									<div class="stats-content">
-										<div class="stats-value">{finalReports}</div>
-										<div class="stats-label">Final Reports</div>
-									</div>
-								</div>
-								
-								<div class="stats-metric stats-metric--dimmed">
-									<div class="stats-content">
-										<div class="stats-value">{draftReports}</div>
-										<div class="stats-label">Draft Reports</div>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<!-- Assets Section -->
-						<div class="stats-section">
-							<div class="stats-section-header">
-								<h3>Assets (Final Reports)</h3>
-							</div>
-							<div class="stats-section-content">
-								<div class="stats-metric">
-									<div class="stats-content">
-										<div class="stats-value">{totalCoverage().toFixed(1)}%</div>
-										<div class="stats-label">Coverage</div>
-									</div>
-								</div>
-								
-								<div class="stats-metric">
-									<div class="stats-content">
-										<div class="stats-value">{totalLISAs}</div>
-										<div class="stats-label">LISAs</div>
-									</div>
-								</div>
-								
-								<div class="stats-metric">
-									<div class="stats-content">
-										<div class="stats-value">{totalGaps}</div>
-										<div class="stats-label">Gaps</div>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<!-- Vehicles Section -->
-						<div class="stats-section">
-							<div class="stats-section-header">
-								<h3>Vehicles (Final Reports)</h3>
-							</div>
-							<div class="stats-section-content">
-								<div class="stats-metric stats-metric--vehicle">
-									<div class="stats-content">
-										<div class="stats-value">{car1Distance.toFixed(1)}</div>
-										<div class="stats-label">Car #1 (km)</div>
-									</div>
-								</div>
-								
-								<div class="stats-metric stats-metric--vehicle">
-									<div class="stats-content">
-										<div class="stats-value">{car2Distance.toFixed(1)}</div>
-										<div class="stats-label">Car #2 (km)</div>
-									</div>
-								</div>
-								
-								<div class="stats-metric stats-metric--vehicle">
-									<div class="stats-content">
-										<div class="stats-value">{car3Distance.toFixed(1)}</div>
-										<div class="stats-label">Car #3 (km)</div>
-									</div>
-								</div>
-								
-								<div class="stats-metric stats-metric--vehicle">
-									<div class="stats-content">
-										<div class="stats-value">{car4Distance.toFixed(1)}</div>
-										<div class="stats-label">Car #4 (km)</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
+					<ReportsStatsCard 
+						{finalReports}
+						{draftReports}
+						totalCoverage={totalCoverage()}
+						{totalLISAs}
+						{totalGaps}
+						{car1Distance}
+						{car2Distance}
+						{car3Distance}
+						{car4Distance}
+					/>
 
 					<!-- Filter Controls -->
-					<div class="filter-controls">
-						<div class="filter-row">
-							<div class="filter-item filter-item--radio-group">
-								<span class="filter-group-label">Report Type:</span>
-								<div class="radio-group">
-									<label class="radio-option">
-										<input 
-											type="radio" 
-											name="reportFilter" 
-											value="final" 
-											bind:group={reportFilter}
-											onchange={handleFilterChange}
-										>
-										<span class="radio-indicator"></span>
-										<span class="radio-label">Final Reports Only</span>
-										<span class="radio-count">({finalReports})</span>
-									</label>
-									
-									<label class="radio-option">
-										<input 
-											type="radio" 
-											name="reportFilter" 
-											value="all" 
-											bind:group={reportFilter}
-											onchange={handleFilterChange}
-										>
-										<span class="radio-indicator"></span>
-										<span class="radio-label">All Reports</span>
-										<span class="radio-count">({totalReports})</span>
-									</label>
-									
-									<label class="radio-option">
-										<input 
-											type="radio" 
-											name="reportFilter" 
-											value="draft" 
-											bind:group={reportFilter}
-											onchange={handleFilterChange}
-										>
-										<span class="radio-indicator"></span>
-										<span class="radio-label">Draft Reports Only</span>
-										<span class="radio-count">({draftReports})</span>
-									</label>
-									
-									<label class="radio-option">
-										<input 
-											type="radio" 
-											name="reportFilter" 
-											value="final-and-draft" 
-											bind:group={reportFilter}
-											onchange={handleFilterChange}
-										>
-										<span class="radio-indicator"></span>
-										<span class="radio-label">Final & Draft (Deletable)</span>
-										<span class="radio-count">({finalAndDraftReports})</span>
-									</label>
-								</div>
-							</div>
-							
-							<div class="filter-item">
-								<label class="search-label" for="search-input">Search Reports:</label>
-								<input 
-									id="search-input"
-									type="text" 
-									class="search-input"
-									placeholder="Search by name, title, unit, or date..."
-									bind:value={searchQuery}
-									oninput={handleFilterChange}
-								>
-							</div>
-							
-							<div class="filter-item">
-								<label class="toggle-label">
-									<input 
-										type="checkbox" 
-										class="toggle-checkbox"
-										bind:checked={includeSurveysOnly}
-										onchange={handleSurveyFilterChange}
-									>
-									<span class="toggle-slider"></span>
-									<span class="toggle-text">Reports with surveys only</span>
-								</label>
-							</div>
-						</div>
-					</div>
+					<ReportsFilters 
+						bind:reportFilter
+						bind:searchQuery
+						bind:includeSurveysOnly
+						{finalReports}
+						{totalReports}
+						{draftReports}
+						{finalAndDraftReports}
+						onFilterChange={handleFilterChange}
+						onSurveyFilterChange={handleSurveyFilterChange}
+					/>
 
 
 
-					<p class="table-scroll-hint">Scroll horizontally to view all report data</p>
+					<p class="table-scroll-hint">Scroll horizontally to view all report data • Click values to copy (Title, Name, Assets, Coverage) • Drag column borders to resize</p>
 					
-					<div class="table-container" bind:this={tableContainer}>
+					<div class="table-container {isResizing ? 'resizing' : ''}" bind:this={tableContainer}>
 						<div class="table table--compact table--reports">
 													<table class="table__element">
 							<thead>
 								<tr>
-									<th class="table__header table__header--expand"></th>
+									<th class="table__header table__header--expand">
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'expand')}></div>
+									</th>
 									<th class="table__header table__header--checkbox">
 										<div class="checkbox-header">
 											<label class="checkbox-wrapper">
@@ -1140,6 +1035,33 @@
 												</span>
 											</label>
 										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'checkbox')}></div>
+									</th>
+									<th class="table__header table__header--sortable table__header--report-date" role="button" tabindex="0" onclick={() => handleSort('report_date')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_date')}>
+										<div class="sort-header">
+											<span>Report Date</span>
+											{#if sortColumn === 'report_date'}
+												{#if sortDirection === 'asc'}
+													<ChevronUp size={14} class="table__sort-icon" />
+												{:else}
+													<ChevronDown size={14} class="table__sort-icon" />
+												{/if}
+											{/if}
+										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'report_date')}></div>
+									</th>
+									<th class="table__header table__header--sortable table__header--report-title" role="button" tabindex="0" onclick={() => handleSort('report_title')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_title')}>
+										<div class="sort-header">
+											<span>Report Title</span>
+											{#if sortColumn === 'report_title'}
+												{#if sortDirection === 'asc'}
+													<ChevronUp size={14} class="table__sort-icon" />
+												{:else}
+													<ChevronDown size={14} class="table__sort-icon" />
+												{/if}
+											{/if}
+										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'report_title')}></div>
 									</th>
 									<th class="table__header table__header--sortable table__header--report-name" role="button" tabindex="0" onclick={() => handleSort('report_name')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_name')}>
 										<div class="sort-header">
@@ -1152,42 +1074,7 @@
 												{/if}
 											{/if}
 										</div>
-									</th>
-										<th class="table__header table__header--sortable table__header--report-title" role="button" tabindex="0" onclick={() => handleSort('report_title')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_title')}>
-											<div class="sort-header">
-												<span>Report Title</span>
-												{#if sortColumn === 'report_title'}
-													{#if sortDirection === 'asc'}
-														<ChevronUp size={14} class="table__sort-icon" />
-													{:else}
-														<ChevronDown size={14} class="table__sort-icon" />
-													{/if}
-												{/if}
-											</div>
-										</th>
-																			<th class="table__header table__header--sortable table__header--report-date" role="button" tabindex="0" onclick={() => handleSort('report_date')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_date')}>
-										<div class="sort-header">
-											<span>Report Date</span>
-												{#if sortColumn === 'report_date'}
-													{#if sortDirection === 'asc'}
-														<ChevronUp size={14} class="table__sort-icon" />
-													{:else}
-														<ChevronDown size={14} class="table__sort-icon" />
-													{/if}
-												{/if}
-											</div>
-										</th>
-																			<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('dist_mains_covered_length')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('dist_mains_covered_length')}>
-										<div class="sort-header">
-											<span>Assets Covered</span>
-											{#if sortColumn === 'dist_mains_covered_length'}
-												{#if sortDirection === 'asc'}
-													<ChevronUp size={14} class="table__sort-icon" />
-												{:else}
-													<ChevronDown size={14} class="table__sort-icon" />
-												{/if}
-											{/if}
-										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'report_name')}></div>
 									</th>
 									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('dist_mains_length')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('dist_mains_length')}>
 										<div class="sort-header">
@@ -1200,6 +1087,7 @@
 												{/if}
 											{/if}
 										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'dist_mains_length')}></div>
 									</th>
 									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('dist_mains_coverage')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('dist_mains_coverage')}>
 										<div class="sort-header">
@@ -1212,46 +1100,24 @@
 												{/if}
 											{/if}
 										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'dist_mains_coverage')}></div>
 									</th>
-										<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('total_duration_seconds')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('total_duration_seconds')}>
-											<div class="sort-header">
-												<span>Duration</span>
-												{#if sortColumn === 'total_duration_seconds'}
-													{#if sortDirection === 'asc'}
-														<ChevronUp size={14} class="table__sort-icon" />
-													{:else}
-														<ChevronDown size={14} class="table__sort-icon" />
-													{/if}
-												{/if}
-											</div>
-										</th>
-										<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('total_distance_km')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('total_distance_km')}>
-											<div class="sort-header">
-												<span>Survey Distance</span>
-												{#if sortColumn === 'total_distance_km'}
-													{#if sortDirection === 'asc'}
-														<ChevronUp size={14} class="table__sort-icon" />
-													{:else}
-														<ChevronDown size={14} class="table__sort-icon" />
-													{/if}
-												{/if}
-											</div>
-										</th>
-										<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('surveyor_unit_desc')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('surveyor_unit_desc')}>
-											<div class="sort-header">
-												<span>Vehicle</span>
-												{#if sortColumn === 'surveyor_unit_desc'}
-													{#if sortDirection === 'asc'}
-														<ChevronUp size={14} class="table__sort-icon" />
-													{:else}
-														<ChevronDown size={14} class="table__sort-icon" />
-													{/if}
-												{/if}
-											</div>
-										</th>
-																			<th class="table__header table__header--sortable table__header--center" role="button" tabindex="0" onclick={() => handleSort('fieldOfViewGapsCount')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('fieldOfViewGapsCount')}>
+									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('dist_mains_covered_length')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('dist_mains_covered_length')}>
 										<div class="sort-header">
-											<span>Gaps</span>
+											<span>Assets Covered</span>
+											{#if sortColumn === 'dist_mains_covered_length'}
+												{#if sortDirection === 'asc'}
+													<ChevronUp size={14} class="table__sort-icon" />
+												{:else}
+													<ChevronDown size={14} class="table__sort-icon" />
+												{/if}
+											{/if}
+										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'dist_mains_covered_length')}></div>
+									</th>
+									<th class="table__header table__header--sortable table__header--center" role="button" tabindex="0" onclick={() => handleSort('fieldOfViewGapsCount')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('fieldOfViewGapsCount')}>
+										<div class="sort-header">
+											<span>GAPS</span>
 											{#if sortColumn === 'fieldOfViewGapsCount'}
 												{#if sortDirection === 'asc'}
 													<ChevronUp size={14} class="table__sort-icon" />
@@ -1260,10 +1126,11 @@
 												{/if}
 											{/if}
 										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'fieldOfViewGapsCount')}></div>
 									</th>
 									<th class="table__header table__header--sortable table__header--center" role="button" tabindex="0" onclick={() => handleSort('indicationsCount')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('indicationsCount')}>
 										<div class="sort-header">
-											<span>LISAs</span>
+											<span>LISA</span>
 											{#if sortColumn === 'indicationsCount'}
 												{#if sortDirection === 'asc'}
 													<ChevronUp size={14} class="table__sort-icon" />
@@ -1272,6 +1139,46 @@
 												{/if}
 											{/if}
 										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'indicationsCount')}></div>
+									</th>
+									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('total_duration_seconds')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('total_duration_seconds')}>
+										<div class="sort-header">
+											<span>Duration</span>
+											{#if sortColumn === 'total_duration_seconds'}
+												{#if sortDirection === 'asc'}
+													<ChevronUp size={14} class="table__sort-icon" />
+												{:else}
+													<ChevronDown size={14} class="table__sort-icon" />
+												{/if}
+											{/if}
+										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'total_duration_seconds')}></div>
+									</th>
+									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('total_distance_km')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('total_distance_km')}>
+										<div class="sort-header">
+											<span>Survey Distance</span>
+											{#if sortColumn === 'total_distance_km'}
+												{#if sortDirection === 'asc'}
+													<ChevronUp size={14} class="table__sort-icon" />
+												{:else}
+													<ChevronDown size={14} class="table__sort-icon" />
+												{/if}
+											{/if}
+										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'total_distance_km')}></div>
+									</th>
+									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('surveyor_unit_desc')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('surveyor_unit_desc')}>
+										<div class="sort-header">
+											<span>Vehicle</span>
+											{#if sortColumn === 'surveyor_unit_desc'}
+												{#if sortDirection === 'asc'}
+													<ChevronUp size={14} class="table__sort-icon" />
+												{:else}
+													<ChevronDown size={14} class="table__sort-icon" />
+												{/if}
+											{/if}
+										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'surveyor_unit_desc')}></div>
 									</th>
 									<th class="table__header table__header--sortable table__header--center" role="button" tabindex="0" onclick={() => handleSort('report_final')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_final')}>
 										<div class="sort-header">
@@ -1284,6 +1191,7 @@
 												{/if}
 											{/if}
 										</div>
+										<div class="resize-handle" onmousedown={(e) => startResize(e, 'report_final')}></div>
 									</th>
 									</tr>
 								</thead>
@@ -1299,7 +1207,6 @@
 														<div class="skeleton-text" style="width: 15px; height: 15px; border-radius: 3px;"></div>
 													</div>
 												</td>
-												<td class="table__cell"><div class="skeleton-text"></div></td>
 												<td class="table__cell"><div class="skeleton-text"></div></td>
 												<td class="table__cell"><div class="skeleton-text"></div></td>
 												<td class="table__cell"><div class="skeleton-text"></div></td>
@@ -1348,61 +1255,60 @@
 														<span class="sr-only">Select {report.report_name}</span>
 													</label>
 												</td>
-												<td class="table__cell table__cell--report-name" title={report.report_name}>
-													<div class="cell-with-copy">
-														<span class="report-name-text">
-															{report.report_name}
-														</span>
-														<button 
-															class="copy-button"
-															class:copy-button--success={copiedItems.has(`${report.id}-name`)}
-															onclick={() => copyToClipboard(report.report_name, 'Report Name', `${report.id}-name`)}
-															title={copiedItems.has(`${report.id}-name`) ? 'Copied!' : 'Copy Report Name'}
-														>
-															{#if copiedItems.has(`${report.id}-name`)}
-																<CheckCircle size={14} />
-															{:else}
-																<Copy size={14} />
-															{/if}
-														</button>
-													</div>
-												</td>
-												<td class="table__cell table__cell--report-title" title={report.report_title}>
-													<div class="cell-with-copy">
-														<span class="table__cell-content">{report.report_title}</span>
-														{#if deletableInfo.isDeletable}
-															<span 
-																class="deletable-badge" 
-																title={deletableInfo.reason}
-															>
-																⚠️
-															</span>
-														{/if}
-														<button 
-															class="copy-button"
-															class:copy-button--success={copiedItems.has(`${report.id}-title`)}
-															onclick={() => copyToClipboard(report.report_title, 'Report Title', `${report.id}-title`)}
-															title={copiedItems.has(`${report.id}-title`) ? 'Copied!' : 'Copy Report Title'}
-														>
-															{#if copiedItems.has(`${report.id}-title`)}
-																<CheckCircle size={14} />
-															{:else}
-																<Copy size={14} />
-															{/if}
-														</button>
-													</div>
-												</td>
 												<td class="table__cell table__cell--report-date">{formatDate(report.report_date)}</td>
-												<td class="table__cell">{report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}</td>
-												<td class="table__cell">{report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}</td>
+												<td class="table__cell table__cell--report-title" title={report.report_title}>
+													<span 
+														class="table__cell-content clickable-value {copiedItems.has(`${report.id}-title`) ? 'copied-value' : ''}"
+														onclick={() => copyToClipboard(report.report_title, 'Report Title', `${report.id}-title`)}
+														title={copiedItems.has(`${report.id}-title`) ? 'Copied!' : 'Click to copy Report Title'}
+													>
+														{report.report_title}
+													</span>
+													{#if deletableInfo.isDeletable}
+														<span 
+															class="deletable-badge" 
+															title={deletableInfo.reason}
+														>
+															⚠️
+														</span>
+													{/if}
+												</td>
+												<td class="table__cell table__cell--report-name" title={report.report_name}>
+													<span 
+														class="report-name-text clickable-value {copiedItems.has(`${report.id}-name`) ? 'copied-value' : ''}"
+														onclick={() => copyToClipboard(report.report_name, 'Report Name', `${report.id}-name`)}
+														title={copiedItems.has(`${report.id}-name`) ? 'Copied!' : 'Click to copy Report Name'}
+													>
+														{report.report_name}
+													</span>
+												</td>
 												<td class="table__cell">
-													<span class:value--high-quality={(report.dist_mains_coverage || 0) > 0.9}>
+													<span 
+														class="clickable-value {copiedItems.has(`${report.id}-total-assets`) ? 'copied-value' : ''}"
+														onclick={() => copyToClipboard(report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A', 'Total Assets', `${report.id}-total-assets`)}
+														title={copiedItems.has(`${report.id}-total-assets`) ? 'Copied!' : 'Click to copy Total Assets'}
+													>
+														{report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}
+													</span>
+												</td>
+												<td class="table__cell">
+													<span 
+														class="clickable-value {copiedItems.has(`${report.id}-coverage`) ? 'copied-value' : ''} {(report.dist_mains_coverage || 0) > 0.9 ? 'value--high-quality' : ''}"
+														onclick={() => copyToClipboard(report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A', 'Coverage %', `${report.id}-coverage`)}
+														title={copiedItems.has(`${report.id}-coverage`) ? 'Copied!' : 'Click to copy Coverage %'}
+													>
 														{report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}
 													</span>
 												</td>
-												<td class="table__cell">{report.formatted_duration || 'N/A'}</td>
-												<td class="table__cell">{report.total_distance_km ? `${report.total_distance_km} km` : 'N/A'}</td>
-												<td class="table__cell">{report.surveyor_unit_desc || 'N/A'}</td>
+												<td class="table__cell">
+													<span 
+														class="clickable-value {copiedItems.has(`${report.id}-assets-covered`) ? 'copied-value' : ''}"
+														onclick={() => copyToClipboard(report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A', 'Assets Covered', `${report.id}-assets-covered`)}
+														title={copiedItems.has(`${report.id}-assets-covered`) ? 'Copied!' : 'Click to copy Assets Covered'}
+													>
+														{report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}
+													</span>
+												</td>
 												<td class="table__cell table__cell--center">
 													<span class:value--high-quality={(report.fieldOfViewGapsCount || 0) < 50}>
 														{report.fieldOfViewGapsCount || 0}
@@ -1417,6 +1323,9 @@
 														{report.indicationsCount || 0}
 													</button>
 												</td>
+												<td class="table__cell">{report.formatted_duration || 'N/A'}</td>
+												<td class="table__cell">{report.total_distance_km ? `${report.total_distance_km} km` : 'N/A'}</td>
+												<td class="table__cell">{report.surveyor_unit_desc || 'N/A'}</td>
 												<td class="table__cell table__cell--status">
 													<div class="status-container">
 														<span class="status-indicator {
@@ -1515,260 +1424,17 @@
 </PageTemplate>
 
 <!-- LISA Modal -->
-{#if showLisaModal}
-	<div class="modal-overlay" role="button" tabindex="0" onclick={closeLisaModal} onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? closeLisaModal() : null} aria-label="Close modal">
-		<div class="modal-content" role="dialog" tabindex="-1" aria-labelledby="modal-title" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
-			<div class="modal-header">
-				<h3 id="modal-title">LISA Indications - {selectedReportName}</h3>
-				<button class="modal-close" onclick={closeLisaModal}>×</button>
-			</div>
-			<div class="modal-body">
-				{#if selectedReportIndications.length === 0}
-					<div class="no-indications">
-						<AlertTriangle size={48} class="no-indications-icon" />
-						<h4>No LISA Indications Found</h4>
-						<p>This report does not contain any LISA indications.</p>
-					</div>
-				{:else}
-					
-					<div class="indications-list">
-						{#each selectedReportIndications as indication, index}
-							{@const confidence = Number(indication.classification_confidence || 0)}
-							{@const emissionRate = Number(indication.emission_rate || 0)}
-							{@const amplitude = Number(indication.amplitude || 0)}
-							
-							<div class="indication-card {confidence > 0.8 ? 'indication-card--high-confidence' : confidence > 0.6 ? 'indication-card--medium-confidence' : 'indication-card--low-confidence'}">
-								<div class="indication-header">
-														<div class="indication-title">
-						<span class="indication-number">#{index + 1}</span>
-						{#if indication.lisa_name}
-							<div class="indication-id-section">
-								<span class="indication-name">{indication.lisa_name}</span>
-							</div>
-						{/if}
-					</div>
-									<div class="indication-badges">
-										{#if indication.rfr_label}
-											<span class="emission-badge">Emission Bin: {indication.rfr_label}</span>
-										{/if}
-									</div>
-								</div>
-								
-								<div class="indication-content">
-									<!-- Primary Metrics -->
-									<div class="metric-group metric-group--primary">
-										<div class="metrics-grid">
-											{#if indication.amplitude}
-												<div class="metric-card">
-													<div class="metric-content">
-														<span class="metric-label">Amplitude</span>
-														<span class="metric-value metric-value--{amplitude > 20 ? 'high' : amplitude > 10 ? 'medium' : 'low'}">{amplitude.toFixed(3)} <span class="metric-unit">ppm</span></span>
-													</div>
-												</div>
-											{/if}
-											
-											{#if indication.classification_confidence}
-												<div class="metric-card">
-													<div class="metric-content">
-														<span class="metric-label">Confidence</span>
-														<div class="metric-value-with-bar">
-															<span class="metric-value">{(confidence * 100).toFixed(1)}%</span>
-															<div class="confidence-bar">
-																<div class="confidence-fill confidence-fill--{confidence > 0.8 ? 'high' : confidence > 0.6 ? 'medium' : 'low'}" style="width: {confidence * 100}%"></div>
-															</div>
-														</div>
-													</div>
-												</div>
-											{/if}
-											
-											{#if indication.emission_rate}
-												<div class="metric-card">
-													<div class="metric-content">
-														<span class="metric-label">Emission Rate</span>
-														<span class="metric-value metric-value--{emissionRate > 1 ? 'high' : emissionRate > 0.5 ? 'medium' : 'low'}">{emissionRate.toFixed(3)} <span class="metric-unit">SCFH</span></span>
-													</div>
-												</div>
-											{/if}
-											
-											{#if indication.num_peaks}
-												<div class="metric-card">
-													<div class="metric-content">
-														<span class="metric-label">Number of Peaks</span>
-														<span class="metric-value">{indication.num_peaks}</span>
-													</div>
-												</div>
-											{/if}
-										</div>
-									</div>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		</div>
-	</div>
-{/if}
+<LisaModal 
+	bind:show={showLisaModal} 
+	reportName={currentLisaReport?.report_name || ''} 
+	indications={currentLisaReport?.indications || []} 
+	onClose={closeLisaModal} 
+/>
 
 <style>
-	/* Stats Dashboard */
-	.stats-dashboard {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1.5rem;
-		margin-bottom: 1.5rem;
-	}
 
-	.stats-section {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 8px;
-		overflow: hidden;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-	}
 
-	.stats-section-header {
-		background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
-		padding: 1rem 1.5rem;
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		color: white;
-	}
 
-	.stats-section-header h3 {
-		margin: 0;
-		font-size: 1rem;
-		font-weight: 600;
-		letter-spacing: 0.025em;
-	}
-
-	.stats-section-content {
-		padding: 1.5rem;
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-		gap: 1rem;
-	}
-
-	.stats-metric {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem;
-		border-radius: 6px;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-secondary);
-		transition: all 0.2s ease;
-	}
-
-	.stats-metric:hover {
-		background: var(--bg-tertiary);
-		border-color: var(--border-primary);
-	}
-
-	.stats-metric--vehicle {
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		gap: 0.5rem;
-	}
-
-	.stats-metric--dimmed {
-		opacity: 0.6;
-	}
-
-	.stats-metric--dimmed .stats-value {
-		color: var(--text-secondary);
-	}
-
-	.stats-metric--dimmed .stats-label {
-		color: var(--text-secondary);
-		opacity: 0.7;
-	}
-
-	.stats-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 36px;
-		height: 36px;
-		background: var(--bg-tertiary);
-		border-radius: 6px;
-		flex-shrink: 0;
-		border: 1px solid var(--border-secondary);
-	}
-
-	.stats-icon--success {
-		background: rgba(34, 197, 94, 0.1);
-		border-color: rgba(34, 197, 94, 0.3);
-		color: var(--success);
-	}
-
-	.stats-icon--warning {
-		background: rgba(245, 158, 11, 0.1);
-		border-color: rgba(245, 158, 11, 0.3);
-		color: var(--warning);
-	}
-
-	.stats-content {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		flex: 1;
-	}
-
-	.stats-value {
-		font-size: 1.25rem;
-		font-weight: 700;
-		line-height: 1;
-		color: var(--text-primary);
-	}
-
-	.stats-label {
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-		font-weight: 500;
-	}
-
-	.stats-sublabel {
-		font-size: 0.75rem;
-		color: var(--accent-primary);
-		opacity: 0.9;
-		margin-top: 0.25rem;
-		font-weight: 500;
-	}
-
-	/* Export Controls */
-	.export-controls {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
-
-	.export-note {
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-		font-weight: 400;
-	}
-
-	.selection-info {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-	}
-
-	.selection-count {
-		font-weight: 600;
-		color: var(--accent-primary);
-	}
-
-	.button--small {
-		padding: 0.375rem 0.75rem;
-		font-size: 0.8rem;
-	}
 
 	/* Checkbox Styles */
 	.table__header--checkbox {
@@ -1936,243 +1602,9 @@
 		color: var(--accent-primary);
 	}
 
-	/* Filter Controls */
-	.filter-controls {
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: 6px;
-		padding: 1rem;
-		margin-bottom: 1.5rem;
-	}
 
-	.filter-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 2rem;
-		flex-wrap: wrap;
-	}
 
-	.filter-item {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-	}
 
-	.filter-item--radio-group {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 0.5rem;
-	}
-
-	.filter-group-label {
-		font-size: 0.9rem;
-		font-weight: 500;
-		color: var(--text-primary);
-	}
-
-	.radio-group {
-		display: flex;
-		align-items: center;
-		gap: 1.5rem;
-		flex-wrap: wrap;
-	}
-
-	.radio-option {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		cursor: pointer;
-		user-select: none;
-		position: relative;
-	}
-
-	.radio-option input {
-		position: absolute;
-		opacity: 0;
-		width: 0;
-		height: 0;
-	}
-
-	.radio-indicator {
-		width: 16px;
-		height: 16px;
-		border: 2px solid var(--border-primary);
-		border-radius: 50%;
-		background: white;
-		transition: all 0.2s ease;
-		flex-shrink: 0;
-	}
-
-	.radio-option input:checked + .radio-indicator {
-		border-color: var(--accent-primary);
-		background: var(--accent-primary);
-		box-shadow: inset 0 0 0 3px white;
-	}
-
-	.radio-option:hover .radio-indicator {
-		border-color: var(--accent-primary);
-	}
-
-	.radio-label {
-		font-size: 0.85rem;
-		font-weight: 500;
-		color: var(--text-primary);
-		white-space: nowrap;
-	}
-
-	.radio-count {
-		font-size: 0.7rem;
-		color: var(--text-secondary);
-		font-style: italic;
-	}
-
-	.radio-option input:checked + .radio-indicator + .radio-label {
-		color: var(--accent-primary);
-	}
-
-	.radio-option input:checked + .radio-indicator + .radio-label + .radio-count {
-		color: var(--accent-primary);
-	}
-
-	/* Search Input */
-	.search-label {
-		font-size: 0.9rem;
-		font-weight: 500;
-		color: var(--text-primary);
-		white-space: nowrap;
-	}
-
-	.search-input {
-		width: 300px;
-		padding: 0.5rem 0.75rem;
-		border: 1px solid var(--border-primary);
-		border-radius: 4px;
-		background: var(--bg-primary);
-		color: var(--text-primary);
-		font-size: 0.85rem;
-		transition: border-color 0.2s ease, box-shadow 0.2s ease;
-	}
-
-	.search-input:focus {
-		outline: none;
-		border-color: var(--accent-primary);
-		box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-	}
-
-	.search-input::placeholder {
-		color: var(--text-secondary);
-		opacity: 0.7;
-	}
-
-	/* Toggle Switch */
-	.toggle-switch {
-		position: relative;
-		display: inline-block;
-		width: 44px;
-		height: 24px;
-		cursor: pointer;
-	}
-
-	.toggle-label {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		cursor: pointer;
-		user-select: none;
-		font-size: 0.9rem;
-		color: var(--text-primary);
-	}
-
-	.toggle-checkbox {
-		position: absolute;
-		opacity: 0;
-		width: 0;
-		height: 0;
-	}
-
-	.toggle-slider {
-		position: relative;
-		display: inline-block;
-		width: 44px;
-		height: 24px;
-		background-color: var(--border-primary);
-		border-radius: 24px;
-		transition: background-color 0.2s ease;
-		flex-shrink: 0;
-	}
-
-	.toggle-slider:before {
-		position: absolute;
-		content: "";
-		height: 18px;
-		width: 18px;
-		left: 3px;
-		bottom: 3px;
-		background-color: white;
-		border-radius: 50%;
-		transition: transform 0.2s ease;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-	}
-
-	.toggle-checkbox:checked + .toggle-slider {
-		background-color: var(--accent-primary);
-	}
-
-	.toggle-checkbox:checked + .toggle-slider:before {
-		transform: translateX(20px);
-	}
-
-	.toggle-text {
-		font-weight: 500;
-		white-space: nowrap;
-	}
-
-	/* Sync Info in Page Actions */
-	.sync-info {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		background: var(--bg-secondary);
-		padding: 0.625rem 1rem;
-		border-radius: 4px;
-		border: 1px solid var(--border-primary);
-	}
-
-	.sync-info__icon {
-		opacity: 0.7;
-	}
-
-	.sync-info__text {
-		white-space: nowrap;
-	}
-
-	.sync-info__status {
-		padding: 0.125rem 0.375rem;
-		border-radius: 12px;
-		font-size: 0.65rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		white-space: nowrap;
-	}
-
-	.sync-info__status--success {
-		background: rgba(34, 197, 94, 0.1);
-		color: var(--success);
-	}
-
-	.sync-info__status--pending {
-		background: rgba(245, 158, 11, 0.1);
-		color: var(--warning);
-	}
-
-	.sync-info__status--failed {
-		background: rgba(239, 68, 68, 0.1);
-		color: var(--error);
-	}
 
 	/* Sync Status */
 	.sync-status {
@@ -2283,7 +1715,57 @@
 		overflow-x: auto;
 	}
 
-	/* Copy button styles */
+	/* Clickable value styles */
+	.clickable-value {
+		cursor: pointer;
+		transition: all 0.2s ease;
+		border-radius: 4px;
+		padding: 0.125rem 0.25rem;
+		margin: -0.125rem -0.25rem;
+		display: inline-block;
+		position: relative;
+	}
+
+	.clickable-value:hover {
+		background-color: var(--bg-secondary);
+		color: var(--accent-primary);
+		transform: scale(1.02);
+	}
+
+	.clickable-value:active {
+		transform: scale(0.98);
+		background-color: var(--accent-primary);
+		color: white;
+	}
+
+	/* Success state styling for copied values */
+	.copied-value {
+		background-color: rgba(16, 185, 129, 0.1) !important;
+		color: #10b981 !important;
+		animation: copySuccess 0.4s ease-out;
+	}
+
+	.copied-value:hover {
+		background-color: rgba(16, 185, 129, 0.15) !important;
+		color: #059669 !important;
+	}
+
+	@keyframes copySuccess {
+		0% {
+			transform: scale(1);
+			background-color: rgba(16, 185, 129, 0.2);
+		}
+		50% {
+			transform: scale(1.05);
+			background-color: rgba(16, 185, 129, 0.3);
+		}
+		100% {
+			transform: scale(1);
+			background-color: rgba(16, 185, 129, 0.1);
+		}
+	}
+
+	/* Legacy support for remaining copy buttons (if any) */
 	.cell-with-copy {
 		display: flex;
 		align-items: center;
@@ -2292,76 +1774,10 @@
 		gap: 0.5rem;
 	}
 
-	.copy-button {
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 0.25rem;
-		border-radius: 4px;
-		color: var(--text-secondary);
-		transition: all 0.2s ease;
-		opacity: 0;
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.copy-button:hover {
-		background-color: var(--bg-secondary);
-		color: var(--accent-primary);
-		transform: scale(1.1);
-	}
-
-	.copy-button:active {
-		transform: scale(0.95);
-	}
-
-	/* Success state styling */
-	.copy-button--success {
-		color: #10b981 !important; /* Green color for success */
-		background-color: rgba(16, 185, 129, 0.1) !important;
-		opacity: 1 !important;
-		animation: copySuccess 0.3s ease-out;
-	}
-
-	.copy-button--success:hover {
-		color: #059669 !important;
-		background-color: rgba(16, 185, 129, 0.15) !important;
-		transform: scale(1.05);
-	}
-
-	@keyframes copySuccess {
-		0% {
-			transform: scale(1);
-		}
-		50% {
-			transform: scale(1.2);
-		}
-		100% {
-			transform: scale(1);
-		}
-	}
-
-	/* Show copy button on row hover */
-	.table__row:hover .copy-button {
-		opacity: 1;
-	}
-
 	/* Green text for high quality values */
 	.value--high-quality {
 		color: #15803d !important;
 		font-weight: 600;
-	}
-
-	/* Adjust text containers to allow space for copy button */
-	.cell-with-copy .report-name-text,
-	.cell-with-copy .table__cell-content {
-		flex: 1;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		min-width: 0;
 	}
 
 	/* Deletable badge styling */
@@ -2376,9 +1792,9 @@
 		background: rgba(239, 68, 68, 0.1);
 		border: 1px solid rgba(239, 68, 68, 0.3);
 		cursor: help;
-		flex-shrink: 0;
 		transition: all 0.2s ease;
 		line-height: 1;
+		vertical-align: middle;
 	}
 
 	.deletable-badge:hover {
@@ -2424,369 +1840,7 @@
 		transform: scale(1.05);
 	}
 
-	/* Modal Styles */
-	.modal-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: rgba(0, 0, 0, 0.5);
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		z-index: 1000;
-		backdrop-filter: blur(2px);
-	}
 
-	.modal-content {
-		background: var(--bg-primary);
-		border-radius: 12px;
-		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-		max-width: 1200px;
-		width: 95vw;
-		max-height: 80vh;
-		overflow: hidden;
-		border: 1px solid var(--border-primary);
-	}
-
-	.modal-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 1.5rem;
-		border-bottom: 1px solid var(--border-primary);
-		background: var(--bg-secondary);
-	}
-
-	.modal-header h3 {
-		margin: 0;
-		color: var(--text-primary);
-		font-size: 1.25rem;
-		font-weight: 600;
-	}
-
-	.modal-close {
-		background: none;
-		border: none;
-		font-size: 1.5rem;
-		cursor: pointer;
-		color: var(--text-secondary);
-		padding: 0.25rem;
-		border-radius: 4px;
-		transition: color 0.2s ease;
-	}
-
-	.modal-close:hover {
-		color: var(--text-primary);
-		background-color: var(--bg-primary);
-	}
-
-	.modal-body {
-		padding: 1.5rem;
-		max-height: 60vh;
-		overflow-y: auto;
-	}
-
-	.no-indications {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		color: var(--text-secondary);
-		padding: 3rem 2rem;
-		gap: 1rem;
-	}
-
-	.no-indications h4 {
-		color: var(--text-primary);
-		margin: 0;
-		font-size: 1.125rem;
-	}
-
-	.no-indications p {
-		margin: 0;
-		opacity: 0.8;
-	}
-
-	:global(.no-indications-icon) {
-		color: var(--text-secondary);
-		opacity: 0.6;
-	}
-
-
-
-
-
-	.indications-list {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.indication-card {
-		border: 1px solid var(--border-primary);
-		border-radius: 12px;
-		overflow: hidden;
-		background: var(--bg-primary);
-		transition: all 0.3s ease;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-	}
-
-	.indication-card:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-	}
-
-	.indication-card--high-confidence {
-		border-left: 4px solid var(--success);
-	}
-
-	.indication-card--medium-confidence {
-		border-left: 4px solid var(--warning);
-	}
-
-	.indication-card--low-confidence {
-		border-left: 4px solid var(--error);
-	}
-
-	.indication-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		padding: 1rem 1rem 0.75rem;
-		background: var(--bg-secondary);
-		border-bottom: 1px solid var(--border-primary);
-	}
-
-	.indication-title {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
-
-	.indication-number {
-		background: var(--accent-primary);
-		color: white;
-		padding: 0.5rem 0.75rem;
-		border-radius: 8px;
-		font-size: 0.875rem;
-		font-weight: 600;
-		min-width: 2.5rem;
-		text-align: center;
-	}
-
-	.indication-id-section {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.indication-id {
-		font-weight: 600;
-		color: var(--text-primary);
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 0.875rem;
-		padding: 0.25rem 0.5rem;
-		background: rgba(var(--accent-primary-rgb), 0.1);
-		border-radius: 4px;
-	}
-
-	.indication-name {
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-		font-weight: 500;
-	}
-
-	.indication-badges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		align-items: flex-start;
-	}
-
-	.confidence-badge {
-		padding: 0.25rem 0.75rem;
-		border-radius: 20px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-
-	.confidence-badge--high {
-		background: rgba(34, 197, 94, 0.15);
-		color: var(--success);
-		border: 1px solid rgba(34, 197, 94, 0.3);
-	}
-
-	.confidence-badge--medium {
-		background: rgba(245, 158, 11, 0.15);
-		color: var(--warning);
-		border: 1px solid rgba(245, 158, 11, 0.3);
-	}
-
-	.confidence-badge--low {
-		background: rgba(239, 68, 68, 0.15);
-		color: var(--error);
-		border: 1px solid rgba(239, 68, 68, 0.3);
-	}
-
-	.emission-badge {
-		padding: 0.25rem 0.75rem;
-		border-radius: 20px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		background: rgba(var(--accent-primary-rgb), 0.15);
-		color: var(--accent-primary);
-		border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
-	}
-
-	.indication-content {
-		padding: 1rem;
-	}
-
-	.metric-group {
-		margin-bottom: 1rem;
-	}
-
-	.metric-group:last-child {
-		margin-bottom: 0;
-	}
-
-	.metric-group-title {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin: 0 0 0.75rem 0;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-
-	.metrics-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-		gap: 0.75rem;
-	}
-
-	.metric-card {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: 6px;
-		transition: all 0.2s ease;
-	}
-
-	.metric-card:hover {
-		border-color: var(--accent-primary);
-		transform: translateY(-1px);
-	}
-
-	.metric-card--simple {
-		padding: 0.75rem;
-	}
-
-	.metric-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 2.5rem;
-		height: 2.5rem;
-		background: rgba(var(--accent-primary-rgb), 0.1);
-		color: var(--accent-primary);
-		border-radius: 8px;
-		flex-shrink: 0;
-	}
-
-	.metric-icon--high {
-		background: rgba(239, 68, 68, 0.1);
-		color: var(--error);
-	}
-
-	.metric-icon--medium {
-		background: rgba(245, 158, 11, 0.1);
-		color: var(--warning);
-	}
-
-	.metric-icon--low {
-		background: rgba(255, 255, 255, 0.1);
-		color: white;
-	}
-
-	.metric-content {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.metric-label {
-		display: block;
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-		font-weight: 500;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		margin-bottom: 0.25rem;
-	}
-
-	.metric-value {
-		display: block;
-		font-weight: 600;
-		color: var(--text-primary);
-		font-size: 1rem;
-	}
-
-	.metric-value--high {
-		color: var(--error);
-	}
-
-	.metric-value--medium {
-		color: var(--warning);
-	}
-
-	.metric-value--low {
-		color: white;
-	}
-
-	.metric-unit {
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-		font-weight: 400;
-	}
-
-	.metric-value-with-bar {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.confidence-bar {
-		width: 100%;
-		height: 4px;
-		background: var(--border-primary);
-		border-radius: 2px;
-		overflow: hidden;
-	}
-
-	.confidence-fill {
-		height: 100%;
-		border-radius: 2px;
-		transition: width 0.3s ease;
-	}
-
-	.confidence-fill--high {
-		background: var(--success);
-	}
-
-	.confidence-fill--medium {
-		background: var(--warning);
-	}
-
-	.confidence-fill--low {
-		background: var(--error);
-	}
 
 	.sr-only {
 		position: absolute;
@@ -2927,43 +1981,7 @@
 		}
 	}
 
-	/* Responsive Filter Controls */
-	@media (max-width: 768px) {
-		.filter-row {
-			flex-direction: column;
-			align-items: stretch;
-			gap: 1rem;
-		}
 
-		.filter-item {
-			justify-content: space-between;
-		}
-
-		.filter-item--radio-group {
-			flex-direction: row;
-			align-items: center;
-			gap: 1.5rem;
-			flex-wrap: wrap;
-		}
-
-		.radio-group {
-			flex-direction: row;
-			align-items: center;
-			gap: 1.5rem;
-			flex-wrap: wrap;
-		}
-
-		.radio-option {
-			flex-direction: row;
-			align-items: center;
-			gap: 0.5rem;
-		}
-
-		.search-input {
-			width: 100%;
-			max-width: none;
-		}
-	}
 
 	@media (max-width: 640px) {
 		.stats-dashboard {
@@ -3051,4 +2069,102 @@
 			min-height: 3rem; /* More space for long names on small screens */
 		}
 	}
+
+	/* Table resizing styles */
+	.table__header {
+		position: relative;
+	}
+
+	.resize-handle {
+		position: absolute;
+		top: 0;
+		right: -2px;
+		width: 8px;
+		height: 100%;
+		cursor: col-resize;
+		background: transparent;
+		border-right: 2px solid transparent;
+		transition: border-color 0.2s ease;
+		z-index: 100;
+	}
+
+	.resize-handle:hover {
+		border-right-color: var(--accent-primary);
+	}
+
+	.resize-handle:active,
+	.resizing .resize-handle {
+		border-right-color: var(--accent-primary);
+		background: rgba(var(--accent-primary-rgb), 0.1);
+	}
+
+	/* Prevent text selection during resize */
+	.resizing {
+		user-select: none;
+	}
+
+	/* Apply dynamic widths to table */
+	.table--resizable th,
+	.table--resizable td {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	@media (max-width: 640px) {
+		.resize-handle {
+			width: 6px; /* Slightly wider on mobile for easier touch interaction */
+		}
+	}
+
+	/* Dynamic column widths using CSS custom properties */
+	.table-container {
+		--col-expand-width: 35px;
+		--col-checkbox-width: 45px;
+		--col-report_date-width: 120px;
+		--col-report_title-width: 300px;
+		--col-report_name-width: 200px;
+		--col-dist_mains_length-width: 120px;
+		--col-dist_mains_coverage-width: 100px;
+		--col-dist_mains_covered_length-width: 140px;
+		--col-fieldOfViewGapsCount-width: 80px;
+		--col-indicationsCount-width: 80px;
+		--col-total_duration_seconds-width: 100px;
+		--col-total_distance_km-width: 140px;
+		--col-surveyor_unit_desc-width: 100px;
+		--col-report_final-width: 80px;
+	}
+
+	.table__header--expand { width: var(--col-expand-width); min-width: var(--col-expand-width); }
+	.table__header--checkbox { width: var(--col-checkbox-width); min-width: var(--col-checkbox-width); }
+	.table__header--report-date { width: var(--col-report_date-width); min-width: var(--col-report_date-width); }
+	.table__header--report-title { width: var(--col-report_title-width); min-width: var(--col-report_title-width); }
+	.table__header--report-name { width: var(--col-report_name-width); min-width: var(--col-report_name-width); }
+	
+	.table__header:nth-child(6) { width: var(--col-dist_mains_length-width); min-width: var(--col-dist_mains_length-width); }
+	.table__header:nth-child(7) { width: var(--col-dist_mains_coverage-width); min-width: var(--col-dist_mains_coverage-width); }
+	.table__header:nth-child(8) { width: var(--col-dist_mains_covered_length-width); min-width: var(--col-dist_mains_covered_length-width); }
+	.table__header:nth-child(9) { width: var(--col-fieldOfViewGapsCount-width); min-width: var(--col-fieldOfViewGapsCount-width); }
+	.table__header:nth-child(10) { width: var(--col-indicationsCount-width); min-width: var(--col-indicationsCount-width); }
+	.table__header:nth-child(11) { width: var(--col-total_duration_seconds-width); min-width: var(--col-total_duration_seconds-width); }
+	.table__header:nth-child(12) { width: var(--col-total_distance_km-width); min-width: var(--col-total_distance_km-width); }
+	.table__header:nth-child(13) { width: var(--col-surveyor_unit_desc-width); min-width: var(--col-surveyor_unit_desc-width); }
+	.table__header:nth-child(14) { width: var(--col-report_final-width); min-width: var(--col-report_final-width); }
+
+	/* Apply same widths to table cells */
+	.table__cell--expand { width: var(--col-expand-width); min-width: var(--col-expand-width); }
+	.table__cell--checkbox { width: var(--col-checkbox-width); min-width: var(--col-checkbox-width); }
+	.table__cell--report-date { width: var(--col-report_date-width); min-width: var(--col-report_date-width); }
+	.table__cell--report-title { width: var(--col-report_title-width); min-width: var(--col-report_title-width); }
+	.table__cell--report-name { width: var(--col-report_name-width); min-width: var(--col-report_name-width); }
+	
+	.table__row > .table__cell:nth-child(6) { width: var(--col-dist_mains_length-width); min-width: var(--col-dist_mains_length-width); }
+	.table__row > .table__cell:nth-child(7) { width: var(--col-dist_mains_coverage-width); min-width: var(--col-dist_mains_coverage-width); }
+	.table__row > .table__cell:nth-child(8) { width: var(--col-dist_mains_covered_length-width); min-width: var(--col-dist_mains_covered_length-width); }
+	.table__row > .table__cell:nth-child(9) { width: var(--col-fieldOfViewGapsCount-width); min-width: var(--col-fieldOfViewGapsCount-width); }
+	.table__row > .table__cell:nth-child(10) { width: var(--col-indicationsCount-width); min-width: var(--col-indicationsCount-width); }
+	.table__row > .table__cell:nth-child(11) { width: var(--col-total_duration_seconds-width); min-width: var(--col-total_duration_seconds-width); }
+	.table__row > .table__cell:nth-child(12) { width: var(--col-total_distance_km-width); min-width: var(--col-total_distance_km-width); }
+	.table__row > .table__cell:nth-child(13) { width: var(--col-surveyor_unit_desc-width); min-width: var(--col-surveyor_unit_desc-width); }
+	.table__row > .table__cell:nth-child(14) { width: var(--col-report_final-width); min-width: var(--col-report_final-width); }
 </style>

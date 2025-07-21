@@ -250,34 +250,34 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         };
         
         // Calculate total distance (only from final reports with surveys)
-        const totalDistance = calculationReports.reduce((sum: number, report: any) => {
+        const totalDistance = finalReportsWithSurveys.reduce((sum: number, report: any) => {
             const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
             return sum + distance;
         }, 0);
         
         // Distance for specific vehicles (only from final reports with surveys)
-        const car1Distance = calculationReports
+        const car1Distance = finalReportsWithSurveys
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #1')
             .reduce((sum: number, report: any) => {
                 const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
                 return sum + distance;
             }, 0);
             
-        const car2Distance = calculationReports
+        const car2Distance = finalReportsWithSurveys
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #2')
             .reduce((sum: number, report: any) => {
                 const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
                 return sum + distance;
             }, 0);
 
-        const car3Distance = calculationReports
+        const car3Distance = finalReportsWithSurveys
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #3')
             .reduce((sum: number, report: any) => {
                 const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
                 return sum + distance;
             }, 0);
 
-        const car4Distance = calculationReports
+        const car4Distance = finalReportsWithSurveys
             .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #4')
             .reduce((sum: number, report: any) => {
                 const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;

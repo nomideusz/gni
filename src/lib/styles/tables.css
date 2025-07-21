@@ -618,8 +618,8 @@
     border-right: none;
 }
 
-/* Reports table specific column widths */
-/* Column 1: Expand arrow */
+/* Reports table specific column widths - DISABLED FOR DYNAMIC RESIZING */
+/* 
 .table--reports .table__element th:nth-child(1),
 .table--reports .table__element td:nth-child(1) {
     width: 30px !important;
@@ -627,7 +627,6 @@
     max-width: 30px !important;
 }
 
-/* Column 2: Checkbox */
 .table--reports .table__element th:nth-child(2),
 .table--reports .table__element td:nth-child(2) {
     width: 20px !important;
@@ -635,7 +634,6 @@
     max-width: 20px !important;
 }
 
-/* Column 6: Assets Covered */
 .table--reports .table__element th:nth-child(6),
 .table--reports .table__element td:nth-child(6) {
     width: 70px !important;
@@ -644,7 +642,6 @@
     text-align: center;
 }
 
-/* Column 7: Total Assets */
 .table--reports .table__element th:nth-child(7),
 .table--reports .table__element td:nth-child(7) {
     width: 70px !important;
@@ -653,7 +650,6 @@
     text-align: center;
 }
 
-/* Column 8: Coverage % */
 .table--reports .table__element th:nth-child(8),
 .table--reports .table__element td:nth-child(8) {
     width: 75px !important;
@@ -662,7 +658,6 @@
     text-align: center;
 }
 
-/* Column 9: Duration */
 .table--reports .table__element th:nth-child(9),
 .table--reports .table__element td:nth-child(9) {
     width: 65px !important;
@@ -671,7 +666,6 @@
     text-align: center;
 }
 
-/* Column 10: Survey Distance */
 .table--reports .table__element th:nth-child(10),
 .table--reports .table__element td:nth-child(10) {
     width: 70px !important;
@@ -680,7 +674,6 @@
     text-align: center;
 }
 
-/* Column 11: Vehicle */
 .table--reports .table__element th:nth-child(11),
 .table--reports .table__element td:nth-child(11) {
     width: 60px !important;
@@ -689,7 +682,6 @@
     text-align: center;
 }
 
-/* Column 12: Gaps */
 .table--reports .table__element th:nth-child(12),
 .table--reports .table__element td:nth-child(12) {
     width: 45px !important;
@@ -698,7 +690,6 @@
     text-align: center;
 }
 
-/* Column 13: LISAs */
 .table--reports .table__element th:nth-child(13),
 .table--reports .table__element td:nth-child(13) {
     width: 45px !important;
@@ -707,7 +698,6 @@
     text-align: center;
 }
 
-/* Column 14: Status */
 .table--reports .table__element th:nth-child(14),
 .table--reports .table__element td:nth-child(14) {
     width: 60px !important;
@@ -715,8 +705,10 @@
     max-width: 60px !important;
     text-align: center;
 }
+*/
 
-/* Reports table header modifiers */
+/* Reports table header modifiers - DISABLED FOR DYNAMIC RESIZING */
+/*
 .table--reports .table__header--report-name {
     min-width: 100px !important;
     max-width: 100px !important;
@@ -735,8 +727,10 @@
     max-width: 85px !important;
     width: 85px !important;
 }
+*/
 
-/* Reports table cell modifiers */
+/* Reports table cell modifiers - DISABLED FOR DYNAMIC RESIZING */
+/*
 .table--reports .table__cell--report-name {
     min-width: 100px !important;
     max-width: 100px !important;
@@ -764,6 +758,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+*/
 
 /* Standard border styling for report table columns */
 .table--reports .table__element .table__header:nth-child(4), 
@@ -994,7 +989,8 @@
     font-weight: 500;
 }
 
-/* Responsive styles for reports table */
+/* Responsive styles for reports table - DISABLED FOR DYNAMIC RESIZING */
+/*
 @media (max-width: 1024px) {
     .table--reports .table__header--checkbox,
     .table--reports .table__cell--checkbox {
@@ -1025,6 +1021,43 @@
         min-width: 20px !important;
         max-width: 20px !important;
     }
+}
+*/
+
+/* Reports table basic styling without fixed widths */
+.table--reports .table__cell--report-name,
+.table--reports .table__cell--report-title,
+.table--reports .table__cell--report-date {
+    position: relative;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.table--reports .table__cell--report-title {
+    padding-right: 1.5rem;
+}
+
+/* Center alignment for data columns */
+.table--reports .table__element th:nth-child(6),
+.table--reports .table__element td:nth-child(6),
+.table--reports .table__element th:nth-child(7),
+.table--reports .table__element td:nth-child(7),
+.table--reports .table__element th:nth-child(8),
+.table--reports .table__element td:nth-child(8),
+.table--reports .table__element th:nth-child(9),
+.table--reports .table__element td:nth-child(9),
+.table--reports .table__element th:nth-child(10),
+.table--reports .table__element td:nth-child(10),
+.table--reports .table__element th:nth-child(11),
+.table--reports .table__element td:nth-child(11),
+.table--reports .table__element th:nth-child(12),
+.table--reports .table__element td:nth-child(12),
+.table--reports .table__element th:nth-child(13),
+.table--reports .table__element td:nth-child(13),
+.table--reports .table__element th:nth-child(14),
+.table--reports .table__element td:nth-child(14) {
+    text-align: center;
 }
 
  

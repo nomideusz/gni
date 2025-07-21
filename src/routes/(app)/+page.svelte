@@ -90,9 +90,14 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 			
 			// Update stats with new data
 			if (apiData.stats) {
-				totalReports = apiData.stats.totalReports || 0;
-				finalReports = apiData.stats.reportCounts.final || 0; // All final reports (with or without surveys)
-				draftReports = apiData.stats.totalReports - apiData.stats.reportCounts.final || 0;
+				// Calculate stats from the filtered reports data (since we're using withSurveys filter)
+				totalReports = apiData.reports?.length || 0;
+				finalReports = apiData.reports?.filter((report: any) => 
+					report.report_final === true || 
+					report.report_final === 1 || 
+					report.report_final === '1'
+				).length || 0;
+				draftReports = totalReports - finalReports;
 				totalDistance = apiData.stats.totalDistance || 0;
 				car1Distance = apiData.stats.car1Distance || 0;
 				car2Distance = apiData.stats.car2Distance || 0;
@@ -425,11 +430,16 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 					processDailyStats(dashData.reports || []);
 					reportsLoading = false;
 
-					// Set stats data
+					// Set stats data - calculate from filtered reports data
 					if (dashData.stats) {
-						totalReports = dashData.stats.totalReports || 0;
-						finalReports = dashData.stats.finalReports || 0;
-						draftReports = dashData.stats.draftReports || 0;
+						// Calculate stats from the filtered reports data (since server uses withSurveys filter)
+						totalReports = dashData.reports?.length || 0;
+						finalReports = dashData.reports?.filter((report: any) => 
+							report.report_final === true || 
+							report.report_final === 1 || 
+							report.report_final === '1'
+						).length || 0;
+						draftReports = totalReports - finalReports;
 						totalDistance = dashData.stats.totalDistance || 0;
 						car1Distance = dashData.stats.car1Distance || 0;
 						car2Distance = dashData.stats.car2Distance || 0;
