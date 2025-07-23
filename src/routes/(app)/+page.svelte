@@ -339,12 +339,21 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 		dailyStats = stats;
 	}
 	
-	// Helper function to get week start (Monday)
+	// Helper function to get week start (Monday 12:00 UTC)
 	function getWeekStart(date: Date): Date {
-		const d = new Date(date);
-		const day = d.getDay();
-		const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-		return new Date(d.setDate(diff));
+		const currentUtc = new Date(date);
+		const startOfWeek = new Date(currentUtc);
+		const dayOfWeek = startOfWeek.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
+		const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Handle Sunday case
+		startOfWeek.setUTCDate(startOfWeek.getUTCDate() - daysFromMonday);
+		startOfWeek.setUTCHours(12, 0, 0, 0); // Set to 12:00 UTC
+		
+		// If current time is before Monday 12:00 UTC, use previous week
+		if (currentUtc < startOfWeek) {
+			startOfWeek.setUTCDate(startOfWeek.getUTCDate() - 7);
+		}
+		
+		return startOfWeek;
 	}
 
 	// Helper function to sort vehicles by car number
@@ -562,6 +571,37 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 			grid-template-columns: 1fr;
 		}
 	}
+	
+	/* Time Information Styles */
+	.time-info {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.75rem;
+		padding: 0.5rem 1rem;
+		background: rgba(var(--accent-primary-rgb), 0.05);
+		border: 1px solid rgba(var(--accent-primary-rgb), 0.15);
+		border-radius: 8px;
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+	}
+	
+	.time-info__icon {
+		font-size: 1rem;
+		opacity: 0.8;
+	}
+	
+	.time-info__text {
+		line-height: 1.4;
+	}
+	
+	/* Daily breakdown specific styling */
+	.time-info--daily-breakdown {
+		margin-top: 0;
+		margin-bottom: 1rem;
+		background: rgba(var(--info-rgb, 59, 130, 246), 0.05);
+		border-color: rgba(var(--info-rgb, 59, 130, 246), 0.15);
+	}
 </style>
 
 <PageTemplate 
@@ -610,6 +650,14 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 						All Time
 					</button>
 				</div>
+				
+				<!-- Weekly Statistics Information -->
+				{#if timePeriod === 'week'}
+					<div class="time-info">
+						<span class="time-info__icon">ℹ️</span>
+						<span class="time-info__text">Weekly statistics reset every Monday at 12:00 UTC</span>
+					</div>
+				{/if}
 
 				<!-- Primary Metric - Final Distance -->
 				<div class="dashboard__primary-metric">
@@ -830,6 +878,12 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 					<a href="/reports" class="dashboard__view-all">
 						View All Reports →
 					</a>
+				</div>
+				
+				<!-- Weekly Grouping Information -->
+				<div class="time-info time-info--daily-breakdown">
+					<span class="time-info__icon">ℹ️</span>
+					<span class="time-info__text">Weekly groupings start every Monday at 12:00 UTC</span>
 				</div>
 				
 				<div class="dashboard__reports-content">

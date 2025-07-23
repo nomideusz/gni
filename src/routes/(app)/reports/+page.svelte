@@ -73,27 +73,7 @@
 	// Selection state - track which reports are selected for export
 	let selectedReports = $state<Set<string>>(new Set());
 
-	// Column resizing state
-	let columnWidths = $state<Map<string, number>>(new Map([
-		['expand', 35],
-		['checkbox', 45],
-		['report_date', 120],
-		['report_title', 300],
-		['report_name', 200],
-		['dist_mains_length', 120],
-		['dist_mains_coverage', 100],
-		['dist_mains_covered_length', 140],
-		['fieldOfViewGapsCount', 80],
-		['indicationsCount', 80],
-		['total_duration_seconds', 100],
-		['total_distance_km', 140],
-		['surveyor_unit_desc', 100],
-		['report_final', 80]
-	]));
-	let isResizing = $state(false);
-	let resizingColumn = $state<string | null>(null);
-	let startX = $state(0);
-	let startWidth = $state(0);
+
 
 	// LISA modal state
 	let showLisaModal = $state(false);
@@ -286,66 +266,7 @@
 		currentLisaReport = null;
 	}
 
-	// Column resizing functions
-	function startResize(event: MouseEvent, columnKey: string) {
-		event.preventDefault();
-		event.stopPropagation(); // Prevent sorting from being triggered
-		event.stopImmediatePropagation(); // Stop all other event handlers
-		isResizing = true;
-		resizingColumn = columnKey;
-		startX = event.clientX;
-		startWidth = columnWidths.get(columnKey) || 100;
-		
-		document.addEventListener('mousemove', handleResize);
-		document.addEventListener('mouseup', stopResize);
-		document.body.style.cursor = 'col-resize';
-		document.body.style.userSelect = 'none';
-	}
 
-	function handleResize(event: MouseEvent) {
-		if (!isResizing || !resizingColumn) return;
-		
-		const deltaX = event.clientX - startX;
-		const newWidth = Math.max(50, startWidth + deltaX); // Minimum width of 50px
-		
-		columnWidths.set(resizingColumn, newWidth);
-		columnWidths = new Map(columnWidths); // Trigger reactivity
-	}
-
-	function stopResize() {
-		document.removeEventListener('mousemove', handleResize);
-		document.removeEventListener('mouseup', stopResize);
-		document.body.style.cursor = '';
-		document.body.style.userSelect = '';
-		
-		// Save to localStorage
-		const widthsObject = Object.fromEntries(columnWidths);
-		localStorage.setItem('reports-column-widths', JSON.stringify(widthsObject));
-		
-		// Small delay before clearing resize state to prevent accidental sorting
-		setTimeout(() => {
-			isResizing = false;
-			resizingColumn = null;
-		}, 50);
-	}
-
-	// Load column widths from localStorage
-	function loadColumnWidths() {
-		try {
-			const saved = localStorage.getItem('reports-column-widths');
-			if (saved) {
-				const widthsObject = JSON.parse(saved);
-				columnWidths = new Map(Object.entries(widthsObject).map(([key, value]) => [key, Number(value)]));
-			}
-		} catch (error) {
-			console.error('Error loading column widths:', error);
-		}
-	}
-
-	// Load column widths on mount
-	onMount(() => {
-		loadColumnWidths();
-	});
 
 	// Function to force scrollbar refresh - modified to be more reliable
 	async function refreshScrollbars() {
@@ -564,12 +485,7 @@
 	}
 
 	// Handle column header click to change sort
-	function handleSort(column: string) {
-		// Don't sort if we're currently resizing
-		if (isResizing) {
-			return;
-		}
-		
+	function handleSort(column: string) {		
 		if (sortColumn === column) {
 			// Toggle direction if same column
 			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -934,15 +850,7 @@
 		};
 	});
 
-	// Update CSS custom properties when column widths change
-	$effect(() => {
-		if (typeof document !== 'undefined' && tableContainer) {
-			const root = tableContainer;
-			columnWidths.forEach((width, key) => {
-				root.style.setProperty(`--col-${key}-width`, `${width}px`);
-			});
-		}
-	});
+
 </script>
 
 <PageTemplate title={t('reports.title', $language)} fullWidth={true}>
@@ -1007,15 +915,15 @@
 
 
 
-					<p class="table-scroll-hint">Scroll horizontally to view all report data • Click values to copy (Title, Name, Assets, Coverage) • Drag column borders to resize</p>
+					<p class="table-scroll-hint">Scroll horizontally to view all report data • Click values to copy (Title, Name, Assets, Coverage)</p>
 					
-					<div class="table-container {isResizing ? 'resizing' : ''}" bind:this={tableContainer}>
+					<div class="table-container" bind:this={tableContainer}>
 						<div class="table table--compact table--reports">
 													<table class="table__element">
 							<thead>
 								<tr>
 									<th class="table__header table__header--expand">
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'expand')}></div>
+
 									</th>
 									<th class="table__header table__header--checkbox">
 										<div class="checkbox-header">
@@ -1035,7 +943,7 @@
 												</span>
 											</label>
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'checkbox')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable table__header--report-date" role="button" tabindex="0" onclick={() => handleSort('report_date')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_date')}>
 										<div class="sort-header">
@@ -1048,7 +956,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'report_date')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable table__header--report-title" role="button" tabindex="0" onclick={() => handleSort('report_title')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_title')}>
 										<div class="sort-header">
@@ -1061,7 +969,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'report_title')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable table__header--report-name" role="button" tabindex="0" onclick={() => handleSort('report_name')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_name')}>
 										<div class="sort-header">
@@ -1074,7 +982,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'report_name')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('dist_mains_length')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('dist_mains_length')}>
 										<div class="sort-header">
@@ -1087,7 +995,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'dist_mains_length')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('dist_mains_coverage')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('dist_mains_coverage')}>
 										<div class="sort-header">
@@ -1100,7 +1008,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'dist_mains_coverage')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('dist_mains_covered_length')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('dist_mains_covered_length')}>
 										<div class="sort-header">
@@ -1113,7 +1021,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'dist_mains_covered_length')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable table__header--center" role="button" tabindex="0" onclick={() => handleSort('fieldOfViewGapsCount')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('fieldOfViewGapsCount')}>
 										<div class="sort-header">
@@ -1126,7 +1034,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'fieldOfViewGapsCount')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable table__header--center" role="button" tabindex="0" onclick={() => handleSort('indicationsCount')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('indicationsCount')}>
 										<div class="sort-header">
@@ -1139,7 +1047,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'indicationsCount')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('total_duration_seconds')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('total_duration_seconds')}>
 										<div class="sort-header">
@@ -1152,7 +1060,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'total_duration_seconds')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('total_distance_km')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('total_distance_km')}>
 										<div class="sort-header">
@@ -1165,7 +1073,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'total_distance_km')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable" role="button" tabindex="0" onclick={() => handleSort('surveyor_unit_desc')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('surveyor_unit_desc')}>
 										<div class="sort-header">
@@ -1178,7 +1086,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'surveyor_unit_desc')}></div>
+
 									</th>
 									<th class="table__header table__header--sortable table__header--center" role="button" tabindex="0" onclick={() => handleSort('report_final')} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSort('report_final')}>
 										<div class="sort-header">
@@ -1191,7 +1099,7 @@
 												{/if}
 											{/if}
 										</div>
-										<div class="resize-handle" onmousedown={(e) => startResize(e, 'report_final')}></div>
+
 									</th>
 									</tr>
 								</thead>
@@ -1255,7 +1163,11 @@
 														<span class="sr-only">Select {report.report_name}</span>
 													</label>
 												</td>
-												<td class="table__cell table__cell--report-date">{formatDate(report.report_date)}</td>
+												<td class="table__cell table__cell--report-date" data-tooltip={report.report_title}>
+													<div class="report-date-content">
+														{formatDateTime(report.report_date)}
+													</div>
+												</td>
 												<td class="table__cell table__cell--report-title" title={report.report_title}>
 													<span 
 														class="table__cell-content clickable-value {copiedItems.has(`${report.id}-title`) ? 'copied-value' : ''}"
@@ -1268,8 +1180,9 @@
 														<span 
 															class="deletable-badge" 
 															title={deletableInfo.reason}
+															style="font-family: system-ui, -apple-system, sans-serif;"
 														>
-															⚠️
+															⚠
 														</span>
 													{/if}
 												</td>
@@ -1721,10 +1634,13 @@
 		transition: all 0.2s ease;
 		border-radius: 4px;
 		padding: 0.125rem 0.25rem;
-		margin: -0.125rem -0.25rem;
 		display: inline-block;
 		position: relative;
+		width: fit-content;
+		max-width: 100%;
 	}
+	
+
 
 	.clickable-value:hover {
 		background-color: var(--bg-secondary);
@@ -1785,9 +1701,8 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 0.8rem;
-		margin-left: 0.5rem;
-		padding: 0.125rem 0.25rem;
+		font-size: 1rem;
+		padding: 0.125rem 0.375rem;
 		border-radius: 4px;
 		background: rgba(239, 68, 68, 0.1);
 		border: 1px solid rgba(239, 68, 68, 0.3);
@@ -1795,12 +1710,25 @@
 		transition: all 0.2s ease;
 		line-height: 1;
 		vertical-align: middle;
+		color: rgb(239, 68, 68);
+		font-weight: bold;
+		min-width: 1.5rem;
+		flex-shrink: 0; /* Prevent the badge from shrinking */
+		margin-left: auto; /* Push to the right */
 	}
 
 	.deletable-badge:hover {
 		background: rgba(239, 68, 68, 0.15);
 		border-color: rgba(239, 68, 68, 0.4);
 		transform: scale(1.05);
+	}
+
+	.deletable-badge :global(svg) {
+		color: rgb(239, 68, 68);
+		vertical-align: middle;
+		display: inline-block !important;
+		width: 14px !important;
+		height: 14px !important;
 	}
 
 
@@ -2075,54 +2003,14 @@
 		position: relative;
 	}
 
-	.resize-handle {
-		position: absolute;
-		top: 0;
-		right: -2px;
-		width: 8px;
-		height: 100%;
-		cursor: col-resize;
-		background: transparent;
-		border-right: 2px solid transparent;
-		transition: border-color 0.2s ease;
-		z-index: 100;
-	}
 
-	.resize-handle:hover {
-		border-right-color: var(--accent-primary);
-	}
-
-	.resize-handle:active,
-	.resizing .resize-handle {
-		border-right-color: var(--accent-primary);
-		background: rgba(var(--accent-primary-rgb), 0.1);
-	}
-
-	/* Prevent text selection during resize */
-	.resizing {
-		user-select: none;
-	}
-
-	/* Apply dynamic widths to table */
-	.table--resizable th,
-	.table--resizable td {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	@media (max-width: 640px) {
-		.resize-handle {
-			width: 6px; /* Slightly wider on mobile for easier touch interaction */
-		}
-	}
 
 	/* Dynamic column widths using CSS custom properties */
 	.table-container {
 		--col-expand-width: 35px;
 		--col-checkbox-width: 45px;
-		--col-report_date-width: 120px;
-		--col-report_title-width: 300px;
+		--col-report_date-width: 180px;
+		--col-report_title-width: 600px;
 		--col-report_name-width: 200px;
 		--col-dist_mains_length-width: 120px;
 		--col-dist_mains_coverage-width: 100px;
@@ -2137,8 +2025,8 @@
 
 	.table__header--expand { width: var(--col-expand-width); min-width: var(--col-expand-width); }
 	.table__header--checkbox { width: var(--col-checkbox-width); min-width: var(--col-checkbox-width); }
-	.table__header--report-date { width: var(--col-report_date-width); min-width: var(--col-report_date-width); }
-	.table__header--report-title { width: var(--col-report_title-width); min-width: var(--col-report_title-width); }
+	.table__header--report-date { width: var(--col-report_date-width) !important; min-width: var(--col-report_date-width) !important; max-width: var(--col-report_date-width) !important; }
+	.table__header--report-title { width: var(--col-report_title-width) !important; min-width: var(--col-report_title-width) !important; max-width: var(--col-report_title-width) !important; }
 	.table__header--report-name { width: var(--col-report_name-width); min-width: var(--col-report_name-width); }
 	
 	.table__header:nth-child(6) { width: var(--col-dist_mains_length-width); min-width: var(--col-dist_mains_length-width); }
@@ -2154,8 +2042,15 @@
 	/* Apply same widths to table cells */
 	.table__cell--expand { width: var(--col-expand-width); min-width: var(--col-expand-width); }
 	.table__cell--checkbox { width: var(--col-checkbox-width); min-width: var(--col-checkbox-width); }
-	.table__cell--report-date { width: var(--col-report_date-width); min-width: var(--col-report_date-width); }
-	.table__cell--report-title { width: var(--col-report_title-width); min-width: var(--col-report_title-width); }
+	.table__cell--report-date { width: var(--col-report_date-width) !important; min-width: var(--col-report_date-width) !important; max-width: var(--col-report_date-width) !important; }
+	.table__cell--report-title { 
+		width: var(--col-report_title-width) !important; 
+		min-width: var(--col-report_title-width) !important; 
+		max-width: var(--col-report_title-width) !important;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
 	.table__cell--report-name { width: var(--col-report_name-width); min-width: var(--col-report_name-width); }
 	
 	.table__row > .table__cell:nth-child(6) { width: var(--col-dist_mains_length-width); min-width: var(--col-dist_mains_length-width); }
@@ -2167,4 +2062,81 @@
 	.table__row > .table__cell:nth-child(12) { width: var(--col-total_distance_km-width); min-width: var(--col-total_distance_km-width); }
 	.table__row > .table__cell:nth-child(13) { width: var(--col-surveyor_unit_desc-width); min-width: var(--col-surveyor_unit_desc-width); }
 	.table__row > .table__cell:nth-child(14) { width: var(--col-report_final-width); min-width: var(--col-report_final-width); }
+
+	/* Ensure report date tooltip works properly */
+	.report-date-content {
+		display: block;
+		width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		cursor: help;
+		position: relative;
+		z-index: 1;
+		pointer-events: auto;
+	}
+	
+	/* Prevent tooltip interference from adjacent cells */
+	.table__cell--report-title .clickable-value {
+		pointer-events: auto;
+		position: relative;
+		z-index: 2;
+		display: inline-block;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		vertical-align: middle;
+		flex: 1;
+		min-width: 0; /* Allow flex item to shrink below content size */
+	}
+
+	/* Override tables.css overflow for report date to allow tooltip */
+	.table--reports .table__cell--report-date {
+		overflow: visible !important;
+		position: relative;
+		isolation: isolate;
+	}
+	
+	/* Native tooltip for report date using data attribute */
+	.table__cell--report-date[data-tooltip]:hover::after {
+		content: attr(data-tooltip);
+		position: absolute;
+		bottom: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		padding: 0.5rem 1rem;
+		background: rgba(0, 0, 0, 0.9);
+		color: white;
+		border-radius: 4px;
+		white-space: nowrap;
+		font-size: 0.875rem;
+		z-index: 1000;
+		pointer-events: none;
+		max-width: 400px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		margin-bottom: 0.25rem;
+	}
+	
+	.table__cell--report-date[data-tooltip]:hover::before {
+		content: '';
+		position: absolute;
+		bottom: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		border: 5px solid transparent;
+		border-top-color: rgba(0, 0, 0, 0.9);
+		z-index: 1000;
+		pointer-events: none;
+	}
+	
+	/* Ensure deletable badge icon shows properly */
+	.deletable-badge {
+		display: inline-flex !important;
+		align-items: center;
+		justify-content: center;
+		width: auto !important;
+		height: auto !important;
+	}
 </style>

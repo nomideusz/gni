@@ -43,13 +43,20 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             const today = now.toISOString().split('T')[0];
             dateFilter += ` && report_date >= "${today}"`;
         } else if (timePeriod === 'week') {
-            // Get start of current week (Monday)
-            const startOfWeek = new Date(now);
-            const dayOfWeek = startOfWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            // Get start of current week (Monday 12:00 UTC)
+            const currentUtc = new Date();
+            const startOfWeek = new Date(currentUtc);
+            const dayOfWeek = startOfWeek.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
             const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Handle Sunday case
-            startOfWeek.setDate(startOfWeek.getDate() - daysFromMonday);
-            startOfWeek.setHours(0, 0, 0, 0);
-            const weekStartStr = startOfWeek.toISOString().split('T')[0];
+            startOfWeek.setUTCDate(startOfWeek.getUTCDate() - daysFromMonday);
+            startOfWeek.setUTCHours(12, 0, 0, 0); // Set to 12:00 UTC
+            
+            // If current time is before Monday 12:00 UTC, use previous week
+            if (currentUtc < startOfWeek) {
+                startOfWeek.setUTCDate(startOfWeek.getUTCDate() - 7);
+            }
+            
+            const weekStartStr = startOfWeek.toISOString().split('T')[0]; // Use date part only for database
             dateFilter += ` && report_date >= "${weekStartStr}"`;
         } else if (timePeriod === 'month') {
             // Get start of current month
