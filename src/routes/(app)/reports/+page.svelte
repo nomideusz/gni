@@ -543,8 +543,14 @@
 			}, 0);
 
 			const gapsTotal = sortedReports.reduce((sum, report) => {
-				return sum + (Number(report.fieldOfViewGapsCount) || 0);
+				const reportGaps = Number(report.fieldOfViewGapsCount) || 0;
+				if (reportGaps > 0) {
+					console.log(`[DEBUG REPORTS PAGE] Adding ${reportGaps} gaps from report ${report.report_name} to total (current sum: ${sum})`);
+				}
+				return sum + reportGaps;
 			}, 0);
+			
+			console.log(`[DEBUG REPORTS PAGE] Final gaps total: ${gapsTotal} from ${sortedReports.length} reports`);
 
 			// Add SUM row to the export data
 			const exportDataWithTotals = [

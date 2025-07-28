@@ -217,6 +217,17 @@ export const GET = async ({ url, locals }: RequestEvent) => {
                     ? convertedItem.expand.field_of_view_gaps 
                     : [];
                 convertedItem.fieldOfViewGapsCount = gaps.length;
+                
+                // Debug logging for gaps calculation
+                if (gaps.length > 0) {
+                    console.log(`[DEBUG] Report ${convertedItem.report_name}: ${gaps.length} gaps found`);
+                    // Check for potential duplicates by gap_id
+                    const gapIds = gaps.map((gap: any) => gap.gap_id || gap.id);
+                    const uniqueGapIds = [...new Set(gapIds)];
+                    if (gapIds.length !== uniqueGapIds.length) {
+                        console.warn(`[WARNING] Report ${convertedItem.report_name}: Found ${gapIds.length} gaps but only ${uniqueGapIds.length} unique gap_ids - potential duplicates!`);
+                    }
+                }
             }
                         
             return convertedItem;
@@ -374,8 +385,14 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         
         // Calculate total gaps from final reports with surveys (gaps data only comes from surveys)
         const totalGaps = finalReportsWithSurveys.reduce((sum: number, report: any) => {
-            return sum + (report.fieldOfViewGapsCount || 0);
+            const reportGaps = report.fieldOfViewGapsCount || 0;
+            if (reportGaps > 0) {
+                console.log(`[DEBUG] Adding ${reportGaps} gaps from report ${report.report_name} to total (current sum: ${sum})`);
+            }
+            return sum + reportGaps;
         }, 0);
+        
+        console.log(`[DEBUG] Final total gaps calculated: ${totalGaps} from ${finalReportsWithSurveys.length} final reports with surveys`);
 
         // Placeholder for work hours - will be loaded from separate API
         const totalWorkHours = 0;

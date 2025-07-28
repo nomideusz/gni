@@ -318,9 +318,11 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 		});
 		
 		// Add final weekly summary if needed
-		if (currentWeekStart && weeklyData.totalLinearAssetLength > 0) {
+		if (currentWeekStart && (weeklyData.totalDistance > 0 || weeklyData.totalLinearAssetLength > 0)) {
 			const weekStartDate = (currentWeekStart as Date).toISOString().split('T')[0];
-			const finalWeeklyAvgCoverage = (weeklyData.coveredLinearAssetLength / weeklyData.totalLinearAssetLength) * 100;
+			const finalWeeklyAvgCoverage = weeklyData.totalLinearAssetLength > 0 
+				? (weeklyData.coveredLinearAssetLength / weeklyData.totalLinearAssetLength) * 100 
+				: 0;
 			stats.push({
 				isWeeklySummary: true,
 				weekLabel: `Week of ${formatDate(weekStartDate)}`,
@@ -342,18 +344,25 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	// Helper function to get week start (Monday 12:00 UTC)
 	function getWeekStart(date: Date): Date {
 		const currentUtc = new Date(date);
-		const startOfWeek = new Date(currentUtc);
-		const dayOfWeek = startOfWeek.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
-		const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Handle Sunday case
-		startOfWeek.setUTCDate(startOfWeek.getUTCDate() - daysFromMonday);
-		startOfWeek.setUTCHours(12, 0, 0, 0); // Set to 12:00 UTC
+		const result = new Date(currentUtc);
 		
-		// If current time is before Monday 12:00 UTC, use previous week
-		if (currentUtc < startOfWeek) {
-			startOfWeek.setUTCDate(startOfWeek.getUTCDate() - 7);
+		// Get day of week (0 = Sunday, 1 = Monday, etc.)
+		const dayOfWeek = result.getUTCDay();
+		
+		// Calculate days to go back to reach Monday
+		const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+		
+		// Go back to Monday of current week
+		result.setUTCDate(result.getUTCDate() - daysToMonday);
+		result.setUTCHours(12, 0, 0, 0); // Set to 12:00 UTC
+		
+		// If we're currently before Monday 12:00 UTC of this week, 
+		// we need to go back to the previous Monday
+		if (currentUtc < result) {
+			result.setUTCDate(result.getUTCDate() - 7);
 		}
 		
-		return startOfWeek;
+		return result;
 	}
 
 	// Helper function to sort vehicles by car number
