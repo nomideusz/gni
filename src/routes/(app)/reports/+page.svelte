@@ -513,28 +513,24 @@
 				return titleA.localeCompare(titleB);
 			});
 
-			// Prepare data for export (using sorted reports)
+			// Prepare data for export (using sorted reports) - matching table column order
 			const exportData = sortedReports.map(report => ({
-				'Boundaries Surveyed': report.report_title || '',
-				'Report name': report.report_name || '',
-				'Network size': report.dist_mains_length ? Number(report.dist_mains_length).toFixed(2) : '',
-				'Network covered': report.dist_mains_covered_length ? Number(report.dist_mains_covered_length).toFixed(2) : '',
-				'Average coverage (%)': report.dist_mains_coverage ? (Number(report.dist_mains_coverage) * 100).toFixed(2) : '',
-				'Gaps': report.fieldOfViewGapsCount || 0,
-				'LISA': report.indicationsCount || 0,
-				'Leaks Found': '',
-				'In Progress': '',
-				'No Gas Found': '',
-				'Not Started': '',
-				'SE Found': ''
+				'Report Date': report.report_date ? formatDate(report.report_date) : '',
+				'Report Title': report.report_title || '',
+				'Report Name': report.report_name || '',
+				'Total Assets': report.dist_mains_length ? Number(report.dist_mains_length).toFixed(2) : '',
+				'Coverage %': report.dist_mains_coverage ? (Number(report.dist_mains_coverage) * 100).toFixed(2) : '',
+				'Assets Covered': report.dist_mains_covered_length ? Number(report.dist_mains_covered_length).toFixed(2) : '',
+				'GAPS': report.fieldOfViewGapsCount || 0,
+				'LISA': report.indicationsCount || 0
 			}));
 
-			// Calculate totals for Network size, Network covered, LISA, and Gaps
-			const networkSizeTotal = sortedReports.reduce((sum, report) => {
+			// Calculate totals for Total Assets, Assets Covered, LISA, and Gaps
+			const totalAssetsSum = sortedReports.reduce((sum, report) => {
 				return sum + (Number(report.dist_mains_length) || 0);
 			}, 0);
 			
-			const networkCoveredTotal = sortedReports.reduce((sum, report) => {
+			const assetsCoveredSum = sortedReports.reduce((sum, report) => {
 				return sum + (Number(report.dist_mains_covered_length) || 0);
 			}, 0);
 
@@ -550,24 +546,23 @@
 				return sum + reportGaps;
 			}, 0);
 			
+			// Calculate overall coverage percentage
+			const overallCoverage = totalAssetsSum > 0 ? (assetsCoveredSum / totalAssetsSum * 100).toFixed(2) : '';
+			
 			console.log(`[DEBUG REPORTS PAGE] Final gaps total: ${gapsTotal} from ${sortedReports.length} reports`);
 
 			// Add SUM row to the export data
 			const exportDataWithTotals = [
 				...exportData,
 				{
-					'Boundaries Surveyed': 'TOTAL',
-					'Report name': '',
-					'Network size': networkSizeTotal.toFixed(2),
-					'Network covered': networkCoveredTotal.toFixed(2),
-					'Average coverage (%)': '',
-					'Gaps': gapsTotal,
-					'LISA': lisaTotal,
-					'Leaks Found': '',
-					'In Progress': '',
-					'No Gas Found': '',
-					'Not Started': '',
-					'SE Found': ''
+					'Report Date': '',
+					'Report Title': 'TOTAL',
+					'Report Name': '',
+					'Total Assets': totalAssetsSum.toFixed(2),
+					'Coverage %': overallCoverage,
+					'Assets Covered': assetsCoveredSum.toFixed(2),
+					'GAPS': gapsTotal,
+					'LISA': lisaTotal
 				}
 			];
 
@@ -595,20 +590,16 @@
 			// Create worksheet from array of arrays
 			const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-			// Set column widths
+			// Set column widths to match table structure
 			ws['!cols'] = [
-				{ wch: 70 }, // Boundaries Surveyed (report title) - wider
-				{ wch: 20 }, // Report name
-				{ wch: 15 }, // Network size
-				{ wch: 16 }, // Network covered
-				{ wch: 18 }, // Average coverage (%)
-				{ wch: 10 }, // Gaps
-				{ wch: 10 }, // LISA
-				{ wch: 12 }, // Leaks Found
-				{ wch: 12 }, // In Progress
-				{ wch: 12 }, // No Gas Found
-				{ wch: 12 }, // Not Started
-				{ wch: 10 }  // SE Found
+				{ wch: 12 }, // Report Date
+				{ wch: 60 }, // Report Title - wider
+				{ wch: 25 }, // Report Name
+				{ wch: 15 }, // Total Assets
+				{ wch: 12 }, // Coverage %
+				{ wch: 16 }, // Assets Covered
+				{ wch: 8 },  // GAPS
+				{ wch: 8 }   // LISA
 			];
 
 			// Note: Bold formatting requires xlsx Pro edition or a different library
@@ -633,7 +624,7 @@
 			XLSX.writeFile(wb, filename);
 			
 			const exportType = selectedReports.size > 0 ? `${selectedReports.size} selected` : 'all displayed';
-			console.log(`Exported ${exportType} reports (+ totals row with Network size, Network covered, and LISA totals) to ${filename}`);
+			console.log(`Exported ${exportType} reports (+ totals row with Total Assets, Assets Covered, Coverage %, GAPS, and LISA totals) to ${filename}`);
 		} catch (error) {
 			console.error('Error exporting to Excel:', error);
 			alert('Error exporting to Excel. Please try again.');
