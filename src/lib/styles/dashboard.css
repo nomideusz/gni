@@ -209,6 +209,10 @@
     grid-template-columns: repeat(2, 1fr);
 }
 
+.dashboard__metrics--quad {
+    grid-template-columns: repeat(4, 1fr);
+}
+
 .dashboard__metrics--stats {
     grid-template-columns: repeat(3, 1fr);
     margin-bottom: var(--space-2xl);
@@ -673,6 +677,9 @@
     .dashboard__metrics--vehicles {
         grid-template-columns: repeat(2, 1fr);
     }
+    .dashboard__metrics--quad {
+        grid-template-columns: repeat(2, 1fr);
+    }
     .dashboard__metrics--stats {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -682,6 +689,7 @@
     .dashboard__metrics--vehicles,
     .dashboard__metrics--survey,
     .dashboard__metrics--reports,
+    .dashboard__metrics--quad,
     .dashboard__metrics--stats {
         grid-template-columns: 1fr;
     }

@@ -710,13 +710,13 @@ import RealtimeIndicator from '$lib/components/RealtimeIndicator.svelte';
 					</div>
 				</div>
 
-				<!-- Survey Findings Section -->
+				<!-- Survey & Report Status — single row -->
 				<div class="dashboard__metrics-section">
 					<h3 class="dashboard__metrics-title">
 						<Activity size={18} />
-						LISAs and Gaps
+						Survey &amp; Report Status
 					</h3>
-					<div class="dashboard__metrics dashboard__metrics--survey">
+					<div class="dashboard__metrics dashboard__metrics--quad">
 						<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
 							<div class="metric-card__icon metric-card__icon--compact metric-card__icon--success">
 								<Activity size={20} />
@@ -739,7 +739,7 @@ import RealtimeIndicator from '$lib/components/RealtimeIndicator.svelte';
 								<AlertTriangle size={20} />
 							</div>
 							<div class="metric-card__content">
-								<span class="metric-card__label">Field of View Gaps</span>
+								<span class="metric-card__label">FoV Gaps</span>
 								<div class="metric-card__value metric-card__value--compact">
 									{#if statsLoading}
 										<div class="skeleton-text"></div>
@@ -749,16 +749,7 @@ import RealtimeIndicator from '$lib/components/RealtimeIndicator.svelte';
 								</div>
 							</div>
 						</div>
-					</div>
-				</div>
-				
-				<!-- Report Status Section -->
-				<div class="dashboard__metrics-section">
-					<h3 class="dashboard__metrics-title">
-						<FileText size={18} />
-						Report Status
-					</h3>
-					<div class="dashboard__metrics dashboard__metrics--reports">
+
 						<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
 							<div class="metric-card__icon metric-card__icon--compact metric-card__icon--success">
 								<FileCheck size={20} />
