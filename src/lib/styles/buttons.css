@@ -43,7 +43,7 @@
 /* Primary Button */
 .button--primary {
     background-color: var(--accent-primary);
-    color: white;
+    color: var(--accent-text, #ccfbf1);
     border-color: var(--accent-primary);
 }
 
@@ -87,7 +87,7 @@
 /* Danger Button */
 .button--danger {
     background-color: var(--error);
-    color: white;
+    color: #fff;
     border-color: var(--error);
 }
 
@@ -101,7 +101,7 @@
 /* Success Button */
 .button--success {
     background-color: var(--success);
-    color: white;
+    color: #fff;
     border-color: var(--success);
 }
 
@@ -274,13 +274,13 @@
 /* Button modifiers for different types */
 .button--primary {
     background-color: var(--accent-primary);
-    color: #fff;
+    color: var(--accent-text, #ccfbf1);
     border-color: transparent;
 }
 
 .button--primary:hover:not(:disabled) {
     background-color: var(--accent-hover);
-    color: #fff;
+    color: var(--accent-text, #ccfbf1);
     border-color: transparent;
 }
 
@@ -353,7 +353,7 @@
     text-decoration: none;
     border-radius: var(--radius-md);
     background-color: var(--accent-primary);
-    color: #fff;
+    color: var(--accent-text, #ccfbf1);
 }
 
 .button--logout {
@@ -484,7 +484,7 @@
 
 .pagination__page-button--active {
     background-color: var(--accent-primary);
-    color: white;
+    color: var(--accent-text, #ccfbf1);
     border-color: var(--accent-primary);
 }
 

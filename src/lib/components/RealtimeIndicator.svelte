@@ -253,8 +253,8 @@
 
 	.rt__refresh:hover {
 		background: var(--bg-secondary, #f9fafb);
-		color: var(--accent-primary, #14b8a6);
-		border-color: var(--accent-primary, #14b8a6);
+		color: var(--accent-primary, var(--accent-primary, #0d9488));
+		border-color: var(--accent-primary, var(--accent-primary, #0d9488));
 	}
 
 	.rt__refresh:active {

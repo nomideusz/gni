@@ -52,7 +52,7 @@
 
 .time-selector__button--active {
     background-color: var(--accent-primary);
-    color: white;
+    color: var(--accent-text, #ccfbf1);
     box-shadow: 0 2px 8px rgba(var(--accent-primary-rgb), 0.25);
 }
 

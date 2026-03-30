@@ -54,7 +54,7 @@
 
 .nav__toggle:hover {
     background-color: var(--accent-primary);
-    color: white;
+    color: var(--accent-text, #ccfbf1);
     border-color: var(--accent-primary);
 }
 
@@ -155,7 +155,7 @@
 /* Active navigation item */
 .nav__item--active .nav__link {
     background-color: var(--accent-primary);
-    color: white;
+    color: var(--accent-text, #ccfbf1);
 }
 
 .nav__item--active .nav__link:hover {
