@@ -830,6 +830,47 @@
 		}
 	};
 
+	// --- Cursor tooltip system ---
+	let tooltipEl: HTMLDivElement | undefined = $state();
+	let tooltipVisible = $state(false);
+	let tooltipContent = $state('');
+	let tooltipHint = $state('');
+	let tooltipX = $state(0);
+	let tooltipY = $state(0);
+
+	function handleTooltipMouseMove(e: MouseEvent) {
+		const cell = (e.target as HTMLElement).closest('[data-tooltip]') as HTMLElement | null;
+		if (!cell) {
+			tooltipVisible = false;
+			return;
+		}
+		const text = cell.getAttribute('data-tooltip') || '';
+		const hint = cell.getAttribute('data-tooltip-hint') || '';
+		if (!text) { tooltipVisible = false; return; }
+
+		tooltipContent = text;
+		tooltipHint = hint;
+		tooltipX = e.clientX + 12;
+		tooltipY = e.clientY + 16;
+		tooltipVisible = true;
+
+		// Keep tooltip within viewport
+		requestAnimationFrame(() => {
+			if (!tooltipEl) return;
+			const rect = tooltipEl.getBoundingClientRect();
+			if (rect.right > window.innerWidth - 8) {
+				tooltipX = e.clientX - rect.width - 8;
+			}
+			if (rect.bottom > window.innerHeight - 8) {
+				tooltipY = e.clientY - rect.height - 8;
+			}
+		});
+	}
+
+	function handleTooltipMouseLeave() {
+		tooltipVisible = false;
+	}
+
 	onMount(() => {
 		loadData();
 		
@@ -912,7 +953,7 @@
 
 					<p class="table-scroll-hint">Scroll horizontally to view all report data • Click values to copy (Title, Name, Assets, Coverage)</p>
 					
-					<div class="table-container" bind:this={tableContainer}>
+					<div class="table-container" bind:this={tableContainer} onmousemove={handleTooltipMouseMove} onmouseleave={handleTooltipMouseLeave}>
 						<div class="table table--compact table--reports">
 													<table class="table__element">
 							<thead>
@@ -1328,6 +1369,20 @@
 	{/snippet}
 </PageTemplate>
 
+<!-- Cursor-following tooltip -->
+{#if tooltipVisible}
+	<div
+		bind:this={tooltipEl}
+		class="cursor-tooltip"
+		style="left:{tooltipX}px;top:{tooltipY}px"
+	>
+		<span class="cursor-tooltip__text">{tooltipContent}</span>
+		{#if tooltipHint}
+			<span class="cursor-tooltip__hint">{tooltipHint}</span>
+		{/if}
+	</div>
+{/if}
+
 <!-- LISA Modal -->
 <LisaModal 
 	bind:show={showLisaModal} 
@@ -1615,8 +1670,8 @@
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
 		border-radius: 8px;
+		overflow: hidden;
 		overflow-x: auto;
-		overflow-y: visible;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 	}
 
@@ -2085,67 +2140,41 @@
 	}
 
 	/* =============================================
-	   UNIFIED HOVER TOOLTIPS for all data cells
-	   Uses data-tooltip attr + ::after pseudo-element
+	   CURSOR-FOLLOWING TOOLTIP (JS-positioned)
 	   ============================================= */
-
-	/* Any cell with a tooltip needs relative + overflow visible on hover */
-	[data-tooltip] {
-		position: relative;
-	}
-
-	[data-tooltip]:hover {
-		overflow: visible !important;
-		z-index: 100;
-	}
-
-	/* Tooltip bubble — positioned below the cell, near the cursor */
-	[data-tooltip]:hover::after {
-		content: attr(data-tooltip);
-		position: absolute;
-		top: calc(100% + 6px);
-		left: 0;
+	:global(.cursor-tooltip) {
+		position: fixed;
+		pointer-events: none;
+		z-index: 99999;
+		max-width: 480px;
+		min-width: 100px;
 		padding: 0.5rem 0.75rem;
 		background: #1e293b;
-		color: #f1f5f9;
 		border-radius: 6px;
-		white-space: normal;
-		word-break: break-word;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06);
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+		animation: cursor-tooltip-in 0.1s ease;
+	}
+
+	:global(.cursor-tooltip__text) {
+		color: #f1f5f9;
 		font-size: 0.82rem;
 		font-weight: 500;
-		line-height: 1.5;
-		text-align: left;
-		z-index: 9999;
-		pointer-events: none;
-		max-width: 480px;
-		min-width: 120px;
-		width: max-content;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
-		animation: tooltip-fade-in 0.12s ease;
+		line-height: 1.45;
+		word-break: break-word;
 	}
 
-	/* Tooltip with click-to-copy hint on a dimmed new line */
-	[data-tooltip-hint]:not([data-tooltip-hint=""]):hover::after {
-		content: attr(data-tooltip) '\A' attr(data-tooltip-hint);
-		white-space: pre-wrap;
-		color: #f1f5f9;
+	:global(.cursor-tooltip__hint) {
+		color: #64748b;
+		font-size: 0.7rem;
+		font-weight: 400;
+		letter-spacing: 0.02em;
 	}
 
-	/* Arrow pointing up from tooltip */
-	[data-tooltip]:hover::before {
-		content: '';
-		position: absolute;
-		top: calc(100% + 1px);
-		left: 20px;
-		border: 5px solid transparent;
-		border-bottom-color: #1e293b;
-		z-index: 9999;
-		pointer-events: none;
-		animation: tooltip-fade-in 0.12s ease;
-	}
-
-	@keyframes tooltip-fade-in {
-		from { opacity: 0; transform: translateY(-3px); }
+	@keyframes cursor-tooltip-in {
+		from { opacity: 0; transform: translateY(4px); }
 		to   { opacity: 1; transform: translateY(0); }
 	}
 	
