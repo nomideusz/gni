@@ -82,7 +82,7 @@
 
 /* Badge modifiers */
 .badge--blue {
-    background-color: rgba(59, 130, 246, 0.2);
+    background-color: rgba(var(--accent-primary-rgb), 0.2);
     color: var(--accent-secondary);
 }
 

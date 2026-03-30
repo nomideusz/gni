@@ -175,11 +175,11 @@
 
 /* Row modifiers */
 .table__row--calculation {
-    background-color: rgba(59, 130, 246, 0.1);
+    background-color: rgba(var(--accent-primary-rgb), 0.1);
 }
 
 .table__row--calculation:hover .table__cell {
-    background-color: rgba(59, 130, 246, 0.15) !important;
+    background-color: rgba(var(--accent-primary-rgb), 0.15) !important;
 }
 
 /* Muted row styling (test reports excluded from stats) */
@@ -352,9 +352,9 @@
 .table--compact:not(.table--reports) .table__header:nth-child(4),
 .table--compact:not(.table--reports) .table__cell:nth-child(4) {
     width: 7%; /* CH4 Max Amplitude (ppm) - matched with Emission Rate */
-    background-color: rgba(59, 130, 246, 0.08) !important; /* Subtle blue highlight */
-    border-left: 2px solid rgba(59, 130, 246, 0.3);
-    border-right: 2px solid rgba(59, 130, 246, 0.3);
+    background-color: rgba(var(--accent-primary-rgb), 0.08) !important; /* Subtle blue highlight */
+    border-left: 2px solid rgba(var(--accent-primary-rgb), 0.3);
+    border-right: 2px solid rgba(var(--accent-primary-rgb), 0.3);
 }
 
 .table--compact .table__header:nth-child(5),
@@ -385,9 +385,9 @@
 .table--compact:not(.table--reports) .table__header:nth-child(10),
 .table--compact:not(.table--reports) .table__cell:nth-child(10) {
     width: 7%; /* Emission Rate (SCFH) */
-    background-color: rgba(59, 130, 246, 0.08) !important; /* Subtle blue highlight */
-    border-left: 2px solid rgba(59, 130, 246, 0.3);
-    border-right: 2px solid rgba(59, 130, 246, 0.3);
+    background-color: rgba(var(--accent-primary-rgb), 0.08) !important; /* Subtle blue highlight */
+    border-left: 2px solid rgba(var(--accent-primary-rgb), 0.3);
+    border-right: 2px solid rgba(var(--accent-primary-rgb), 0.3);
 }
 
 .table--compact .table__header:nth-child(11),
@@ -564,18 +564,18 @@
 /* Maintain highlighting on hover for key threshold columns */
 .table--compact:not(.table--reports) .table__row:hover .table__cell:nth-child(4),
 .table--compact:not(.table--reports) .table__row:hover .table__cell:nth-child(10) {
-    background-color: rgba(59, 130, 246, 0.15) !important; /* Slightly stronger highlight on hover */
+    background-color: rgba(var(--accent-primary-rgb), 0.15) !important; /* Slightly stronger highlight on hover */
 }
 
 /* Maintain highlighting for filtered rows */
 .table--compact:not(.table--reports) .table__row--filtered .table__cell:nth-child(4),
 .table--compact:not(.table--reports) .table__row--filtered .table__cell:nth-child(10) {
-    background-color: rgba(59, 130, 246, 0.06) !important; /* Dimmed highlight for filtered rows */
+    background-color: rgba(var(--accent-primary-rgb), 0.06) !important; /* Dimmed highlight for filtered rows */
 }
 
 .table--compact:not(.table--reports) .table__row--filtered:hover .table__cell:nth-child(4),
 .table--compact:not(.table--reports) .table__row--filtered:hover .table__cell:nth-child(10) {
-    background-color: rgba(59, 130, 246, 0.12) !important; /* Moderate highlight for filtered row hover */
+    background-color: rgba(var(--accent-primary-rgb), 0.12) !important; /* Moderate highlight for filtered row hover */
 }
 
 /*---------------------------------------*/

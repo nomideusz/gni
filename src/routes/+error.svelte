@@ -191,7 +191,7 @@
 	}
 
 	.action-button:first-child {
-		background-color: #2563eb;
+		background-color: #14b8a6;
 		color: white;
 	}
 

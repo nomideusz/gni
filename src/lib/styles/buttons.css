@@ -51,12 +51,12 @@
     background-color: var(--accent-hover);
     border-color: var(--accent-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--accent-primary-rgb), 0.3);
 }
 
 .button--primary:active {
     transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 2px 4px rgba(var(--accent-primary-rgb), 0.3);
 }
 
 /* Secondary Button */
@@ -80,7 +80,7 @@
 }
 
 .button--ghost:hover {
-    background-color: rgba(59, 130, 246, 0.1);
+    background-color: rgba(var(--accent-primary-rgb), 0.1);
     color: var(--accent-hover);
 }
 

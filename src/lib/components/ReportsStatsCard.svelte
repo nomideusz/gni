@@ -100,9 +100,9 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
-		color: var(--accent-primary, #4f8cff);
+		color: var(--accent-primary, #2dd4bf);
 		border-bottom: 1px solid var(--border-primary, #22253a);
-		background: rgba(79, 140, 255, 0.03);
+		background: rgba(var(--accent-primary-rgb), 0.03);
 	}
 
 	.stats-card__body {

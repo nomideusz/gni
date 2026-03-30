@@ -243,7 +243,7 @@
   }
   
   .status--loading {
-    color: #3b82f6;
+    color: #2dd4bf;
     text-align: center;
     padding: 0.5rem;
   }
@@ -260,7 +260,7 @@
   
   .status--loggingIn {
     background-color: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
+    color: #2dd4bf;
   }
   
   .status--loggingOut {
