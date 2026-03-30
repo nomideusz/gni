@@ -2115,21 +2115,21 @@
 		position: absolute;
 		bottom: calc(100% + 6px);
 		left: 0;
-		padding: 0.5rem 0.75rem;
-		background: rgba(15, 23, 42, 0.95);
-		color: #f1f5f9;
+		padding: 0.6rem 0.85rem;
+		background: #1e40af;
+		color: #ffffff;
 		border-radius: 6px;
 		white-space: normal;
 		word-break: break-word;
 		font-size: 0.8rem;
+		font-weight: 500;
 		line-height: 1.45;
 		z-index: 9999;
 		pointer-events: none;
 		max-width: 500px;
 		min-width: 180px;
 		width: max-content;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
 		animation: tooltip-fade-in 0.15s ease;
 	}
 
@@ -2140,7 +2140,7 @@
 		bottom: calc(100% + 1px);
 		left: 24px;
 		border: 5px solid transparent;
-		border-top-color: rgba(15, 23, 42, 0.95);
+		border-top-color: #1e40af;
 		z-index: 9999;
 		pointer-events: none;
 		animation: tooltip-fade-in 0.15s ease;
