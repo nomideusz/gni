@@ -35,9 +35,8 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             filter: dateFilter + ' && report_final=1'
         }) : { totalItems: countAll.totalItems };
         
-        const expandParam = includeUnitDesc 
-            ? 'driving_sessions,indications_via_report,field_of_view_gaps' 
-            : 'indications_via_report,field_of_view_gaps';
+        // Always expand driving_sessions for vehicle info and survey detection
+        const expandParam = 'driving_sessions,indications_via_report,field_of_view_gaps';
         
         const queryOptions: { sort: string; filter: string; expand?: string } = {
             sort, filter, expand: expandParam
@@ -87,11 +86,8 @@ export const GET = async ({ url, locals }: RequestEvent) => {
                                         (convertedItem.driving_sessions?.length > 0));
             convertedItem.has_surveys = hasDrivingSessions;
             
-            if (includeUnitDesc) {
-                convertedItem.surveyor_unit_desc = convertedItem.expand?.driving_sessions?.[0]?.surveyor_unit_desc || 'n/a';
-            } else {
-                convertedItem.surveyor_unit_desc = null;
-            }
+            // Always get surveyor_unit_desc for per-vehicle calculations
+            convertedItem.surveyor_unit_desc = convertedItem.expand?.driving_sessions?.[0]?.surveyor_unit_desc || 'n/a';
             
             convertedItem.indications = [];
             convertedItem.indicationsCount = 0;

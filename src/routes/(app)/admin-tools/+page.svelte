@@ -40,19 +40,26 @@
     <h1>Admin Tools</h1>
     
     <div class="tool-section">
-        <h2>Fix Field of View Relations</h2>
+        <h2>Fix All Relations</h2>
         <p class="description">
-            This tool fixes missing report relations in the <code>field_of_view</code> and 
-            <code>field_of_view_gaps</code> collections by mapping report_id text fields to 
-            actual report relations.
+            This tool fixes missing report relations across all collections by mapping 
+            <code>report_id</code> text fields to actual PocketBase relation fields. It repairs:
         </p>
+        <ul class="description-list">
+            <li><strong>driving_sessions → report</strong>: Links surveys to their reports (fixes missing vehicle/car info)</li>
+            <li><strong>gas_reports → driving_sessions</strong>: Adds driving sessions to report forward-relation (fixes empty surveys)</li>
+            <li><strong>indications → report</strong>: Links LISA indications to their reports (fixes missing indication counts)</li>
+            <li><strong>field_of_view → report</strong>: Links FOV records to reports</li>
+            <li><strong>field_of_view_gaps → report</strong>: Links FOV gap records to reports</li>
+            <li><strong>gas_reports → field_of_view / field_of_view_gaps</strong>: Forward-relation arrays</li>
+        </ul>
         
         <button 
             class="fix-button"
             on:click={fixRelations}
             disabled={fixingRelations}
         >
-            {fixingRelations ? 'Fixing Relations...' : 'Fix Relations'}
+            {fixingRelations ? 'Fixing Relations...' : 'Fix All Relations'}
         </button>
         
         {#if error}
@@ -64,26 +71,52 @@
         {#if results}
             <div class="results">
                 <h3>Results:</h3>
+                
+                {#if results.driving_sessions}
+                    <div class="result-group">
+                        <h4>🚗 driving_sessions (surveys → reports):</h4>
+                        <ul>
+                            <li class:success={results.driving_sessions.fixed > 0}>Fixed: {results.driving_sessions.fixed}</li>
+                            <li>No Report Found: {results.driving_sessions.noReportFound}</li>
+                            <li>Failed: {results.driving_sessions.failed}</li>
+                        </ul>
+                    </div>
+                {/if}
+                
+                {#if results.indications}
+                    <div class="result-group">
+                        <h4>📍 indications (LISAs → reports):</h4>
+                        <ul>
+                            <li class:success={results.indications.fixed > 0}>Fixed: {results.indications.fixed}</li>
+                            <li>No Report Found: {results.indications.noReportFound}</li>
+                            <li>Failed: {results.indications.failed}</li>
+                        </ul>
+                    </div>
+                {/if}
+                
                 <div class="result-group">
-                    <h4>field_of_view:</h4>
+                    <h4>🔭 field_of_view:</h4>
                     <ul>
-                        <li>Fixed: {results.field_of_view.fixed}</li>
-                        <li>Failed: {results.field_of_view.failed}</li>
+                        <li class:success={results.field_of_view.fixed > 0}>Fixed: {results.field_of_view.fixed}</li>
                         <li>No Report Found: {results.field_of_view.noReportFound}</li>
+                        <li>Failed: {results.field_of_view.failed}</li>
                     </ul>
                 </div>
+                
                 <div class="result-group">
-                    <h4>field_of_view_gaps:</h4>
+                    <h4>⚠️ field_of_view_gaps:</h4>
                     <ul>
-                        <li>Fixed: {results.field_of_view_gaps.fixed}</li>
-                        <li>Failed: {results.field_of_view_gaps.failed}</li>
+                        <li class:success={results.field_of_view_gaps.fixed > 0}>Fixed: {results.field_of_view_gaps.fixed}</li>
                         <li>No Report Found: {results.field_of_view_gaps.noReportFound}</li>
+                        <li>Failed: {results.field_of_view_gaps.failed}</li>
                     </ul>
                 </div>
+                
                 <div class="result-group">
-                    <h4>gas_reports:</h4>
+                    <h4>📊 gas_reports (forward relations):</h4>
                     <ul>
-                        <li>Fixed: {results.gas_reports.fixed}</li>
+                        <li class:success={results.gas_reports.fixed > 0}>Fixed: {results.gas_reports.fixed}</li>
+                        <li>Already OK: {results.gas_reports.alreadyOk || 0}</li>
                         <li>Failed: {results.gas_reports.failed}</li>
                     </ul>
                 </div>
@@ -118,9 +151,20 @@
     }
     
     .description {
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.5rem;
         color: var(--text-color-secondary);
         line-height: 1.6;
+    }
+    
+    .description-list {
+        margin-bottom: 1.5rem;
+        padding-left: 1.5rem;
+        color: var(--text-color-secondary);
+        line-height: 1.8;
+    }
+    
+    .description-list li {
+        margin-bottom: 0.25rem;
     }
     
     code {
@@ -175,6 +219,14 @@
     
     .result-group {
         margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--card-border, #eee);
+    }
+    
+    .result-group:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
     }
     
     .result-group h4 {
@@ -191,4 +243,9 @@
         margin-bottom: 0.25rem;
         color: var(--text-color-secondary);
     }
-</style> 
+    
+    .result-group li.success {
+        color: var(--success-color, #4CAF50);
+        font-weight: 600;
+    }
+</style>

@@ -591,8 +591,22 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.85rem;
-    min-width: 1315px; /* Calculated total of all column widths */
+    min-width: 1200px; /* Minimum before horizontal scroll kicks in */
     table-layout: fixed; /* Force table to respect column widths */
+}
+
+/* Override generic thead/tbody display:table to keep columns aligned */
+.table--reports .table__element thead {
+    display: table-header-group;
+    width: 100%;
+}
+
+.table--reports .table__element tbody {
+    display: table-row-group;
+}
+
+.table--reports .table__element tbody tr {
+    display: table-row;
 }
 
 /* Reports table headers */
@@ -606,21 +620,24 @@
     letter-spacing: 0.05em;
     color: var(--text-secondary);
     border-bottom: 1px solid var(--border-primary);
-    min-width: 80px;
-    max-width: 200px;
     position: relative;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Reports table cells */
 .table--reports .table__cell {
-    padding: 0.875rem 1rem;
+    padding: 0.875rem 0.75rem;
     vertical-align: middle;
     height: 3.5rem;
     box-sizing: border-box;
     border-right: 1px solid var(--border-secondary);
     font-size: 0.85rem;
     color: var(--text-primary);
-    text-overflow: clip;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .table--reports .table__cell:last-child {

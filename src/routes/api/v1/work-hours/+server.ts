@@ -53,12 +53,14 @@ export const GET: RequestHandler = async ({ locals }) => {
         
         // Fallback method: Return estimated values based on historical data
         return json({
-            totalWorkHours: 320.5,
+            totalWorkHours: 480.75,
             car1WorkHours: 160.25,
             car2WorkHours: 160.25,
-            totalSessions: 42,
+            car3WorkHours: 160.25,
+            totalSessions: 63,
             car1SessionCount: 21,
             car2SessionCount: 21,
+            car3SessionCount: 21,
             totalBreadcrumbs: 5280,
             method: 'fallback-estimation',
             errorInfo: 'All calculation methods failed, using fallback estimates',
@@ -84,15 +86,17 @@ async function calculateFromDrivingSessionsBasic(pb: any) {
     let totalWorkHours = 0;
     let car1WorkHours = 0;
     let car2WorkHours = 0;
+    let car3WorkHours = 0;
     let car1SessionCount = 0;
     let car2SessionCount = 0;
+    let car3SessionCount = 0;
     let totalSessions = 0;
     
     try {
-        // Get all driving sessions with minimal fields (only data after July 1st, 2025)
+        // Get all driving sessions with minimal fields (only 2026 data)
         const sessionsResult = await pb.collection('driving_sessions').getList(1, 100, {
             fields: 'id,surveyor_unit_desc,created',
-            filter: 'created >= "2025-07-01"',
+            filter: 'created >= "2026-01-01"',
             sort: '-created'
         });
         
@@ -116,6 +120,9 @@ async function calculateFromDrivingSessionsBasic(pb: any) {
             } else if (vehicle.includes('Car #2')) {
                 car2WorkHours += AVERAGE_SESSION_HOURS;
                 car2SessionCount++;
+            } else if (vehicle.includes('Car #3')) {
+                car3WorkHours += AVERAGE_SESSION_HOURS;
+                car3SessionCount++;
             }
         });
         
@@ -123,6 +130,7 @@ async function calculateFromDrivingSessionsBasic(pb: any) {
         const formattedTotal = totalWorkHours.toFixed(2);
         const formattedCar1 = car1WorkHours.toFixed(2);
         const formattedCar2 = car2WorkHours.toFixed(2);
+        const formattedCar3 = car3WorkHours.toFixed(2);
         
         console.log(`[API] Total work hours via sessions basic: ${formattedTotal} hours`);
         console.log(`[API] Processed ${totalSessions} sessions`);
@@ -131,9 +139,11 @@ async function calculateFromDrivingSessionsBasic(pb: any) {
             totalWorkHours: parseFloat(formattedTotal),
             car1WorkHours: parseFloat(formattedCar1),
             car2WorkHours: parseFloat(formattedCar2),
+            car3WorkHours: parseFloat(formattedCar3),
             totalSessions,
             car1SessionCount,
             car2SessionCount,
+            car3SessionCount,
             totalBreadcrumbs: 0,
             updated: new Date().toISOString()
         };
@@ -151,28 +161,30 @@ async function calculateFromGasReports(pb: any) {
     console.log('[API] Calculating work hours from gas reports collection');
     
     try {
-        // Get reports with their driving sessions (only data after July 1st, 2025)
+        // Get reports with their driving sessions (only 2026 data)
         const reportsResult = await pb.collection('gas_reports').getList(1, 50, {
-            filter: 'report_date >= "2025-07-01"',
+            filter: 'report_date >= "2026-01-01"',
             sort: '-created',
             fields: 'id,report_name,report_date'
         });
         
-        // Set fixed values per report - equal treatment for all cars
+        // Set fixed values per report - equal treatment for all 3 cars
         const HOURS_PER_REPORT = 8;
-        const CARS_COUNT = 2;
-        const HOURS_PER_CAR_RATIO = 1 / CARS_COUNT; // Equal distribution (0.5 each)
+        const CARS_COUNT = 3;
+        const HOURS_PER_CAR_RATIO = 1 / CARS_COUNT; // Equal distribution (1/3 each)
         const SESSIONS_PER_REPORT = 1.0; // Equal sessions per report for each car
         
         const totalReports = reportsResult.items.length;
         const totalWorkHours = totalReports * HOURS_PER_REPORT;
         const car1WorkHours = totalWorkHours * HOURS_PER_CAR_RATIO;
         const car2WorkHours = totalWorkHours * HOURS_PER_CAR_RATIO;
+        const car3WorkHours = totalWorkHours * HOURS_PER_CAR_RATIO;
         
         // Format to 2 decimal places
         const formattedTotal = totalWorkHours.toFixed(2);
         const formattedCar1 = car1WorkHours.toFixed(2);
         const formattedCar2 = car2WorkHours.toFixed(2);
+        const formattedCar3 = car3WorkHours.toFixed(2);
         
         console.log(`[API] Total work hours via gas reports: ${formattedTotal} hours from ${totalReports} reports`);
         
@@ -180,9 +192,11 @@ async function calculateFromGasReports(pb: any) {
             totalWorkHours: parseFloat(formattedTotal),
             car1WorkHours: parseFloat(formattedCar1),
             car2WorkHours: parseFloat(formattedCar2),
+            car3WorkHours: parseFloat(formattedCar3),
             totalSessions: Math.round(totalReports * CARS_COUNT * SESSIONS_PER_REPORT),
             car1SessionCount: Math.round(totalReports * SESSIONS_PER_REPORT),
             car2SessionCount: Math.round(totalReports * SESSIONS_PER_REPORT),
+            car3SessionCount: Math.round(totalReports * SESSIONS_PER_REPORT),
             totalBreadcrumbs: 0,
             reportCount: totalReports,
             updated: new Date().toISOString()

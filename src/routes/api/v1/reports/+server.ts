@@ -89,10 +89,9 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             filter: dateFilter + ' && report_final=1'
         }) : { totalItems: countAll.totalItems };
         
-        // Use expand to get related driving sessions, indications, and field_of_view_gaps
-        const expandParam = includeUnitDesc 
-            ? 'driving_sessions,indications_via_report,field_of_view_gaps' 
-            : 'indications_via_report,field_of_view_gaps';
+        // Always expand driving_sessions to get vehicle info and detect surveys
+        // indications_via_report is a back-relation expand (indications where report = this record)
+        const expandParam = 'driving_sessions,indications_via_report,field_of_view_gaps';
         
         console.log('API: Using expand parameter:', expandParam);
         
@@ -178,16 +177,13 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             // Add flag indicating whether report has driving sessions
             convertedItem.has_surveys = hasDrivingSessions;
             
-            // Get surveyor_unit_desc from expanded relation
-            if (includeUnitDesc) {
-                if (convertedItem.expand && convertedItem.expand.driving_sessions?.length > 0) {
-                    const firstSession = convertedItem.expand.driving_sessions[0];
-                    convertedItem.surveyor_unit_desc = firstSession.surveyor_unit_desc || 'n/a';
-                } else {
-                    convertedItem.surveyor_unit_desc = 'n/a';
-                }
+            // Always get surveyor_unit_desc from expanded driving sessions
+            // This is essential for per-vehicle distance/LISA calculations
+            if (convertedItem.expand && convertedItem.expand.driving_sessions?.length > 0) {
+                const firstSession = convertedItem.expand.driving_sessions[0];
+                convertedItem.surveyor_unit_desc = firstSession.surveyor_unit_desc || 'n/a';
             } else {
-                convertedItem.surveyor_unit_desc = null;
+                convertedItem.surveyor_unit_desc = 'n/a';
             }
             
             // Add indications from expanded back-relation

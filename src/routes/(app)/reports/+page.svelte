@@ -1164,22 +1164,24 @@
 													</div>
 												</td>
 												<td class="table__cell table__cell--report-title" title={report.report_title}>
-													<span 
-														class="table__cell-content clickable-value {copiedItems.has(`${report.id}-title`) ? 'copied-value' : ''}"
-														onclick={() => copyToClipboard(report.report_title, 'Report Title', `${report.id}-title`)}
-														title={copiedItems.has(`${report.id}-title`) ? 'Copied!' : 'Click to copy Report Title'}
-													>
-														{report.report_title}
-													</span>
-													{#if deletableInfo.isDeletable}
+													<div class="cell-flex-wrapper">
 														<span 
-															class="deletable-badge" 
-															title={deletableInfo.reason}
-															style="font-family: system-ui, -apple-system, sans-serif;"
+															class="table__cell-content clickable-value {copiedItems.has(`${report.id}-title`) ? 'copied-value' : ''}"
+															onclick={() => copyToClipboard(report.report_title, 'Report Title', `${report.id}-title`)}
+															title={copiedItems.has(`${report.id}-title`) ? 'Copied!' : 'Click to copy Report Title'}
 														>
-															⚠
+															{report.report_title}
 														</span>
-													{/if}
+														{#if deletableInfo.isDeletable}
+															<span 
+																class="deletable-badge" 
+																title={deletableInfo.reason}
+																style="font-family: system-ui, -apple-system, sans-serif;"
+															>
+																⚠
+															</span>
+														{/if}
+													</div>
 												</td>
 												<td class="table__cell table__cell--report-name" title={report.report_name}>
 													<span 
@@ -2004,25 +2006,25 @@
 	.table-container {
 		--col-expand-width: 35px;
 		--col-checkbox-width: 45px;
-		--col-report_date-width: 180px;
-		--col-report_title-width: 600px;
-		--col-report_name-width: 200px;
-		--col-dist_mains_length-width: 120px;
-		--col-dist_mains_coverage-width: 100px;
-		--col-dist_mains_covered_length-width: 140px;
-		--col-fieldOfViewGapsCount-width: 80px;
-		--col-indicationsCount-width: 80px;
-		--col-total_duration_seconds-width: 100px;
-		--col-total_distance_km-width: 140px;
-		--col-surveyor_unit_desc-width: 100px;
-		--col-report_final-width: 80px;
+		--col-report_date-width: 150px;
+		--col-report_title-width: 380px;
+		--col-report_name-width: 160px;
+		--col-dist_mains_length-width: 110px;
+		--col-dist_mains_coverage-width: 95px;
+		--col-dist_mains_covered_length-width: 120px;
+		--col-fieldOfViewGapsCount-width: 70px;
+		--col-indicationsCount-width: 70px;
+		--col-total_duration_seconds-width: 90px;
+		--col-total_distance_km-width: 120px;
+		--col-surveyor_unit_desc-width: 95px;
+		--col-report_final-width: 75px;
 	}
 
 	.table__header--expand { width: var(--col-expand-width); min-width: var(--col-expand-width); }
 	.table__header--checkbox { width: var(--col-checkbox-width); min-width: var(--col-checkbox-width); }
-	.table__header--report-date { width: var(--col-report_date-width) !important; min-width: var(--col-report_date-width) !important; max-width: var(--col-report_date-width) !important; }
-	.table__header--report-title { width: var(--col-report_title-width) !important; min-width: var(--col-report_title-width) !important; max-width: var(--col-report_title-width) !important; }
-	.table__header--report-name { width: var(--col-report_name-width); min-width: var(--col-report_name-width); }
+	.table__header--report-date { width: var(--col-report_date-width); min-width: var(--col-report_date-width); max-width: var(--col-report_date-width); }
+	.table__header--report-title { width: var(--col-report_title-width); min-width: 200px; max-width: var(--col-report_title-width); }
+	.table__header--report-name { width: var(--col-report_name-width); min-width: 120px; max-width: var(--col-report_name-width); }
 	
 	.table__header:nth-child(6) { width: var(--col-dist_mains_length-width); min-width: var(--col-dist_mains_length-width); }
 	.table__header:nth-child(7) { width: var(--col-dist_mains_coverage-width); min-width: var(--col-dist_mains_coverage-width); }
@@ -2037,16 +2039,14 @@
 	/* Apply same widths to table cells */
 	.table__cell--expand { width: var(--col-expand-width); min-width: var(--col-expand-width); }
 	.table__cell--checkbox { width: var(--col-checkbox-width); min-width: var(--col-checkbox-width); }
-	.table__cell--report-date { width: var(--col-report_date-width) !important; min-width: var(--col-report_date-width) !important; max-width: var(--col-report_date-width) !important; }
+	.table__cell--report-date { width: var(--col-report_date-width); min-width: var(--col-report_date-width); max-width: var(--col-report_date-width); }
 	.table__cell--report-title { 
-		width: var(--col-report_title-width) !important; 
-		min-width: var(--col-report_title-width) !important; 
-		max-width: var(--col-report_title-width) !important;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
+		width: var(--col-report_title-width); 
+		min-width: 200px; 
+		max-width: var(--col-report_title-width);
+		overflow: hidden;
 	}
-	.table__cell--report-name { width: var(--col-report_name-width); min-width: var(--col-report_name-width); }
+	.table__cell--report-name { width: var(--col-report_name-width); min-width: 120px; max-width: var(--col-report_name-width); overflow: hidden; }
 	
 	.table__row > .table__cell:nth-child(6) { width: var(--col-dist_mains_length-width); min-width: var(--col-dist_mains_length-width); }
 	.table__row > .table__cell:nth-child(7) { width: var(--col-dist_mains_coverage-width); min-width: var(--col-dist_mains_coverage-width); }
@@ -2071,17 +2071,25 @@
 		pointer-events: auto;
 	}
 	
+	/* Inner flex wrapper for report title cell (flex on td breaks table-layout) */
+	.cell-flex-wrapper {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		width: 100%;
+		min-width: 0;
+		overflow: hidden;
+	}
+
 	/* Prevent tooltip interference from adjacent cells */
 	.table__cell--report-title .clickable-value {
 		pointer-events: auto;
 		position: relative;
 		z-index: 2;
-		display: inline-block;
-		max-width: 100%;
+		display: block;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		vertical-align: middle;
 		flex: 1;
 		min-width: 0; /* Allow flex item to shrink below content size */
 	}
@@ -2128,10 +2136,11 @@
 	
 	/* Ensure deletable badge icon shows properly */
 	.deletable-badge {
-		display: inline-flex !important;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: auto !important;
-		height: auto !important;
+		flex-shrink: 0;
+		width: 1.2em;
+		height: 1.2em;
 	}
 </style>
