@@ -1615,9 +1615,9 @@
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
 		border-radius: 8px;
-		overflow: hidden;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 		overflow-x: auto;
+		overflow-y: visible;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 	}
 
 	/* Clickable value styles */
@@ -2114,6 +2114,7 @@
 		font-size: 0.82rem;
 		font-weight: 500;
 		line-height: 1.5;
+		text-align: left;
 		z-index: 9999;
 		pointer-events: none;
 		max-width: 480px;

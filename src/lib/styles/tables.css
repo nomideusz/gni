@@ -585,6 +585,8 @@
 /* Reports table specific layout */
 .table--reports {
     margin-bottom: 0;
+    overflow: visible;
+    overflow-x: auto;
 }
 
 .table--reports .table__element {
@@ -603,6 +605,7 @@
 
 .table--reports .table__element tbody {
     display: table-row-group;
+    overflow: visible;
 }
 
 .table--reports .table__element tbody tr {
