@@ -1163,7 +1163,7 @@
 														{formatDateTime(report.report_date)}
 													</div>
 												</td>
-												<td class="table__cell table__cell--report-title" data-tooltip={copiedItems.has(`${report.id}-title`) ? '✓ Copied!' : `${report.report_title}  · Click to copy`}>
+												<td class="table__cell table__cell--report-title" data-tooltip={copiedItems.has(`${report.id}-title`) ? '✓ Copied!' : report.report_title} data-tooltip-hint={copiedItems.has(`${report.id}-title`) ? '' : '· click to copy'}>
 													<div class="cell-flex-wrapper">
 														<span 
 															class="table__cell-content clickable-value {copiedItems.has(`${report.id}-title`) ? 'copied-value' : ''}"
@@ -1182,7 +1182,7 @@
 														{/if}
 													</div>
 												</td>
-												<td class="table__cell table__cell--report-name" data-tooltip={copiedItems.has(`${report.id}-name`) ? '✓ Copied!' : `${report.report_name}  · Click to copy`}>
+												<td class="table__cell table__cell--report-name" data-tooltip={copiedItems.has(`${report.id}-name`) ? '✓ Copied!' : report.report_name} data-tooltip-hint={copiedItems.has(`${report.id}-name`) ? '' : '· click to copy'}>
 													<span 
 														class="report-name-text clickable-value {copiedItems.has(`${report.id}-name`) ? 'copied-value' : ''}"
 														onclick={() => copyToClipboard(report.report_name, 'Report Name', `${report.id}-name`)}
@@ -1190,7 +1190,7 @@
 														{report.report_name}
 													</span>
 												</td>
-												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-total-assets`) ? '✓ Copied!' : `Total Assets: ${report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}  · Click to copy`}>
+												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-total-assets`) ? '✓ Copied!' : `Total Assets: ${report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}`} data-tooltip-hint={copiedItems.has(`${report.id}-total-assets`) ? '' : '· click to copy'}>
 													<span 
 														class="clickable-value {copiedItems.has(`${report.id}-total-assets`) ? 'copied-value' : ''}"
 														onclick={() => copyToClipboard(report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A', 'Total Assets', `${report.id}-total-assets`)}
@@ -1198,7 +1198,7 @@
 														{report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}
 													</span>
 												</td>
-												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-coverage`) ? '✓ Copied!' : `Coverage: ${report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}  · Click to copy`}>
+												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-coverage`) ? '✓ Copied!' : `Coverage: ${report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}`} data-tooltip-hint={copiedItems.has(`${report.id}-coverage`) ? '' : '· click to copy'}>
 													<span 
 														class="clickable-value {copiedItems.has(`${report.id}-coverage`) ? 'copied-value' : ''} {(report.dist_mains_coverage || 0) > 0.9 ? 'value--high-quality' : ''}"
 														onclick={() => copyToClipboard(report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A', 'Coverage %', `${report.id}-coverage`)}
@@ -1206,7 +1206,7 @@
 														{report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}
 													</span>
 												</td>
-												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-assets-covered`) ? '✓ Copied!' : `Assets Covered: ${report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}  · Click to copy`}>
+												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-assets-covered`) ? '✓ Copied!' : `Assets Covered: ${report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}`} data-tooltip-hint={copiedItems.has(`${report.id}-assets-covered`) ? '' : '· click to copy'}>
 													<span 
 														class="clickable-value {copiedItems.has(`${report.id}-assets-covered`) ? 'copied-value' : ''}"
 														onclick={() => copyToClipboard(report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A', 'Assets Covered', `${report.id}-assets-covered`)}
@@ -2107,12 +2107,12 @@
 		left: 0;
 		padding: 0.5rem 0.75rem;
 		background: #1e293b;
-		color: #e2e8f0;
+		color: #f1f5f9;
 		border-radius: 6px;
 		white-space: normal;
 		word-break: break-word;
-		font-size: 0.8rem;
-		font-weight: 400;
+		font-size: 0.82rem;
+		font-weight: 500;
 		line-height: 1.5;
 		z-index: 9999;
 		pointer-events: none;
@@ -2121,6 +2121,13 @@
 		width: max-content;
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
 		animation: tooltip-fade-in 0.12s ease;
+	}
+
+	/* Tooltip with click-to-copy hint on a dimmed new line */
+	[data-tooltip-hint]:not([data-tooltip-hint=""]):hover::after {
+		content: attr(data-tooltip) '\A' attr(data-tooltip-hint);
+		white-space: pre-wrap;
+		color: #f1f5f9;
 	}
 
 	/* Arrow pointing down */
