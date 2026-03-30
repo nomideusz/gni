@@ -29,13 +29,13 @@
 
 /* Header styling */
 .header {
-    padding: 0.6rem 1.2rem;
-    background-color: var(--bg-tertiary);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    padding: 0 1.2rem;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 3.5rem;
+    height: 3rem;
     z-index: 10;
     position: relative;
 }
@@ -302,13 +302,14 @@
 
 /* Footer styling */
 .footer {
-    background-color: var(--bg-tertiary);
+    background-color: var(--bg-secondary);
     border-top: 1px solid var(--border-primary);
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     color: var(--text-secondary);
-    padding: 0.5rem 1rem;
+    padding: 0.35rem 1rem;
     z-index: 10;
     flex-shrink: 0;
+    opacity: 0.7;
 }
 
 .footer__content {

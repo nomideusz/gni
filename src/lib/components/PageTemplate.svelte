@@ -104,23 +104,24 @@
 <style>  .page-template {    width: 100%;    min-height: 100%;    display: flex;    flex-direction: column;    overflow-x: hidden; /* Prevent horizontal scroll on the template itself */  }  .page-template__container {    width: 100%;    max-width: 1400px;    margin: 0 auto;    padding: 0 2rem;    flex: 1;    display: flex;    flex-direction: column;    box-sizing: border-box; /* Ensure padding is included in width */  }  .page-template__container--full-width {    max-width: 100%;  }  .page-template__header {    display: flex;    justify-content: space-between;    align-items: flex-start;    gap: 2rem;    padding: 1.5rem 0;    border-bottom: 1px solid var(--border-primary);    margin-bottom: 1.5rem;  }  .page-template__header-content {    flex: 1;  }
 
   .page-template__title {
-    margin: 0 0 0.5rem 0;
-    font-size: 2.5rem;
+    margin: 0 0 0.25rem 0;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1.2;
+    letter-spacing: -0.02em;
   }
 
   .page-template__subtitle {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-    color: var(--text-primary);
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--text-secondary);
   }
 
   .page-template__description {
-    margin: 0;
-    font-size: 1.125rem;
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
     color: var(--text-secondary);
     max-width: 800px;
   }

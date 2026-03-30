@@ -1,5 +1,4 @@
 <script lang="ts">
-	// Props interface
 	interface Props {
 		finalReports?: number;
 		draftReports?: number;
@@ -23,215 +22,134 @@
 	}: Props = $props();
 </script>
 
-<div class="stats-dashboard">
-	<!-- Reports Section -->
-	<div class="stats-section">
-		<div class="stats-section-header">
-			<h3>Reports</h3>
-		</div>
-		<div class="stats-section-content">
-			<div class="stats-metric">
-				<div class="stats-content">
-					<div class="stats-value">{finalReports}</div>
-					<div class="stats-label">Final Reports</div>
-				</div>
+<div class="stats-row">
+	<!-- Reports -->
+	<div class="stats-card">
+		<div class="stats-card__header">Reports</div>
+		<div class="stats-card__body">
+			<div class="stats-card__item">
+				<span class="stats-card__value">{finalReports}</span>
+				<span class="stats-card__label">Final</span>
 			</div>
-			
-			<div class="stats-metric stats-metric--dimmed">
-				<div class="stats-content">
-					<div class="stats-value">{draftReports}</div>
-					<div class="stats-label">Draft Reports</div>
-				</div>
+			<div class="stats-card__divider"></div>
+			<div class="stats-card__item stats-card__item--dimmed">
+				<span class="stats-card__value">{draftReports}</span>
+				<span class="stats-card__label">Draft</span>
 			</div>
 		</div>
 	</div>
 
-	<!-- Assets Section -->
-	<div class="stats-section">
-		<div class="stats-section-header">
-			<h3>Assets (Final Reports)</h3>
-		</div>
-		<div class="stats-section-content">
-			<div class="stats-metric">
-				<div class="stats-content">
-					<div class="stats-value">{totalCoverage.toFixed(1)}%</div>
-					<div class="stats-label">Coverage</div>
-				</div>
+	<!-- Assets -->
+	<div class="stats-card">
+		<div class="stats-card__header">Assets (Final)</div>
+		<div class="stats-card__body">
+			<div class="stats-card__item">
+				<span class="stats-card__value">{totalCoverage.toFixed(1)}<small>%</small></span>
+				<span class="stats-card__label">Coverage</span>
 			</div>
-			
-			<div class="stats-metric">
-				<div class="stats-content">
-					<div class="stats-value">{totalLISAs}</div>
-					<div class="stats-label">LISAs</div>
-				</div>
+			<div class="stats-card__divider"></div>
+			<div class="stats-card__item">
+				<span class="stats-card__value">{totalLISAs}</span>
+				<span class="stats-card__label">LISAs</span>
 			</div>
-			
-			<div class="stats-metric">
-				<div class="stats-content">
-					<div class="stats-value">{totalGaps}</div>
-					<div class="stats-label">Gaps</div>
-				</div>
+			<div class="stats-card__divider"></div>
+			<div class="stats-card__item">
+				<span class="stats-card__value">{totalGaps}</span>
+				<span class="stats-card__label">Gaps</span>
 			</div>
 		</div>
 	</div>
 
-	<!-- Vehicles Section -->
-	<div class="stats-section">
-		<div class="stats-section-header">
-			<h3>Vehicles (Final Reports)</h3>
-		</div>
-		<div class="stats-section-content">
-			<div class="stats-metric stats-metric--vehicle">
-				<div class="stats-content">
-					<div class="stats-value">{car1Distance.toFixed(1)}</div>
-					<div class="stats-label">Car #1 (km)</div>
+	<!-- Vehicles -->
+	<div class="stats-card">
+		<div class="stats-card__header">Vehicles (Final km)</div>
+		<div class="stats-card__body">
+			{#each [
+				{ label: '#1', dist: car1Distance },
+				{ label: '#2', dist: car2Distance },
+				{ label: '#3', dist: car3Distance },
+			] as car, i}
+				{#if i > 0}<div class="stats-card__divider"></div>{/if}
+				<div class="stats-card__item">
+					<span class="stats-card__value">{car.dist.toFixed(1)}</span>
+					<span class="stats-card__label">Car {car.label}</span>
 				</div>
-			</div>
-			
-			<div class="stats-metric stats-metric--vehicle">
-				<div class="stats-content">
-					<div class="stats-value">{car2Distance.toFixed(1)}</div>
-					<div class="stats-label">Car #2 (km)</div>
-				</div>
-			</div>
-			
-			<div class="stats-metric stats-metric--vehicle">
-				<div class="stats-content">
-					<div class="stats-value">{car3Distance.toFixed(1)}</div>
-					<div class="stats-label">Car #3 (km)</div>
-				</div>
-			</div>
-			
-
+			{/each}
 		</div>
 	</div>
 </div>
 
 <style>
-	/* Stats Dashboard */
-	.stats-dashboard {
+	.stats-row {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1.5rem;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 0.75rem;
 		margin-bottom: 1.5rem;
 	}
 
-	.stats-section {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 8px;
+	.stats-card {
+		background: var(--bg-card, #161825);
+		border: 1px solid var(--border-primary, #22253a);
+		border-radius: 10px;
 		overflow: hidden;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 	}
 
-	.stats-section-header {
-		background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
-		padding: 1rem 1.5rem;
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		color: white;
-	}
-
-	.stats-section-header h3 {
-		margin: 0;
-		font-size: 1rem;
+	.stats-card__header {
+		padding: 0.6rem 1rem;
+		font-size: 0.65rem;
 		font-weight: 600;
-		letter-spacing: 0.025em;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--accent-primary, #4f8cff);
+		border-bottom: 1px solid var(--border-primary, #22253a);
+		background: rgba(79, 140, 255, 0.03);
 	}
 
-	.stats-section-content {
-		padding: 1.5rem;
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-		gap: 1rem;
-	}
-
-	.stats-metric {
+	.stats-card__body {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem;
-		border-radius: 6px;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-secondary);
-		transition: all 0.2s ease;
+		padding: 0.875rem 1rem;
+		gap: 0;
 	}
 
-	.stats-metric:hover {
-		background: var(--bg-tertiary);
-		border-color: var(--border-primary);
-	}
-
-	.stats-metric--vehicle {
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		gap: 0.5rem;
-	}
-
-	.stats-metric--dimmed {
-		opacity: 0.6;
-	}
-
-	.stats-metric--dimmed .stats-value {
-		color: var(--text-secondary);
-	}
-
-	.stats-metric--dimmed .stats-label {
-		color: var(--text-secondary);
-		opacity: 0.7;
-	}
-
-	.stats-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 36px;
-		height: 36px;
-		background: var(--bg-tertiary);
-		border-radius: 6px;
-		flex-shrink: 0;
-		border: 1px solid var(--border-secondary);
-	}
-
-	.stats-icon--success {
-		background: rgba(34, 197, 94, 0.1);
-		border-color: rgba(34, 197, 94, 0.3);
-		color: var(--success);
-	}
-
-	.stats-icon--warning {
-		background: rgba(245, 158, 11, 0.1);
-		border-color: rgba(245, 158, 11, 0.3);
-		color: var(--warning);
-	}
-
-	.stats-content {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
+	.stats-card__item {
 		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.15rem;
 	}
 
-	.stats-value {
+	.stats-card__item--dimmed {
+		opacity: 0.5;
+	}
+
+	.stats-card__value {
 		font-size: 1.25rem;
 		font-weight: 700;
+		color: var(--text-primary, #eef0f6);
 		line-height: 1;
-		color: var(--text-primary);
+		font-variant-numeric: tabular-nums;
 	}
 
-	.stats-label {
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-		font-weight: 500;
+	.stats-card__value small {
+		font-size: 0.7em;
+		font-weight: 400;
+		color: var(--text-secondary, #8b8fa6);
 	}
 
-	.stats-sublabel {
-		font-size: 0.75rem;
-		color: var(--accent-primary);
-		opacity: 0.9;
-		margin-top: 0.25rem;
+	.stats-card__label {
+		font-size: 0.6rem;
 		font-weight: 500;
+		color: var(--text-secondary, #8b8fa6);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
-</style> 
+
+	.stats-card__divider {
+		width: 1px;
+		height: 28px;
+		background: var(--border-primary, #22253a);
+		flex-shrink: 0;
+	}
+</style>

@@ -527,63 +527,25 @@ import RealtimeIndicator from '$lib/components/RealtimeIndicator.svelte';
 </script>
 
 <style>
-	.dashboard__metrics-section {
-		margin-bottom: 2rem;
-	}
-
-	.dashboard__metrics-title {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
-		font-size: 1.125rem;
-		font-weight: 600;
-		color: var(--color-text-primary);
-	}
-
-	.dashboard__metrics--vehicles {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 1rem;
-	}
-
-	.dashboard__metrics--survey {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 1rem;
-	}
-
-	.dashboard__metrics--reports {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 1rem;
-	}
-
-	@media (max-width: 768px) {
-		.dashboard__metrics--vehicles,
-		.dashboard__metrics--survey,
-		.dashboard__metrics--reports {
-			grid-template-columns: 1fr;
-		}
-	}
+	/* Scoped overrides handled by dashboard.css */
 	
 	/* Time Information Styles */
 	.time-info {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.4rem;
 		margin-top: 0.75rem;
-		padding: 0.5rem 1rem;
-		background: rgba(var(--accent-primary-rgb), 0.05);
-		border: 1px solid rgba(var(--accent-primary-rgb), 0.15);
-		border-radius: 8px;
-		font-size: 0.875rem;
-		color: var(--color-text-secondary);
+		padding: 0.4rem 0.875rem;
+		background: rgba(79, 140, 255, 0.04);
+		border: 1px solid rgba(79, 140, 255, 0.1);
+		border-radius: var(--radius-md);
+		font-size: 0.75rem;
+		color: var(--text-secondary);
 	}
 	
 	.time-info__icon {
-		font-size: 1rem;
-		opacity: 0.8;
+		font-size: 0.85rem;
+		opacity: 0.7;
 	}
 	
 	.time-info__text {
@@ -594,8 +556,6 @@ import RealtimeIndicator from '$lib/components/RealtimeIndicator.svelte';
 	.time-info--daily-breakdown {
 		margin-top: 0;
 		margin-bottom: 1rem;
-		background: rgba(var(--info-rgb, 59, 130, 246), 0.05);
-		border-color: rgba(var(--info-rgb, 59, 130, 246), 0.15);
 	}
 </style>
 
