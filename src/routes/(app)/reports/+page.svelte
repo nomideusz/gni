@@ -1199,16 +1199,18 @@
 														<span class="sr-only">Select {report.report_name}</span>
 													</label>
 												</td>
-												<td class="table__cell table__cell--report-date" data-tooltip={`${formatDateTime(report.report_date)}`}>
-													<div class="report-date-content">
+												<td class="table__cell table__cell--report-date">
+													<div class="report-date-content" data-tooltip={formatDateTime(report.report_date)}>
 														{formatDateTime(report.report_date)}
 													</div>
 												</td>
-												<td class="table__cell table__cell--report-title" data-tooltip={copiedItems.has(`${report.id}-title`) ? '✓ Copied!' : report.report_title} data-tooltip-hint={copiedItems.has(`${report.id}-title`) ? '' : '· click to copy'}>
+												<td class="table__cell table__cell--report-title">
 													<div class="cell-flex-wrapper">
 														<span 
 															class="table__cell-content clickable-value {copiedItems.has(`${report.id}-title`) ? 'copied-value' : ''}"
 															onclick={() => copyToClipboard(report.report_title, 'Report Title', `${report.id}-title`)}
+															data-tooltip={copiedItems.has(`${report.id}-title`) ? '✓ Copied!' : report.report_title}
+															data-tooltip-hint={copiedItems.has(`${report.id}-title`) ? '' : '· click to copy'}
 														>
 															{report.report_title}
 														</span>
@@ -1223,34 +1225,42 @@
 														{/if}
 													</div>
 												</td>
-												<td class="table__cell table__cell--report-name" data-tooltip={copiedItems.has(`${report.id}-name`) ? '✓ Copied!' : report.report_name} data-tooltip-hint={copiedItems.has(`${report.id}-name`) ? '' : '· click to copy'}>
+												<td class="table__cell table__cell--report-name">
 													<span 
 														class="report-name-text clickable-value {copiedItems.has(`${report.id}-name`) ? 'copied-value' : ''}"
 														onclick={() => copyToClipboard(report.report_name, 'Report Name', `${report.id}-name`)}
+														data-tooltip={copiedItems.has(`${report.id}-name`) ? '✓ Copied!' : report.report_name}
+														data-tooltip-hint={copiedItems.has(`${report.id}-name`) ? '' : '· click to copy'}
 													>
 														{report.report_name}
 													</span>
 												</td>
-												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-total-assets`) ? '✓ Copied!' : `Total Assets: ${report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}`} data-tooltip-hint={copiedItems.has(`${report.id}-total-assets`) ? '' : '· click to copy'}>
+												<td class="table__cell">
 													<span 
 														class="clickable-value {copiedItems.has(`${report.id}-total-assets`) ? 'copied-value' : ''}"
 														onclick={() => copyToClipboard(report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A', 'Total Assets', `${report.id}-total-assets`)}
+														data-tooltip={copiedItems.has(`${report.id}-total-assets`) ? '✓ Copied!' : `Total Assets: ${report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}`}
+														data-tooltip-hint={copiedItems.has(`${report.id}-total-assets`) ? '' : '· click to copy'}
 													>
 														{report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}
 													</span>
 												</td>
-												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-coverage`) ? '✓ Copied!' : `Coverage: ${report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}`} data-tooltip-hint={copiedItems.has(`${report.id}-coverage`) ? '' : '· click to copy'}>
+												<td class="table__cell">
 													<span 
 														class="clickable-value {copiedItems.has(`${report.id}-coverage`) ? 'copied-value' : ''} {(report.dist_mains_coverage || 0) > 0.9 ? 'value--high-quality' : ''}"
 														onclick={() => copyToClipboard(report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A', 'Coverage %', `${report.id}-coverage`)}
+														data-tooltip={copiedItems.has(`${report.id}-coverage`) ? '✓ Copied!' : `Coverage: ${report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}`}
+														data-tooltip-hint={copiedItems.has(`${report.id}-coverage`) ? '' : '· click to copy'}
 													>
 														{report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}
 													</span>
 												</td>
-												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-assets-covered`) ? '✓ Copied!' : `Assets Covered: ${report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}`} data-tooltip-hint={copiedItems.has(`${report.id}-assets-covered`) ? '' : '· click to copy'}>
+												<td class="table__cell">
 													<span 
 														class="clickable-value {copiedItems.has(`${report.id}-assets-covered`) ? 'copied-value' : ''}"
 														onclick={() => copyToClipboard(report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A', 'Assets Covered', `${report.id}-assets-covered`)}
+														data-tooltip={copiedItems.has(`${report.id}-assets-covered`) ? '✓ Copied!' : `Assets Covered: ${report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}`}
+														data-tooltip-hint={copiedItems.has(`${report.id}-assets-covered`) ? '' : '· click to copy'}
 													>
 														{report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}
 													</span>
