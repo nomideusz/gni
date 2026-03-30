@@ -1158,12 +1158,12 @@
 														<span class="sr-only">Select {report.report_name}</span>
 													</label>
 												</td>
-												<td class="table__cell table__cell--report-date" data-tooltip={formatDateTime(report.report_date)}>
+												<td class="table__cell table__cell--report-date" data-tooltip={`${formatDateTime(report.report_date)}`}>
 													<div class="report-date-content">
 														{formatDateTime(report.report_date)}
 													</div>
 												</td>
-												<td class="table__cell table__cell--report-title" data-tooltip={report.report_title}>
+												<td class="table__cell table__cell--report-title" data-tooltip={copiedItems.has(`${report.id}-title`) ? '✓ Copied!' : `${report.report_title}  · Click to copy`}>
 													<div class="cell-flex-wrapper">
 														<span 
 															class="table__cell-content clickable-value {copiedItems.has(`${report.id}-title`) ? 'copied-value' : ''}"
@@ -1182,7 +1182,7 @@
 														{/if}
 													</div>
 												</td>
-												<td class="table__cell table__cell--report-name" data-tooltip={report.report_name}>
+												<td class="table__cell table__cell--report-name" data-tooltip={copiedItems.has(`${report.id}-name`) ? '✓ Copied!' : `${report.report_name}  · Click to copy`}>
 													<span 
 														class="report-name-text clickable-value {copiedItems.has(`${report.id}-name`) ? 'copied-value' : ''}"
 														onclick={() => copyToClipboard(report.report_name, 'Report Name', `${report.id}-name`)}
@@ -1190,29 +1190,26 @@
 														{report.report_name}
 													</span>
 												</td>
-												<td class="table__cell">
+												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-total-assets`) ? '✓ Copied!' : `Total Assets: ${report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}  · Click to copy`}>
 													<span 
 														class="clickable-value {copiedItems.has(`${report.id}-total-assets`) ? 'copied-value' : ''}"
 														onclick={() => copyToClipboard(report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A', 'Total Assets', `${report.id}-total-assets`)}
-														title={copiedItems.has(`${report.id}-total-assets`) ? 'Copied!' : 'Click to copy Total Assets'}
 													>
 														{report.dist_mains_length ? `${Number(report.dist_mains_length).toFixed(2)} km` : 'N/A'}
 													</span>
 												</td>
-												<td class="table__cell">
+												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-coverage`) ? '✓ Copied!' : `Coverage: ${report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}  · Click to copy`}>
 													<span 
 														class="clickable-value {copiedItems.has(`${report.id}-coverage`) ? 'copied-value' : ''} {(report.dist_mains_coverage || 0) > 0.9 ? 'value--high-quality' : ''}"
 														onclick={() => copyToClipboard(report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A', 'Coverage %', `${report.id}-coverage`)}
-														title={copiedItems.has(`${report.id}-coverage`) ? 'Copied!' : 'Click to copy Coverage %'}
 													>
 														{report.dist_mains_coverage ? `${Number(report.dist_mains_coverage * 100).toFixed(1)}%` : 'N/A'}
 													</span>
 												</td>
-												<td class="table__cell">
+												<td class="table__cell" data-tooltip={copiedItems.has(`${report.id}-assets-covered`) ? '✓ Copied!' : `Assets Covered: ${report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}  · Click to copy`}>
 													<span 
 														class="clickable-value {copiedItems.has(`${report.id}-assets-covered`) ? 'copied-value' : ''}"
 														onclick={() => copyToClipboard(report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A', 'Assets Covered', `${report.id}-assets-covered`)}
-														title={copiedItems.has(`${report.id}-assets-covered`) ? 'Copied!' : 'Click to copy Assets Covered'}
 													>
 														{report.dist_mains_covered_length ? `${Number(report.dist_mains_covered_length).toFixed(2)} km` : 'N/A'}
 													</span>
@@ -2088,23 +2085,16 @@
 	}
 
 	/* =============================================
-	   HOVER TOOLTIPS for truncated cells
+	   UNIFIED HOVER TOOLTIPS for all data cells
 	   Uses data-tooltip attr + ::after pseudo-element
 	   ============================================= */
 
-	/* All tooltip cells need relative positioning; overflow visible on hover for tooltip */
-	.table__cell--report-date,
-	.table__cell--report-title,
-	.table__cell--report-name {
+	/* Any cell with a tooltip needs relative + overflow visible on hover */
+	[data-tooltip] {
 		position: relative;
-		cursor: default;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
-	.table__cell--report-date:hover,
-	.table__cell--report-title:hover,
-	.table__cell--report-name:hover {
+	[data-tooltip]:hover {
 		overflow: visible !important;
 		z-index: 100;
 	}
@@ -2113,41 +2103,41 @@
 	[data-tooltip]:hover::after {
 		content: attr(data-tooltip);
 		position: absolute;
-		bottom: calc(100% + 6px);
+		bottom: calc(100% + 8px);
 		left: 0;
-		padding: 0.6rem 0.85rem;
-		background: #1e40af;
-		color: #ffffff;
+		padding: 0.5rem 0.75rem;
+		background: #1e293b;
+		color: #e2e8f0;
 		border-radius: 6px;
 		white-space: normal;
 		word-break: break-word;
 		font-size: 0.8rem;
-		font-weight: 500;
-		line-height: 1.45;
+		font-weight: 400;
+		line-height: 1.5;
 		z-index: 9999;
 		pointer-events: none;
-		max-width: 500px;
-		min-width: 180px;
+		max-width: 480px;
+		min-width: 120px;
 		width: max-content;
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
-		animation: tooltip-fade-in 0.15s ease;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
+		animation: tooltip-fade-in 0.12s ease;
 	}
 
 	/* Arrow pointing down */
 	[data-tooltip]:hover::before {
 		content: '';
 		position: absolute;
-		bottom: calc(100% + 1px);
-		left: 24px;
+		bottom: calc(100% + 3px);
+		left: 20px;
 		border: 5px solid transparent;
-		border-top-color: #1e40af;
+		border-top-color: #1e293b;
 		z-index: 9999;
 		pointer-events: none;
-		animation: tooltip-fade-in 0.15s ease;
+		animation: tooltip-fade-in 0.12s ease;
 	}
 
 	@keyframes tooltip-fade-in {
-		from { opacity: 0; transform: translateY(4px); }
+		from { opacity: 0; transform: translateY(3px); }
 		to   { opacity: 1; transform: translateY(0); }
 	}
 	
