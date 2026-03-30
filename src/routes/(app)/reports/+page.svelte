@@ -1158,17 +1158,16 @@
 														<span class="sr-only">Select {report.report_name}</span>
 													</label>
 												</td>
-												<td class="table__cell table__cell--report-date" data-tooltip={report.report_title}>
+												<td class="table__cell table__cell--report-date" data-tooltip={formatDateTime(report.report_date)}>
 													<div class="report-date-content">
 														{formatDateTime(report.report_date)}
 													</div>
 												</td>
-												<td class="table__cell table__cell--report-title" title={report.report_title}>
+												<td class="table__cell table__cell--report-title" data-tooltip={report.report_title}>
 													<div class="cell-flex-wrapper">
 														<span 
 															class="table__cell-content clickable-value {copiedItems.has(`${report.id}-title`) ? 'copied-value' : ''}"
 															onclick={() => copyToClipboard(report.report_title, 'Report Title', `${report.id}-title`)}
-															title={copiedItems.has(`${report.id}-title`) ? 'Copied!' : 'Click to copy Report Title'}
 														>
 															{report.report_title}
 														</span>
@@ -1183,11 +1182,10 @@
 														{/if}
 													</div>
 												</td>
-												<td class="table__cell table__cell--report-name" title={report.report_name}>
+												<td class="table__cell table__cell--report-name" data-tooltip={report.report_name}>
 													<span 
 														class="report-name-text clickable-value {copiedItems.has(`${report.id}-name`) ? 'copied-value' : ''}"
 														onclick={() => copyToClipboard(report.report_name, 'Report Name', `${report.id}-name`)}
-														title={copiedItems.has(`${report.id}-name`) ? 'Copied!' : 'Click to copy Report Name'}
 													>
 														{report.report_name}
 													</span>
@@ -2058,17 +2056,13 @@
 	.table__row > .table__cell:nth-child(13) { width: var(--col-surveyor_unit_desc-width); min-width: var(--col-surveyor_unit_desc-width); }
 	.table__row > .table__cell:nth-child(14) { width: var(--col-report_final-width); min-width: var(--col-report_final-width); }
 
-	/* Ensure report date tooltip works properly */
+	/* Report date content */
 	.report-date-content {
 		display: block;
 		width: 100%;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		cursor: help;
-		position: relative;
-		z-index: 1;
-		pointer-events: auto;
 	}
 	
 	/* Inner flex wrapper for report title cell (flex on td breaks table-layout) */
@@ -2081,57 +2075,80 @@
 		overflow: hidden;
 	}
 
-	/* Prevent tooltip interference from adjacent cells */
+	/* Clickable text in title/name cells */
 	.table__cell--report-title .clickable-value {
 		pointer-events: auto;
-		position: relative;
-		z-index: 2;
 		display: block;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		flex: 1;
-		min-width: 0; /* Allow flex item to shrink below content size */
+		min-width: 0;
+		cursor: pointer;
 	}
 
-	/* Override tables.css overflow for report date to allow tooltip */
-	.table--reports .table__cell--report-date {
-		overflow: visible !important;
+	/* =============================================
+	   HOVER TOOLTIPS for truncated cells
+	   Uses data-tooltip attr + ::after pseudo-element
+	   ============================================= */
+
+	/* All tooltip cells need relative positioning; overflow visible on hover for tooltip */
+	.table__cell--report-date,
+	.table__cell--report-title,
+	.table__cell--report-name {
 		position: relative;
-		isolation: isolate;
+		cursor: default;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
-	
-	/* Native tooltip for report date using data attribute */
-	.table__cell--report-date[data-tooltip]:hover::after {
+
+	.table__cell--report-date:hover,
+	.table__cell--report-title:hover,
+	.table__cell--report-name:hover {
+		overflow: visible !important;
+		z-index: 100;
+	}
+
+	/* Tooltip bubble */
+	[data-tooltip]:hover::after {
 		content: attr(data-tooltip);
 		position: absolute;
-		bottom: 100%;
-		left: 50%;
-		transform: translateX(-50%);
-		padding: 0.5rem 1rem;
-		background: rgba(0, 0, 0, 0.9);
-		color: white;
-		border-radius: 4px;
-		white-space: nowrap;
-		font-size: 0.875rem;
-		z-index: 1000;
+		bottom: calc(100% + 6px);
+		left: 0;
+		padding: 0.5rem 0.75rem;
+		background: rgba(15, 23, 42, 0.95);
+		color: #f1f5f9;
+		border-radius: 6px;
+		white-space: normal;
+		word-break: break-word;
+		font-size: 0.8rem;
+		line-height: 1.45;
+		z-index: 9999;
 		pointer-events: none;
-		max-width: 400px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		margin-bottom: 0.25rem;
+		max-width: 500px;
+		min-width: 180px;
+		width: max-content;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		animation: tooltip-fade-in 0.15s ease;
 	}
-	
-	.table__cell--report-date[data-tooltip]:hover::before {
+
+	/* Arrow pointing down */
+	[data-tooltip]:hover::before {
 		content: '';
 		position: absolute;
-		bottom: 100%;
-		left: 50%;
-		transform: translateX(-50%);
+		bottom: calc(100% + 1px);
+		left: 24px;
 		border: 5px solid transparent;
-		border-top-color: rgba(0, 0, 0, 0.9);
-		z-index: 1000;
+		border-top-color: rgba(15, 23, 42, 0.95);
+		z-index: 9999;
 		pointer-events: none;
+		animation: tooltip-fade-in 0.15s ease;
+	}
+
+	@keyframes tooltip-fade-in {
+		from { opacity: 0; transform: translateY(4px); }
+		to   { opacity: 1; transform: translateY(0); }
 	}
 	
 	/* Ensure deletable badge icon shows properly */
