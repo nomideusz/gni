@@ -9,7 +9,6 @@
 		car1Distance?: number;
 		car2Distance?: number;
 		car3Distance?: number;
-		car4Distance?: number;
 	}
 
 	let { 
@@ -20,8 +19,7 @@
 		totalGaps = 0,
 		car1Distance = 0,
 		car2Distance = 0,
-		car3Distance = 0,
-		car4Distance = 0
+		car3Distance = 0
 	}: Props = $props();
 </script>
 
@@ -104,12 +102,7 @@
 				</div>
 			</div>
 			
-			<div class="stats-metric stats-metric--vehicle">
-				<div class="stats-content">
-					<div class="stats-value">{car4Distance.toFixed(1)}</div>
-					<div class="stats-label">Car #4 (km)</div>
-				</div>
-			</div>
+
 		</div>
 	</div>
 </div>

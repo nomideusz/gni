@@ -15,6 +15,7 @@
 	import Eye from 'lucide-svelte/icons/eye';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import Archive from 'lucide-svelte/icons/archive';
 	import Menu from 'lucide-svelte/icons/menu';
 	import X from 'lucide-svelte/icons/x';
 	import Loader from 'lucide-svelte/icons/loader';
@@ -378,13 +379,7 @@
 									<span class="mobile-nav__text">{t('nav.reports', $language)}</span>
 								</a>
 							</li>
-							<li class="mobile-nav__item">
-								<a href="/settings" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/settings')} onclick={closeMobileNav}>
-									<Settings size={20} class="mobile-nav__icon" />
-									<span class="mobile-nav__text">{t('nav.settings', $language)}</span>
-								</a>
-							</li>
-						</ul>
+							</ul>
 					</div>
 					
 					{#if data.isAuthenticated}
@@ -408,6 +403,35 @@
 						</ul>
 					</div>
 					{/if}
+					
+					<div class="mobile-nav__section mobile-nav__section--dimmed">
+						<h3 class="mobile-nav__heading">Archive (2025)</h3>
+						<ul class="mobile-nav__list">
+							<li class="mobile-nav__item">
+								<a href="/archive/dashboard" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/archive/dashboard')} onclick={closeMobileNav}>
+									<Archive size={20} class="mobile-nav__icon" />
+									<span class="mobile-nav__text">Dashboard (2025)</span>
+								</a>
+							</li>
+							<li class="mobile-nav__item">
+								<a href="/archive/reports" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/archive/reports')} onclick={closeMobileNav}>
+									<Archive size={20} class="mobile-nav__icon" />
+									<span class="mobile-nav__text">Reports (2025)</span>
+								</a>
+							</li>
+						</ul>
+					</div>
+					
+					<div class="mobile-nav__section">
+						<ul class="mobile-nav__list">
+							<li class="mobile-nav__item">
+								<a href="/settings" class="mobile-nav__link" class:mobile-nav__link--active={isActive('/settings')} onclick={closeMobileNav}>
+									<Settings size={20} class="mobile-nav__icon" />
+									<span class="mobile-nav__text">{t('nav.settings', $language)}</span>
+								</a>
+							</li>
+						</ul>
+					</div>
 				</div>
 			</nav>
 		</div>
@@ -508,14 +532,6 @@
 							{/if}
 						</a>
 					</li>
-					<li class="nav__item" class:nav__item--active={isActive('/settings')}>
-						<a href="/settings" class="nav__link" title="{t('nav.settings', $language)}">
-							<Settings size={20} class="nav__icon" />
-							{#if !isNavCollapsed}
-							<span class="nav__text">{t('nav.settings', $language)}</span>
-							{/if}
-						</a>
-					</li>
 				</ul>
 			</div>
 			
@@ -546,6 +562,44 @@
 				</ul>
 			</div>
 			{/if}
+			
+			<div class="nav__section nav__section--dimmed">
+				{#if !isNavCollapsed}
+				<h3 class="nav__heading">Archive (2025)</h3>
+				{/if}
+				<ul class="nav__list">
+					<li class="nav__item" class:nav__item--active={isActive('/archive/dashboard')}>
+						<a href="/archive/dashboard" class="nav__link" title="Dashboard (2025)">
+							<Archive size={20} class="nav__icon" />
+							{#if !isNavCollapsed}
+							<span class="nav__text">Dashboard</span>
+							{/if}
+						</a>
+					</li>
+					<li class="nav__item" class:nav__item--active={isActive('/archive/reports')}>
+						<a href="/archive/reports" class="nav__link" title="Reports (2025)">
+							<Archive size={20} class="nav__icon" />
+							{#if !isNavCollapsed}
+							<span class="nav__text">Reports</span>
+							{/if}
+						</a>
+					</li>
+				</ul>
+			</div>
+			
+			</div>
+			
+			<div class="nav__footer">
+				<ul class="nav__list">
+					<li class="nav__item" class:nav__item--active={isActive('/settings')}>
+						<a href="/settings" class="nav__link" title="{t('nav.settings', $language)}">
+							<Settings size={20} class="nav__icon" />
+							{#if !isNavCollapsed}
+							<span class="nav__text">{t('nav.settings', $language)}</span>
+							{/if}
+						</a>
+					</li>
+				</ul>
 			</div>
 		</nav>
 

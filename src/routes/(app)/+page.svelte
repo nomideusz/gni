@@ -21,7 +21,7 @@
 	import Activity from 'lucide-svelte/icons/activity';
 import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
 import Calendar from 'lucide-svelte/icons/calendar';
-import RefreshCw from 'lucide-svelte/icons/refresh-cw';
+import RealtimeIndicator from '$lib/components/RealtimeIndicator.svelte';
 
 	// Recommended way to access data in SvelteKit with Svelte 5
 	const { data } = $props();
@@ -44,23 +44,19 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	let car1Distance = $state(0);
 	let car2Distance = $state(0);
 	let car3Distance = $state(0);
-	let car4Distance = $state(0);
 	let totalDraftDistance = $state(0);
 	let car1DraftDistance = $state(0);
 	let car2DraftDistance = $state(0);
 	let car3DraftDistance = $state(0);
-	let car4DraftDistance = $state(0);
 	let totalIndications = $state(0);
 	let totalGaps = $state(0);
 	let car1LisaCount = $state(0);
 	let car2LisaCount = $state(0);
 	let car3LisaCount = $state(0);
-	let car4LisaCount = $state(0);
 	let totalLisaPerKm = $state(0);
 	let car1LisaPerKm = $state(0);
 	let car2LisaPerKm = $state(0);
 	let car3LisaPerKm = $state(0);
-	let car4LisaPerKm = $state(0);
 	let weeklyTargetKm = $state(200);
 	let dailyTargetKm = $state(40);
 	let weeklyProgress = $state(0);
@@ -102,23 +98,19 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 				car1Distance = apiData.stats.car1Distance || 0;
 				car2Distance = apiData.stats.car2Distance || 0;
 				car3Distance = apiData.stats.car3Distance || 0;
-				car4Distance = apiData.stats.car4Distance || 0;
 				totalDraftDistance = apiData.stats.totalDraftDistance || 0;
 				car1DraftDistance = apiData.stats.car1DraftDistance || 0;
 				car2DraftDistance = apiData.stats.car2DraftDistance || 0;
 				car3DraftDistance = apiData.stats.car3DraftDistance || 0;
-				car4DraftDistance = apiData.stats.car4DraftDistance || 0;
 				totalIndications = apiData.stats.totalIndications || 0;
 				totalGaps = apiData.stats.totalGaps || 0;
 				car1LisaCount = apiData.stats.car1LisaCount || 0;
 				car2LisaCount = apiData.stats.car2LisaCount || 0;
 				car3LisaCount = apiData.stats.car3LisaCount || 0;
-				car4LisaCount = apiData.stats.car4LisaCount || 0;
 				totalLisaPerKm = apiData.stats.totalLisaPerKm || 0;
 				car1LisaPerKm = apiData.stats.car1LisaPerKm || 0;
 				car2LisaPerKm = apiData.stats.car2LisaPerKm || 0;
 				car3LisaPerKm = apiData.stats.car3LisaPerKm || 0;
-				car4LisaPerKm = apiData.stats.car4LisaPerKm || 0;
 				weeklyTargetKm = apiData.stats.weeklyTargetKm || 200;
 				dailyTargetKm = apiData.stats.dailyTargetKm || 40;
 				weeklyProgress = apiData.stats.weeklyProgress || 0;
@@ -398,9 +390,7 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 				car2Distance,
 				car2DraftDistance,
 				car3Distance,
-				car3DraftDistance,
-				car4Distance,
-				car4DraftDistance
+				car3DraftDistance
 			},
 			syncInfo,
 			error,
@@ -462,23 +452,19 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 						car1Distance = dashData.stats.car1Distance || 0;
 						car2Distance = dashData.stats.car2Distance || 0;
 						car3Distance = dashData.stats.car3Distance || 0;
-						car4Distance = dashData.stats.car4Distance || 0;
 						totalDraftDistance = dashData.stats.totalDraftDistance || 0;
 						car1DraftDistance = dashData.stats.car1DraftDistance || 0;
 						car2DraftDistance = dashData.stats.car2DraftDistance || 0;
 						car3DraftDistance = dashData.stats.car3DraftDistance || 0;
-						car4DraftDistance = dashData.stats.car4DraftDistance || 0;
 						totalIndications = dashData.stats.totalIndications || 0;
 						totalGaps = dashData.stats.totalGaps || 0;
 						car1LisaCount = dashData.stats.car1LisaCount || 0;
 						car2LisaCount = dashData.stats.car2LisaCount || 0;
 						car3LisaCount = dashData.stats.car3LisaCount || 0;
-						car4LisaCount = dashData.stats.car4LisaCount || 0;
 						totalLisaPerKm = dashData.stats.totalLisaPerKm || 0;
 						car1LisaPerKm = dashData.stats.car1LisaPerKm || 0;
 						car2LisaPerKm = dashData.stats.car2LisaPerKm || 0;
 						car3LisaPerKm = dashData.stats.car3LisaPerKm || 0;
-						car4LisaPerKm = dashData.stats.car4LisaPerKm || 0;
 						// These fields might not exist on initial load from server
 						weeklyTargetKm = (dashData.stats as any).weeklyTargetKm || 200;
 						dailyTargetKm = (dashData.stats as any).dailyTargetKm || 40;
@@ -619,25 +605,11 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	fullWidth={true}
 >
 	{#snippet pageActions()}
+		<RealtimeIndicator onRefresh={() => reloadDashboardData(timePeriod)} {syncInfo} />
 		<a href="/reports" class="button button--primary">
 			<FileText size={18} />
 			{t('dashboard.viewAllReports', $language)}
 		</a>
-		{#if syncInfo}
-			<div class="sync-info">
-				<RefreshCw size={16} class="sync-info__icon" />
-				<span class="sync-info__text">
-					{t('dashboard.lastSynced', $language)}: {syncInfo.last_sync
-						? formatDateTime(syncInfo.last_sync)
-						: syncInfo.last_sync_success
-							? formatDateTime(syncInfo.last_sync_success)
-							: 'Never'}
-				</span>
-				<span class="sync-info__status sync-info__status--{syncInfo.sync_status || 'pending'}">
-					{syncInfo.sync_status || 'Unknown'}
-				</span>
-			</div>
-		{/if}
 	{/snippet}
 	
 	{#snippet content()}
@@ -774,22 +746,7 @@ import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 							</div>
 						</div>
 
-						<div class="metric-card metric-card--compact {statsLoading ? 'metric-card--loading' : ''}">
-							<div class="metric-card__icon metric-card__icon--compact">
-								<Car size={20} />
-							</div>
-							<div class="metric-card__content">
-								<span class="metric-card__label">GNI Car #4</span>
-								<div class="metric-card__value metric-card__value--compact">
-									{#if statsLoading}
-										<div class="skeleton-text"></div>
-									{:else}
-										{car4Distance.toFixed(1)} km
-										<span class="metric-card__sub">({car4DraftDistance.toFixed(1)} draft)</span>
-									{/if}
-								</div>
-							</div>
-						</div>
+	
 					</div>
 				</div>
 

@@ -75,7 +75,7 @@ export const gasReportsApi = {
     try {
       return await pb.collection('gas_reports').getFullList<GasReport>({
         sort: sortField,
-        filter: 'report_date >= "2025-07-01"'
+        filter: 'report_date >= "2026-01-01"'
       });
     } catch (error) {
       console.error('Error fetching gas reports:', error);
@@ -117,7 +117,7 @@ export const gasReportsApi = {
     
     try {
       // Combine date filter with user provided filter
-      const dateFilter = 'report_date >= "2025-07-01"';
+      const dateFilter = 'report_date >= "2026-01-01"';
       const combinedFilter = filter ? `${dateFilter} && (${filter})` : dateFilter;
       
       return await pb.collection('gas_reports').getList<GasReport>(page, perPage, {

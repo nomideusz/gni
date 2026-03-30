@@ -7,6 +7,7 @@
 
 .dashboard {
     width: 100%;
+    font-family: 'Exo 2', var(--ui-font);
 }
 
 /* Sync info */

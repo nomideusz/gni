@@ -182,6 +182,15 @@
     background-color: rgba(59, 130, 246, 0.15) !important;
 }
 
+/* Muted row styling (test reports excluded from stats) */
+.table__row--muted {
+    opacity: 0.4;
+}
+
+.table__row--muted:hover {
+    opacity: 0.6;
+}
+
 /* Filtered row styling */
 .table__row--filtered {
     opacity: 0.65;

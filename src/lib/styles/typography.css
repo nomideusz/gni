@@ -29,7 +29,6 @@
 }
 
 * {
-  font-family: var(--ui-font);
   color: var(--default-text-color);
 }
 

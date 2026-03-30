@@ -10,6 +10,7 @@
 	import ReportsStatsCard from '$lib/components/ReportsStatsCard.svelte';
 	import ExportControls from '$lib/components/ExportControls.svelte';
 	import ReportsFilters from '$lib/components/ReportsFilters.svelte';
+	import RealtimeIndicator from '$lib/components/RealtimeIndicator.svelte';
 
 	// Define Report interface based on the API response
 	interface Report {
@@ -48,7 +49,6 @@
 	let car1Distance = $state(0);
 	let car2Distance = $state(0);
 	let car3Distance = $state(0);
-	let car4Distance = $state(0);
 	
 	let reports = $state<Report[]>([]);
 	let displayedReports = $state<Report[]>([]);
@@ -801,7 +801,6 @@
 			car1Distance = result.stats.car1Distance || 0;
 			car2Distance = result.stats.car2Distance || 0;
 			car3Distance = result.stats.car3Distance || 0;
-			car4Distance = result.stats.car4Distance || 0;
 			
 			// Fetch sync info from centralized API
 							try {
@@ -852,12 +851,12 @@
 
 <PageTemplate title={t('reports.title', $language)} fullWidth={true}>
 	{#snippet pageActions()}
+		<RealtimeIndicator onRefresh={loadData} {syncInfo} />
 		<ExportControls 
 			{selectedReports}
 			{reportFilter}
 			{includeSurveysOnly}
 			{displayedReports}
-			{syncInfo}
 			onClearSelections={clearAllSelections}
 			onExport={exportToExcel}
 		/>
@@ -894,7 +893,6 @@
 						{car1Distance}
 						{car2Distance}
 						{car3Distance}
-						{car4Distance}
 					/>
 
 					<!-- Filter Controls -->
@@ -1132,7 +1130,7 @@
 											{@const hasSurveys = (report.expand?.driving_sessions?.length ?? 0) > 0}
 											{@const isExpanded = expandedReports.has(report.id)}
 											{@const deletableInfo = isReportDeletable(report)}
-											<tr class="table__row">
+											<tr class="table__row {report.is_muted ? 'table__row--muted' : ''}">
 												<td class="table__cell table__cell--expand">
 													{#if hasSurveys}
 														<button 

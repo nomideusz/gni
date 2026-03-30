@@ -34,8 +34,17 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         
         console.log('API: Query parameters:', { limit, page, sort, finalOnly, includeUnitDesc, withSurveys, timePeriod });
         
-        // Prepare filtering with date constraint (only data after July 1st, 2025)
-        let dateFilter = 'report_date >= "2025-07-01"';
+        // Prepare filtering with date constraint (new project: 2026+)
+        // Exclude test/automatic deliverable reports from all queries and stats
+        const excludedReports = [
+            'B25R2 - LEINSTER NORTH EAST - NAVAN #1 TEST AUTOMATIC DELIVERABLE'
+        ];
+        // Reports shown in UI but excluded from all stats calculations
+        const mutedReports = [
+            'CR-E3D27E'
+        ];
+        const excludeFilter = excludedReports.map(name => `report_name != "${name}"`).join(' && ');
+        let dateFilter = `report_date >= "2026-01-01" && ${excludeFilter}`;
         
         // Add time period filter
         const now = new Date();
@@ -210,6 +219,9 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             }
             
             // Add field_of_view_gaps count from expanded relation
+            // Flag muted reports (visible but excluded from stats)
+            convertedItem.is_muted = mutedReports.includes(convertedItem.report_name);
+            
             convertedItem.fieldOfViewGapsCount = 0;
             
             if (convertedItem.expand && convertedItem.expand.field_of_view_gaps) {
@@ -240,22 +252,20 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         
         // ======= USE ALL FINAL REPORTS FOR CALCULATIONS (WITH OR WITHOUT SURVEYS) =======
         // Include all final reports in calculations to ensure complete statistics
-        const calculationReports = processedItems.filter((r: any) => 
-            (r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true')
-        );
+        // Helper: check if report is final
+        const isFinal = (r: any) => r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true';
+        
+        const calculationReports = processedItems.filter((r: any) => isFinal(r));
         
         // ======= FINAL REPORTS WITH SURVEYS FOR DETAILED ANALYTICS =======
-        // Track final reports with surveys for detailed analytics like LISA counting
+        // Exclude muted reports from all stats calculations
         const finalReportsWithSurveys = processedItems.filter((r: any) => 
-            r.has_surveys && 
-            (r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true')
+            r.has_surveys && isFinal(r) && !r.is_muted
         );
         
         // ======= DRAFT REPORTS WITH SURVEYS FOR SEPARATE TRACKING =======
-        // Track draft reports separately to show progress before finalization
         const draftReportsWithSurveys = processedItems.filter((r: any) => 
-            r.has_surveys && 
-            !(r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true')
+            r.has_surveys && !isFinal(r) && !r.is_muted
         );
         
         // Count reports by status
@@ -295,12 +305,7 @@ export const GET = async ({ url, locals }: RequestEvent) => {
                 return sum + distance;
             }, 0);
 
-        const car4Distance = finalReportsWithSurveys
-            .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #4')
-            .reduce((sum: number, report: any) => {
-                const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
-                return sum + distance;
-            }, 0);
+
         
         // Calculate total distance for draft reports with surveys
         const totalDraftDistance = draftReportsWithSurveys.reduce((sum: number, report: any) => {
@@ -330,12 +335,7 @@ export const GET = async ({ url, locals }: RequestEvent) => {
                 return sum + distance;
             }, 0);
 
-        const car4DraftDistance = draftReportsWithSurveys
-            .filter((r: any) => r.surveyor_unit_desc === 'GNI Car #4')
-            .reduce((sum: number, report: any) => {
-                const distance = report.dist_mains_covered_length ? Number(report.dist_mains_covered_length) : 0;
-                return sum + distance;
-            }, 0);
+
         
         // Get all unique LISAs from final reports with surveys (LISA data only comes from surveys)
         const allUniqueIndications = new Map();
@@ -372,16 +372,14 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             (indication: any) => indication.surveyor_unit_desc === 'GNI Car #3'
         ).length;
 
-        const uniqueCar4Indications = uniqueIndicationsArray.filter(
-            (indication: any) => indication.surveyor_unit_desc === 'GNI Car #4'
-        ).length;
+
         
         // Calculate LISA per km metrics using unique indications
         const totalLisaPerKm = totalDistance > 0 ? (totalUniqueIndications / totalDistance) : 0;
         const car1LisaPerKm = car1Distance > 0 ? (uniqueCar1Indications / car1Distance) : 0;
         const car2LisaPerKm = car2Distance > 0 ? (uniqueCar2Indications / car2Distance) : 0;
         const car3LisaPerKm = car3Distance > 0 ? (uniqueCar3Indications / car3Distance) : 0;
-        const car4LisaPerKm = car4Distance > 0 ? (uniqueCar4Indications / car4Distance) : 0;
+
         
         // Calculate total gaps from final reports with surveys (gaps data only comes from surveys)
         const totalGaps = finalReportsWithSurveys.reduce((sum: number, report: any) => {
@@ -399,7 +397,7 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         const car1WorkHours = 0;
         const car2WorkHours = 0;
         const car3WorkHours = 0;
-        const car4WorkHours = 0;
+
         
         // Weekly targets (configurable)
         const WEEKLY_TARGET_KM = 200; // Client's weekly target in km
@@ -418,29 +416,29 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             car1Distance,
             car2Distance,
             car3Distance,
-            car4Distance,
+
             totalDraftDistance,
             car1DraftDistance,
             car2DraftDistance,
             car3DraftDistance,
-            car4DraftDistance,
+
             totalGaps,
             totalIndications: totalUniqueIndications,
             totalRawIndications: finalReportsWithSurveys.reduce((sum, item: any) => sum + (item.indicationsCount || 0), 0),
             car1LisaCount: uniqueCar1Indications,
             car2LisaCount: uniqueCar2Indications,
             car3LisaCount: uniqueCar3Indications,
-            car4LisaCount: uniqueCar4Indications,
+
             totalLisaPerKm,
             car1LisaPerKm,
             car2LisaPerKm,
             car3LisaPerKm,
-            car4LisaPerKm,
+
             totalWorkHours,
             car1WorkHours,
             car2WorkHours,
             car3WorkHours,
-            car4WorkHours,
+
             // Target tracking
             weeklyTargetKm: WEEKLY_TARGET_KM,
             dailyTargetKm: DAILY_TARGET_KM,
