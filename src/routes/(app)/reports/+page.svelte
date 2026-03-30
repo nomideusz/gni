@@ -121,11 +121,13 @@
 			// Show success feedback
 			copiedItems.add(itemId);
 			copiedItems = new Set(copiedItems); // Trigger reactivity
+			refreshTooltipContent();
 			
 			// Remove feedback after 1.5 seconds
 			setTimeout(() => {
 				copiedItems.delete(itemId);
 				copiedItems = new Set(copiedItems); // Trigger reactivity
+				refreshTooltipContent();
 			}, 1500);
 		} catch (err) {
 			console.error('Failed to copy text: ', err);
@@ -142,9 +144,11 @@
 				// Show success feedback for fallback too
 				copiedItems.add(itemId);
 				copiedItems = new Set(copiedItems);
+				refreshTooltipContent();
 				setTimeout(() => {
 					copiedItems.delete(itemId);
 					copiedItems = new Set(copiedItems);
+					refreshTooltipContent();
 				}, 1500);
 			} catch (fallbackErr) {
 				console.error('Fallback copy failed: ', fallbackErr);
@@ -837,17 +841,30 @@
 	let tooltipHint = $state('');
 	let tooltipX = $state(0);
 	let tooltipY = $state(0);
+	let lastTooltipTarget: HTMLElement | null = null;
+
+	function refreshTooltipContent() {
+		if (!lastTooltipTarget || !tooltipVisible) return;
+		// Re-read from DOM after Svelte updates the attributes
+		tick().then(() => {
+			if (!lastTooltipTarget) return;
+			tooltipContent = lastTooltipTarget.getAttribute('data-tooltip') || '';
+			tooltipHint = lastTooltipTarget.getAttribute('data-tooltip-hint') || '';
+		});
+	}
 
 	function handleTooltipMouseMove(e: MouseEvent) {
-		const cell = (e.target as HTMLElement).closest('[data-tooltip]') as HTMLElement | null;
-		if (!cell) {
+		const el = (e.target as HTMLElement).closest('[data-tooltip]') as HTMLElement | null;
+		if (!el) {
 			tooltipVisible = false;
+			lastTooltipTarget = null;
 			return;
 		}
-		const text = cell.getAttribute('data-tooltip') || '';
-		const hint = cell.getAttribute('data-tooltip-hint') || '';
-		if (!text) { tooltipVisible = false; return; }
+		const text = el.getAttribute('data-tooltip') || '';
+		const hint = el.getAttribute('data-tooltip-hint') || '';
+		if (!text) { tooltipVisible = false; lastTooltipTarget = null; return; }
 
+		lastTooltipTarget = el;
 		tooltipContent = text;
 		tooltipHint = hint;
 		tooltipX = e.clientX + 12;
@@ -869,6 +886,7 @@
 
 	function handleTooltipMouseLeave() {
 		tooltipVisible = false;
+		lastTooltipTarget = null;
 	}
 
 	onMount(() => {
