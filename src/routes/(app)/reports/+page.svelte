@@ -2099,11 +2099,11 @@
 		z-index: 100;
 	}
 
-	/* Tooltip bubble */
+	/* Tooltip bubble — positioned below the cell, near the cursor */
 	[data-tooltip]:hover::after {
 		content: attr(data-tooltip);
 		position: absolute;
-		bottom: calc(100% + 8px);
+		top: calc(100% + 6px);
 		left: 0;
 		padding: 0.5rem 0.75rem;
 		background: #1e293b;
@@ -2130,21 +2130,21 @@
 		color: #f1f5f9;
 	}
 
-	/* Arrow pointing down */
+	/* Arrow pointing up from tooltip */
 	[data-tooltip]:hover::before {
 		content: '';
 		position: absolute;
-		bottom: calc(100% + 3px);
+		top: calc(100% + 1px);
 		left: 20px;
 		border: 5px solid transparent;
-		border-top-color: #1e293b;
+		border-bottom-color: #1e293b;
 		z-index: 9999;
 		pointer-events: none;
 		animation: tooltip-fade-in 0.12s ease;
 	}
 
 	@keyframes tooltip-fade-in {
-		from { opacity: 0; transform: translateY(3px); }
+		from { opacity: 0; transform: translateY(-3px); }
 		to   { opacity: 1; transform: translateY(0); }
 	}
 	
