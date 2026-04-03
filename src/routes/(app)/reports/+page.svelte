@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { t, language } from '$lib';
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import { reportsApi, formatDate, formatDateTime } from '$lib/pocketbase';
+	import { getBaseTitle, isFinalReport, isReportDeletable } from '$lib/report-utils';
 	import { tick } from 'svelte';
 	import PageTemplate from '$lib/components/PageTemplate.svelte';
 	import SectionContainer from '$lib/components/SectionContainer.svelte';
@@ -72,6 +74,7 @@
 	
 	// Selection state - track which reports are selected for export
 	let selectedReports = $state<Set<string>>(new Set());
+
 
 
 
@@ -167,95 +170,9 @@
 		return displayedReports.filter(r => selectedReports.has(r.id));
 	});
 
-	// Helper function to determine if a report is deletable
-	function isReportDeletable(report: Report): { isDeletable: boolean; reason: string } {
-		const reportTitle = report.report_title || '';
-		const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
-		const isDraft = report.report_final === false || report.report_final === 0 || report.report_final === '0' || !report.report_final;
-		
-		// Check for exact title duplicates with conflicting final/draft states
-		const hasExactDuplicate = reports.some(otherReport => 
-			otherReport.id !== report.id && 
-			otherReport.report_title === reportTitle &&
-			reportTitle.trim() !== '' && // Don't match empty titles
-			((isFinal && (otherReport.report_final === false || otherReport.report_final === 0 || otherReport.report_final === '0' || !otherReport.report_final)) ||
-			 (isDraft && (otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1')))
-		);
-		
-		if (hasExactDuplicate) {
-			return { isDeletable: true, reason: 'Duplicate title with conflicting status' };
-		}
-		
-		// Check for temporary reports
-		const tempPatterns = [
-			/\s+Temp\s*$/i,           // " Temp"
-			/\s+Temp\s+\d+S\s*$/i,    // " Temp 1S", " Temp 2S", etc.
-			/\s+Temp\d+\s*$/i,        // " Temp1", " Temp2", etc.
-			/\s+TEMP\s*$/i,           // " TEMP" (uppercase)
-			/\s+TEMP\s+\d+S\s*$/i,    // " TEMP 1S", " TEMP 2S", etc.
-		];
-		
-		const isTempReport = tempPatterns.some(pattern => pattern.test(reportTitle));
-		
-		if (isTempReport) {
-			// Extract base title
-			let baseTitle = reportTitle;
-			for (const pattern of tempPatterns) {
-				if (pattern.test(reportTitle)) {
-					baseTitle = reportTitle.replace(pattern, '').trim();
-					break;
-				}
-			}
-			
-			// Check if there's a corresponding final report
-			const hasFinalVersion = reports.some(otherReport => {
-				const otherIsFinal = otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1';
-				if (!otherIsFinal) return false;
-				
-				return otherReport.id !== report.id && (
-					otherReport.report_title === baseTitle || // Exact match
-					otherReport.report_title === baseTitle + " Final" // Match with " Final" suffix
-				);
-			});
-			
-			if (hasFinalVersion) {
-				return { isDeletable: true, reason: 'Temp report with final version available' };
-			}
-			
-			// Check if this is an older temporary report
-			const tempReportGroups = new Map();
-			reports.forEach(r => {
-				const rTitle = r.report_title || '';
-				const isTemp = tempPatterns.some(pattern => pattern.test(rTitle));
-				
-				if (isTemp) {
-					let rBaseTitle = rTitle;
-					for (const pattern of tempPatterns) {
-						if (pattern.test(rTitle)) {
-							rBaseTitle = rTitle.replace(pattern, '').trim();
-							break;
-						}
-					}
-					
-					if (!tempReportGroups.has(rBaseTitle)) {
-						tempReportGroups.set(rBaseTitle, []);
-					}
-					tempReportGroups.get(rBaseTitle).push(r);
-				}
-			});
-			
-			const tempGroup = tempReportGroups.get(baseTitle);
-			if (tempGroup && tempGroup.length > 1) {
-				// Sort by date (newest first)
-				tempGroup.sort((a: Report, b: Report) => new Date(b.report_date).getTime() - new Date(a.report_date).getTime());
-				const reportIndex = tempGroup.findIndex((r: Report) => r.id === report.id);
-				if (reportIndex > 0) {
-					return { isDeletable: true, reason: `Older temp report (${reportIndex + 1} of ${tempGroup.length})` };
-				}
-			}
-		}
-		
-		return { isDeletable: false, reason: '' };
+	// Deletable detection - wraps shared utility with local reports array
+	function checkDeletable(report: Report) {
+		return isReportDeletable(report, reports);
 	}
 
 	// Function to open LISA modal
@@ -331,10 +248,9 @@
 				!report.report_final
 			);
 		} else if (reportFilter === 'final-and-draft') {
-			// Show reports that are potentially deletable:
-			// 1. Reports with conflicting final/draft states (exact name duplicates)
-			// 2. Temporary reports (with "Temp", "Temp 1S", etc.) that have corresponding final versions
-			// 3. Older temporary reports when there are multiple temp reports for the same base title
+			// Show reports that are potentially deletable (uses shared DRAFT_PATTERNS / helpers)
+			filteredReports = filteredReports.filter(report => checkDeletable(report).isDeletable);
+			/* OLD LOGIC REPLACED - keeping comment for reference
 			// console.log('DEBUG: Filtering for deletable reports. Total reports:', reports.length);
 			
 			// Pre-process: Group temporary reports by base title to find duplicates
@@ -434,6 +350,7 @@
 				
 				return isDeleteable;
 			});
+			*/
 		}
 		// If reportFilter === 'all', show all reports (no filtering needed)
 		
@@ -700,8 +617,9 @@
 			).length;
 			draftReports = totalReports - finalReports;
 			
-			// Calculate final-and-draft reports (potentially deletable)
-			// 1. Reports with conflicting final/draft states (exact name duplicates)
+			// Calculate final-and-draft reports (potentially deletable) using shared helpers
+			finalAndDraftReports = reports.filter(r => checkDeletable(r).isDeletable).length;
+			/* OLD LOGIC REPLACED
 			// 2. Temporary reports (with "Temp", "Temp 1S", etc.) that have corresponding final versions
 			// 3. Older temporary reports when there are multiple temp reports for the same base title
 			
@@ -796,6 +714,7 @@
 				
 				return hasExactDuplicate || (isTempReport && hasFinalVersion) || isOlderTempReport;
 			}).length;
+			*/
 			
 			// totalIndications already comes from final reports only (calculation reports)
 			totalLISAs = result.stats.totalIndications || 0;
@@ -910,7 +829,7 @@
 
 <PageTemplate title={t('reports.title', $language)} fullWidth={true}>
 	{#snippet pageActions()}
-		<RealtimeIndicator onRefresh={loadData} {syncInfo} />
+		<RealtimeIndicator onRefresh={loadData} {syncInfo} isAdmin={$page.data.isAdmin} />
 		<ExportControls 
 			{selectedReports}
 			{reportFilter}
@@ -1188,7 +1107,7 @@
 										{#each displayedReports as report}
 											{@const hasSurveys = (report.expand?.driving_sessions?.length ?? 0) > 0}
 											{@const isExpanded = expandedReports.has(report.id)}
-											{@const deletableInfo = isReportDeletable(report)}
+											{@const deletableInfo = checkDeletable(report)}
 											<tr class="table__row {report.is_muted ? 'table__row--muted' : ''}">
 												<td class="table__cell table__cell--expand">
 													{#if hasSurveys}

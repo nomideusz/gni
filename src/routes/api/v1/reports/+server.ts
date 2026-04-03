@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
+import { deduplicateFinals } from '$lib/report-utils';
 
 /**
  * GET - Retrieves reports directly from the local PocketBase database
@@ -253,14 +254,19 @@ export const GET = async ({ url, locals }: RequestEvent) => {
         
         const calculationReports = processedItems.filter((r: any) => isFinal(r));
         
+        // ======= DEDUPLICATE FINALS FOR STATS =======
+        // When multiple finals share the same base title (driver mistake / forgot to delete),
+        // only the newest one should count towards statistics.
+        const dedupedProcessed = deduplicateFinals(processedItems);
+        
         // ======= FINAL REPORTS WITH SURVEYS FOR DETAILED ANALYTICS =======
         // Exclude muted reports from all stats calculations
-        const finalReportsWithSurveys = processedItems.filter((r: any) => 
+        const finalReportsWithSurveys = dedupedProcessed.filter((r: any) => 
             r.has_surveys && isFinal(r) && !r.is_muted
         );
         
         // ======= DRAFT REPORTS WITH SURVEYS FOR SEPARATE TRACKING =======
-        const draftReportsWithSurveys = processedItems.filter((r: any) => 
+        const draftReportsWithSurveys = dedupedProcessed.filter((r: any) => 
             r.has_surveys && !isFinal(r) && !r.is_muted
         );
         

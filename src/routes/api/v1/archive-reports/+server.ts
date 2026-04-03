@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
+import { deduplicateFinals } from '$lib/report-utils';
 
 /**
  * GET - Retrieves ARCHIVED (2025) reports directly from the local PocketBase database
@@ -120,18 +121,19 @@ export const GET = async ({ url, locals }: RequestEvent) => {
             ? processedItems.filter((item: any) => item.has_surveys) 
             : processedItems;
         
-        const calculationReports = processedItems.filter((r: any) => 
-            (r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true')
+        const isFinal = (r: any) => r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true';
+        
+        const calculationReports = processedItems.filter((r: any) => isFinal(r));
+        
+        // Deduplicate finals for stats — keep only newest final per base title
+        const dedupedProcessed = deduplicateFinals(processedItems);
+        
+        const finalReportsWithSurveys = dedupedProcessed.filter((r: any) => 
+            r.has_surveys && isFinal(r)
         );
         
-        const finalReportsWithSurveys = processedItems.filter((r: any) => 
-            r.has_surveys && 
-            (r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true')
-        );
-        
-        const draftReportsWithSurveys = processedItems.filter((r: any) => 
-            r.has_surveys && 
-            !(r.report_final === true || r.report_final === 1 || r.report_final === '1' || r.report_final === 'true')
+        const draftReportsWithSurveys = dedupedProcessed.filter((r: any) => 
+            r.has_surveys && !isFinal(r)
         );
         
         const reportStatusCount = {

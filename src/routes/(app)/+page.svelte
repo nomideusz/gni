@@ -565,7 +565,7 @@ import RealtimeIndicator from '$lib/components/RealtimeIndicator.svelte';
 	fullWidth={true}
 >
 	{#snippet pageActions()}
-		<RealtimeIndicator onRefresh={() => reloadDashboardData(timePeriod)} {syncInfo} />
+		<RealtimeIndicator onRefresh={() => reloadDashboardData(timePeriod)} {syncInfo} isAdmin={data.isAdmin} />
 		<a href="/reports" class="button button--primary">
 			<FileText size={18} />
 			{t('dashboard.viewAllReports', $language)}

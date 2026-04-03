@@ -12,15 +12,18 @@
 		onRefresh?: () => void;
 		/** Optional sync info object from the API (ArcGIS → PocketBase sync time) */
 		syncInfo?: { last_sync?: string; last_sync_success?: string; sync_status?: string } | null;
+		/** Whether the current user is an admin */
+		isAdmin?: boolean;
 	}
 
-	let { onRefresh, syncInfo = null }: Props = $props();
+	let { onRefresh, syncInfo = null, isAdmin = false }: Props = $props();
 
 	// Local copy of syncInfo that we can update
 	let localSyncInfo = $state<typeof syncInfo>(null);
 
-	// Track when UI data was last refreshed (manual or auto)
-	let lastRefreshed = $state<Date | null>(new Date());
+	// Quick sync state (admin only)
+	let syncTriggering = $state(false);
+	let syncTriggerMessage = $state<string | null>(null);
 
 	// Keep localSyncInfo in sync with prop
 	$effect(() => {
@@ -31,6 +34,7 @@
 	let refreshing = $state(false);
 	let unsubStore: (() => void) | undefined;
 	let unsubRefresh: (() => void) | undefined;
+	let syncTriggerTimeout: ReturnType<typeof setTimeout> | undefined;
 
 	onMount(() => {
 		setupRealtime();
@@ -42,7 +46,6 @@
 		if (onRefresh) {
 			unsubRefresh = onRealtimeRefresh(() => {
 				onRefresh();
-				lastRefreshed = new Date();
 				fetchSyncStatus();
 			});
 		}
@@ -66,14 +69,31 @@
 			try { onRefresh(); } catch { /* */ }
 		}
 		manualRefresh();
-		lastRefreshed = new Date();
 		await fetchSyncStatus();
 		setTimeout(() => { refreshing = false; }, 600);
 	}
 
-	function formatTime(date: Date | null): string {
-		if (!date) return '';
-		return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+	async function handleTriggerSync(force: boolean) {
+		syncTriggering = true;
+		syncTriggerMessage = null;
+		try {
+			const res = await fetch('/api/v1/trigger-sync', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({ type: 'gni', force })
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || 'Failed');
+			syncTriggerMessage = force ? '⏳ Full sync started...' : '⚡ Quick sync started...';
+			// Auto-clear message after 8s
+			if (syncTriggerTimeout) clearTimeout(syncTriggerTimeout);
+			syncTriggerTimeout = setTimeout(() => { syncTriggerMessage = null; }, 8000);
+		} catch (err) {
+			syncTriggerMessage = '❌ ' + (err instanceof Error ? err.message : 'Failed');
+		} finally {
+			syncTriggering = false;
+		}
 	}
 
 	function getSyncTime(): string {
@@ -100,14 +120,6 @@
 		</span>
 	</div>
 
-	<!-- Last refreshed time (updates on manual refresh + auto refresh) -->
-	{#if lastRefreshed}
-		<div class="rt__refreshed" title="Data last loaded at {formatTime(lastRefreshed)}">
-			<span class="rt__refreshed-label">Updated:</span>
-			<span class="rt__refreshed-time">{formatTime(lastRefreshed)}</span>
-		</div>
-	{/if}
-
 	<!-- DB sync info (ArcGIS → PocketBase) -->
 	{#if localSyncInfo}
 		<div class="rt__sync" title="Last ArcGIS sync: {getSyncTime()}">
@@ -119,16 +131,40 @@
 		</div>
 	{/if}
 
-	<!-- Manual refresh button -->
-	<button
-		class="rt__refresh"
-		class:rt__refresh--spinning={refreshing}
-		onclick={handleManualRefresh}
-		title="Refresh data"
-		disabled={refreshing}
-	>
-		<RefreshCw size={14} />
-	</button>
+	{#if isAdmin}
+		<!-- Admin: Quick Sync + Full Sync buttons -->
+		<button
+			class="rt__sync-btn rt__sync-btn--quick"
+			onclick={() => handleTriggerSync(false)}
+			title="Quick sync: fetch changes since last sync"
+			disabled={syncTriggering}
+		>
+			⚡ Quick Sync
+		</button>
+		<button
+			class="rt__sync-btn rt__sync-btn--full"
+			onclick={() => handleTriggerSync(true)}
+			title="Full sync: re-fetch ALL data from ArcGIS (takes a long time!)"
+			disabled={syncTriggering}
+		>
+			🔄 Full Sync
+		</button>
+
+		{#if syncTriggerMessage}
+			<span class="rt__trigger-msg">{syncTriggerMessage}</span>
+		{/if}
+
+		<!-- Manual data refresh -->
+		<button
+			class="rt__refresh"
+			class:rt__refresh--spinning={refreshing}
+			onclick={handleManualRefresh}
+			title="Refresh dashboard data"
+			disabled={refreshing}
+		>
+			<RefreshCw size={14} />
+		</button>
+	{/if}
 </div>
 
 <style>
@@ -163,29 +199,6 @@
 	.rt__count {
 		opacity: 0.7;
 		font-weight: 400;
-	}
-
-	/* Last refreshed time */
-	.rt__refreshed {
-		display: flex;
-		align-items: center;
-		gap: 0.3rem;
-		padding: 0.25rem 0.625rem;
-		border-radius: 6px;
-		background: var(--bg-secondary, #f9fafb);
-		border: 1px solid var(--border-primary, #e5e7eb);
-		white-space: nowrap;
-		color: var(--color-text-secondary, #6b7280);
-	}
-
-	.rt__refreshed-label {
-		font-weight: 500;
-		opacity: 0.7;
-	}
-
-	.rt__refreshed-time {
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 0.7rem;
 	}
 
 	/* DB sync info */
@@ -261,6 +274,52 @@
 		transform: scale(0.92);
 	}
 
+	/* Admin sync trigger buttons */
+	.rt__sync-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.25rem 0.6rem;
+		border-radius: 6px;
+		border: 1px solid var(--border-primary, #e5e7eb);
+		background: var(--bg-primary, #fff);
+		color: var(--color-text-secondary, #6b7280);
+		cursor: pointer;
+		font-size: 0.7rem;
+		font-weight: 600;
+		white-space: nowrap;
+		transition: all 0.2s ease;
+	}
+
+	.rt__sync-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.rt__sync-btn--quick:hover:not(:disabled) {
+		background: rgba(34, 197, 94, 0.1);
+		border-color: #16a34a;
+		color: #16a34a;
+	}
+
+	.rt__sync-btn--full:hover:not(:disabled) {
+		background: rgba(245, 158, 11, 0.1);
+		border-color: #d97706;
+		color: #d97706;
+	}
+
+	.rt__trigger-msg {
+		font-size: 0.7rem;
+		white-space: nowrap;
+		color: var(--color-text-secondary, #6b7280);
+		animation: rt-fade-in 0.3s ease;
+	}
+
+	@keyframes rt-fade-in {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
 	.rt__refresh--spinning {
 		pointer-events: none;
 	}
@@ -286,7 +345,7 @@
 	}
 
 	@media (max-width: 640px) {
-		.rt__refreshed {
+		.rt__sync-btn {
 			display: none;
 		}
 	}
