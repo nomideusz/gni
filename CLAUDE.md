@@ -160,8 +160,8 @@ Zero test files. No unit tests, no integration tests, no e2e tests. Critical bus
 **~~Client-side data fetching in reports page~~ ✅ FIXED**
 Reports page now uses server-side loading with streaming via `+page.server.ts`, matching the dashboard pattern. Data starts loading on the server; page renders immediately with skeletons. Client-side `loadData()` retained for manual refresh and survey filter toggle.
 
-**Sync status reads from `gas_reports.last_sync`**
-The sync-status endpoint reads `last_sync` from the most recent gas_report record. This is fragile — it depends on the sync touching at least one record. We patched this by always updating the newest report, but it would be cleaner to read from the `sync_status` collection directly (which already exists and is updated per-layer).
+**~~Sync status reads from `gas_reports.last_sync`~~ ✅ FIXED**
+Sync-status endpoint now reads from the `sync_status` collection (`layer_id=999`, overall sync record) instead of scanning `gas_reports.last_sync`. Also reordered VPS sync script to update `sync_status` + `last_sync` before the slow relationship update step.
 
 ---
 
