@@ -7,11 +7,24 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { formatDateTime } from '$lib/pocketbase';
 
+	interface SyncingInfo {
+		currentLayer: string | null;
+		completedLayers: number;
+		totalLayers: number;
+	}
+
+	interface SyncInfoData {
+		last_sync?: string;
+		last_sync_success?: string;
+		sync_status?: string;
+		syncing?: SyncingInfo;
+	}
+
 	interface Props {
 		/** Called when real-time data arrives or manual refresh is clicked */
 		onRefresh?: () => void;
 		/** Optional sync info object from the API (ArcGIS → PocketBase sync time) */
-		syncInfo?: { last_sync?: string; last_sync_success?: string; sync_status?: string } | null;
+		syncInfo?: SyncInfoData | null;
 		/** Whether the current user is an admin */
 		isAdmin?: boolean;
 	}
@@ -19,15 +32,22 @@
 	let { onRefresh, syncInfo = null, isAdmin = false }: Props = $props();
 
 	// Local copy of syncInfo that we can update
-	let localSyncInfo = $state<typeof syncInfo>(null);
+	let localSyncInfo = $state<SyncInfoData | null>(null);
 
 	// Quick sync state (admin only)
 	let syncTriggering = $state(false);
 	let syncTriggerMessage = $state<string | null>(null);
 
-	// Keep localSyncInfo in sync with prop
+	// Keep localSyncInfo in sync with prop, and start polling if sync is in progress on load
 	$effect(() => {
-		if (syncInfo) localSyncInfo = syncInfo;
+		if (syncInfo) {
+			localSyncInfo = syncInfo;
+			// If we loaded the page while a sync is running, start polling
+			if (syncInfo.sync_status === 'in_progress' && !syncPollInterval) {
+				const prevTime = syncInfo.last_sync || syncInfo.last_sync_success;
+				startSyncPolling(prevTime);
+			}
+		}
 	});
 
 	let rtState = $state({ connected: false, eventCount: 0, lastEvent: null as string | null, lastEventTime: null as Date | null });
@@ -75,21 +95,31 @@
 		setTimeout(() => { refreshing = false; }, 600);
 	}
 
-	/** Poll sync status until last_sync changes or timeout */
+	// Derived: is a sync currently in progress?
+	const isSyncRunning = $derived(localSyncInfo?.sync_status === 'in_progress');
+
+	/** Poll sync status until sync completes or timeout */
 	function startSyncPolling(previousSyncTime: string | undefined) {
 		if (syncPollInterval) clearInterval(syncPollInterval);
 		let elapsed = 0;
-		const POLL_INTERVAL = 5000; // 5s
-		const MAX_POLL_TIME = 120000; // 2 min
+		const POLL_INTERVAL = 3000; // 3s for better progress updates
+		const MAX_POLL_TIME = 300000; // 5 min
 
 		syncPollInterval = setInterval(async () => {
 			elapsed += POLL_INTERVAL;
 			await fetchSyncStatus();
 
+			// Update message with progress if available
+			if (localSyncInfo?.syncing) {
+				const s = localSyncInfo.syncing;
+				syncTriggerMessage = `⏳ Syncing ${s.currentLayer || '...'} (${s.completedLayers}/${s.totalLayers})`;
+			}
+
 			const currentSync = localSyncInfo?.last_sync || localSyncInfo?.last_sync_success;
+			const syncDone = localSyncInfo?.sync_status !== 'in_progress';
 			const changed = currentSync && currentSync !== previousSyncTime;
 
-			if (changed) {
+			if (syncDone && changed) {
 				clearInterval(syncPollInterval!);
 				syncPollInterval = undefined;
 				syncTriggerMessage = '✅ Sync complete';
@@ -121,8 +151,8 @@
 			});
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.error || 'Failed');
-			syncTriggerMessage = force ? '⏳ Full sync running...' : '⚡ Quick sync running...';
-			// Start polling for completion
+			syncTriggerMessage = force ? '⏳ Full sync starting...' : '⚡ Quick sync starting...';
+			// Start polling for progress and completion
 			startSyncPolling(previousSyncTime);
 		} catch (err) {
 			syncTriggerMessage = '❌ ' + (err instanceof Error ? err.message : 'Failed');
@@ -159,12 +189,24 @@
 
 	<!-- DB sync info (ArcGIS → PocketBase) -->
 	{#if localSyncInfo}
-		<div class="rt__sync" title="Last ArcGIS sync: {getSyncTime()}">
-			<span class="rt__sync-label">DB sync:</span>
-			<span class="rt__sync-time">{getSyncTime()}</span>
-			<span class="rt__sync-badge rt__sync-badge--{localSyncInfo.sync_status || 'pending'}">
-				{localSyncInfo.sync_status || 'Unknown'}
-			</span>
+		<div class="rt__sync" class:rt__sync--active={isSyncRunning} title="Last ArcGIS sync: {getSyncTime()}">
+			{#if isSyncRunning && localSyncInfo.syncing}
+				<span class="rt__sync-label">Syncing:</span>
+				<span class="rt__sync-progress">
+					{localSyncInfo.syncing.currentLayer || '...'}
+					<span class="rt__sync-fraction">{localSyncInfo.syncing.completedLayers}/{localSyncInfo.syncing.totalLayers}</span>
+				</span>
+				<span class="rt__sync-badge rt__sync-badge--in_progress">syncing</span>
+			{:else if isSyncRunning}
+				<span class="rt__sync-label">Syncing...</span>
+				<span class="rt__sync-badge rt__sync-badge--in_progress">syncing</span>
+			{:else}
+				<span class="rt__sync-label">DB sync:</span>
+				<span class="rt__sync-time">{getSyncTime()}</span>
+				<span class="rt__sync-badge rt__sync-badge--{localSyncInfo.sync_status || 'pending'}">
+					{localSyncInfo.sync_status || 'Unknown'}
+				</span>
+			{/if}
 		</div>
 	{/if}
 
@@ -174,7 +216,7 @@
 			class="rt__sync-btn rt__sync-btn--quick"
 			onclick={() => handleTriggerSync(false)}
 			title="Quick sync: fetch changes since last sync"
-			disabled={syncTriggering}
+			disabled={syncTriggering || isSyncRunning}
 		>
 			⚡ Quick Sync
 		</button>
@@ -182,7 +224,7 @@
 			class="rt__sync-btn rt__sync-btn--full"
 			onclick={() => handleTriggerSync(true)}
 			title="Full sync: re-fetch ALL data from ArcGIS (takes a long time!)"
-			disabled={syncTriggering}
+			disabled={syncTriggering || isSyncRunning}
 		>
 			🔄 Full Sync
 		</button>
@@ -283,6 +325,32 @@
 	.rt__sync-badge--failed {
 		background: rgba(239, 68, 68, 0.1);
 		color: #dc2626;
+	}
+
+	.rt__sync-badge--in_progress {
+		background: rgba(59, 130, 246, 0.1);
+		color: #2563eb;
+		animation: rt-pulse 1.5s ease-in-out infinite;
+	}
+
+	/* Syncing state */
+	.rt__sync--active {
+		border-color: rgba(59, 130, 246, 0.4);
+		background: rgba(59, 130, 246, 0.05);
+	}
+
+	.rt__sync-progress {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.7rem;
+		color: #2563eb;
+		max-width: 200px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.rt__sync-fraction {
+		opacity: 0.7;
+		margin-left: 0.25rem;
 	}
 
 	/* Refresh button */
