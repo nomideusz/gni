@@ -157,8 +157,8 @@ Zero test files. No unit tests, no integration tests, no e2e tests. Critical bus
 **Duplicate stats logic**
 `/api/v1/reports` and `/api/v1/archive-reports` have nearly identical stats calculation code. Should be extracted into a shared `calculateReportStats()` function.
 
-**Client-side data fetching in reports page**
-`reports/+page.svelte` fetches all data client-side via `onMount` → `reportsApi.getAll()` instead of using SvelteKit's `+page.server.ts` load function. This means no SSR, no streaming, and a loading spinner on every navigation. The dashboard page correctly uses server-side loading with streaming.
+**~~Client-side data fetching in reports page~~ ✅ FIXED**
+Reports page now uses server-side loading with streaming via `+page.server.ts`, matching the dashboard pattern. Data starts loading on the server; page renders immediately with skeletons. Client-side `loadData()` retained for manual refresh and survey filter toggle.
 
 **Sync status reads from `gas_reports.last_sync`**
 The sync-status endpoint reads `last_sync` from the most recent gas_report record. This is fragile — it depends on the sync touching at least one record. We patched this by always updating the newest report, but it would be cleaner to read from the `sync_status` collection directly (which already exists and is updated per-layer).
@@ -167,12 +167,8 @@ The sync-status endpoint reads `last_sync` from the most recent gas_report recor
 
 ### 🔴 Critically Bad
 
-**Hardcoded webhook secret in source code**
-`trigger-sync/+server.ts` has the webhook secret as a fallback string literal:
-```ts
-const WEBHOOK_SECRET = process.env.SYNC_WEBHOOK_SECRET || 'r2kkxDNPs9pkdnkTh1ZKiYniQfnVOOngPfRLiMpvqhM';
-```
-If `SYNC_WEBHOOK_SECRET` is not set in Vercel env vars, the hardcoded value is used. This secret is in git history. **Fix: remove the fallback, fail loudly if env var is missing. Rotate the secret.**
+**~~Hardcoded webhook secret in source code~~ ✅ FIXED**
+`trigger-sync/+server.ts` now uses `$env/dynamic/private` and throws if `SYNC_WEBHOOK_SECRET` is missing. No hardcoded fallback. **Remaining action: rotate the secret on Vercel + VPS since the old value is in git history.**
 
 **Admin credentials in `.env` committed patterns**
 While `.env` is gitignored, the PB admin password `Szczerzuj1a!` appears in the `.env` file and was visible in this session. The VPS root password `szczerzuja` is also stored in `.env`. If `.env` ever leaks (backup, copy, teammate), full system access is compromised. **Fix: use a secrets manager or at minimum ensure `.env` is never committed and passwords are rotated.**
@@ -192,7 +188,7 @@ If a PM2 process crashes in a loop (restart count was 15 for GNI during our sess
 ---
 
 ### Priority Fixes (Recommended Order)
-1. **Remove hardcoded webhook secret** — security, 5 min fix
+1. ~~**Remove hardcoded webhook secret**~~ ✅ Done — still need to rotate secret on Vercel + VPS
 2. **Add PocketBase backup cron** — data safety, 15 min
 3. **Fix TypeScript errors** — code quality, prevents regressions
 4. **Break up giant components** — maintainability, biggest productivity win

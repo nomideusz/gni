@@ -1,8 +1,16 @@
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 
 const WEBHOOK_URL = 'https://g.zaur.app/webhook';
-const WEBHOOK_SECRET = process.env.SYNC_WEBHOOK_SECRET || 'r2kkxDNPs9pkdnkTh1ZKiYniQfnVOOngPfRLiMpvqhM';
+
+function getWebhookSecret(): string {
+    const secret = env.SYNC_WEBHOOK_SECRET;
+    if (!secret) {
+        throw new Error('SYNC_WEBHOOK_SECRET environment variable is not set');
+    }
+    return secret;
+}
 
 /** GET /api/v1/trigger-sync - Check sync webhook status */
 export async function GET({ locals }: RequestEvent) {
@@ -13,7 +21,7 @@ export async function GET({ locals }: RequestEvent) {
 
     try {
         const response = await fetch(`${WEBHOOK_URL}/status`, {
-            headers: { 'Authorization': `Bearer ${WEBHOOK_SECRET}` }
+            headers: { 'Authorization': `Bearer ${getWebhookSecret()}` }
         });
 
         if (!response.ok) {
@@ -48,7 +56,7 @@ export async function POST({ locals, request }: RequestEvent) {
         const response = await fetch(`${WEBHOOK_URL}/trigger`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${WEBHOOK_SECRET}`,
+                'Authorization': `Bearer ${getWebhookSecret()}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ type, force })

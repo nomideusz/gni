@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { t, language } from '$lib';
-	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { reportsApi, formatDate, formatDateTime } from '$lib/pocketbase';
+	import { formatDate, formatDateTime } from '$lib/pocketbase';
 	import { getBaseTitle, isFinalReport, isReportDeletable } from '$lib/report-utils';
 	import { tick } from 'svelte';
 	import PageTemplate from '$lib/components/PageTemplate.svelte';
@@ -13,6 +12,9 @@
 	import ExportControls from '$lib/components/ExportControls.svelte';
 	import ReportsFilters from '$lib/components/ReportsFilters.svelte';
 	import RealtimeIndicator from '$lib/components/RealtimeIndicator.svelte';
+
+	// Server-streamed data
+	const { data } = $props();
 
 	// Define Report interface based on the API response
 	interface Report {
@@ -585,171 +587,104 @@
 		return totalAssets > 0 ? (coveredAssets / totalAssets) * 100 : 0;
 	});
 
-	// Function to load data
+	// Populate state from API result
+	function applyReportsData(result: any) {
+		reports = result.reports || [];
+		meta = result.meta || { page: 1, totalPages: 0, totalItems: 0, perPage: 0 };
+
+		// Apply sorting/filtering
+		sortReports();
+
+		// Calculate stats
+		totalReports = reports.length;
+		finalReports = reports.filter(report =>
+			report.report_final === true ||
+			report.report_final === 1 ||
+			report.report_final === '1'
+		).length;
+		draftReports = totalReports - finalReports;
+		finalAndDraftReports = reports.filter(r => checkDeletable(r).isDeletable).length;
+
+		totalLISAs = result.stats?.totalIndications || 0;
+		totalGaps = result.stats?.totalGaps || 0;
+		car1Distance = result.stats?.car1Distance || 0;
+		car2Distance = result.stats?.car2Distance || 0;
+		car3Distance = result.stats?.car3Distance || 0;
+
+		if (result.error) {
+			error = result.error;
+		}
+	}
+
+	// Process server-streamed reports data
+	$effect(() => {
+		if (data.reportsData) {
+			data.reportsData
+				.then((result: any) => {
+					applyReportsData(result);
+					loading = false;
+					reportsLoading = false;
+					refreshScrollbars();
+					setTimeout(refreshScrollbars, 100);
+					setTimeout(refreshScrollbars, 500);
+				})
+				.catch((err: any) => {
+					console.error('Error loading reports:', err);
+					error = t('reports.error', $language);
+					loading = false;
+					reportsLoading = false;
+				});
+		}
+	});
+
+	// Process server-streamed sync data
+	$effect(() => {
+		if (data.syncData) {
+			data.syncData
+				.then((result: any) => {
+					syncInfo = result;
+				})
+				.catch((err: any) => {
+					console.error('Error loading sync status:', err);
+				});
+		}
+	});
+
+	// Client-side reload for survey filter toggle and manual refresh
 	const loadData = async () => {
 		loading = true;
 		reportsLoading = true;
 		try {
-			// Fetch reports using our API service
-			const result = await reportsApi.getAll({
-				limit: 500,
-				page: 1,
+			const params = new URLSearchParams({
+				limit: '500',
 				sort: '-report_date',
-				finalOnly: false, // Show all reports including drafts
-				includeUnitDesc: true, // Include unit descriptions
-				withSurveys: includeSurveysOnly // Show only reports with surveys based on toggle
+				finalOnly: 'false',
+				includeUnitDesc: 'true',
+				withSurveys: String(includeSurveysOnly)
 			});
+			const response = await fetch(`/api/v1/reports?${params}`);
+			if (!response.ok) throw new Error(`API error: ${response.status}`);
+			const result = await response.json();
+			applyReportsData(result);
 
-			
-			// We no longer need to filter for driving sessions as the API does this for us
-			reports = result.reports;
-			meta = result.meta;
-			
-			// Apply initial sorting
-			sortReports();
-			
-			// Calculate stats from the filtered reports data (since we're using withSurveys filter)
-			totalReports = reports.length;
-			finalReports = reports.filter(report => 
-				report.report_final === true || 
-				report.report_final === 1 || 
-				report.report_final === '1'
-			).length;
-			draftReports = totalReports - finalReports;
-			
-			// Calculate final-and-draft reports (potentially deletable) using shared helpers
-			finalAndDraftReports = reports.filter(r => checkDeletable(r).isDeletable).length;
-			/* OLD LOGIC REPLACED
-			// 2. Temporary reports (with "Temp", "Temp 1S", etc.) that have corresponding final versions
-			// 3. Older temporary reports when there are multiple temp reports for the same base title
-			
-			// Pre-process: Group temporary reports by base title to find duplicates (for count calculation)
-			const tempPatternsForCount = [
-				/\s+Temp\s*$/i,           // " Temp"
-				/\s+Temp\s+\d+S\s*$/i,    // " Temp 1S", " Temp 2S", etc.
-				/\s+Temp\d+\s*$/i,        // " Temp1", " Temp2", etc.
-				/\s+TEMP\s*$/i,           // " TEMP" (uppercase)
-				/\s+TEMP\s+\d+S\s*$/i,    // " TEMP 1S", " TEMP 2S", etc.
-			];
-			
-			const tempReportGroupsForCount = new Map();
-			reports.forEach(report => {
-				const reportTitle = report.report_title || '';
-				const isTempReport = tempPatternsForCount.some(pattern => pattern.test(reportTitle));
-				
-				if (isTempReport) {
-					let baseTitle = reportTitle;
-					for (const pattern of tempPatternsForCount) {
-						if (pattern.test(reportTitle)) {
-							baseTitle = reportTitle.replace(pattern, '').trim();
-							break;
-						}
-					}
-					
-					if (!tempReportGroupsForCount.has(baseTitle)) {
-						tempReportGroupsForCount.set(baseTitle, []);
-					}
-					tempReportGroupsForCount.get(baseTitle).push(report);
+			// Also refresh sync status
+			try {
+				const syncResponse = await fetch('/api/v1/sync-status');
+				if (syncResponse.ok) {
+					syncInfo = await syncResponse.json();
 				}
-			});
-			
-			// Sort each group by date (newest first) to identify older reports for deletion
-			tempReportGroupsForCount.forEach((reportsInGroup) => {
-				if (reportsInGroup.length > 1) {
-					reportsInGroup.sort((a: Report, b: Report) => new Date(b.report_date).getTime() - new Date(a.report_date).getTime());
-				}
-			});
-			
-			finalAndDraftReports = reports.filter(report => {
-				const reportName = report.report_name || '';
-				const reportTitle = report.report_title || '';
-				const isFinal = report.report_final === true || report.report_final === 1 || report.report_final === '1';
-				const isDraft = report.report_final === false || report.report_final === 0 || report.report_final === '0' || !report.report_final;
-				
-				// Check for exact title duplicates with conflicting final/draft states (using report_title)
-				const hasExactDuplicate = reports.some(otherReport => 
-					otherReport.id !== report.id && 
-					otherReport.report_title === reportTitle &&
-					reportTitle.trim() !== '' && // Don't match empty titles
-					((isFinal && (otherReport.report_final === false || otherReport.report_final === 0 || otherReport.report_final === '0' || !otherReport.report_final)) ||
-					 (isDraft && (otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1')))
-				);
-				
-				// Check for temporary reports that can be deleted (using report_title for long descriptive names)
-				const isTempReport = tempPatternsForCount.some(pattern => pattern.test(reportTitle));
-				
-				let hasFinalVersion = false;
-				let isOlderTempReport = false;
-				
-				if (isTempReport) {
-					// Try multiple patterns to extract base title
-					let baseTitle = reportTitle;
-					for (const pattern of tempPatternsForCount) {
-						if (pattern.test(reportTitle)) {
-							baseTitle = reportTitle.replace(pattern, '').trim();
-							break;
-						}
-					}
-					
-					// Check if there's a final report with the base title
-					// Final reports might have " Final" suffix, so check both base title and base title + " Final"
-					hasFinalVersion = reports.some(otherReport => {
-						const otherIsFinal = otherReport.report_final === true || otherReport.report_final === 1 || otherReport.report_final === '1';
-						if (!otherIsFinal) return false;
-						
-						return otherReport.id !== report.id && (
-							otherReport.report_title === baseTitle || // Exact match
-							otherReport.report_title === baseTitle + " Final" // Match with " Final" suffix
-						);
-					});
-					
-					// Check if this is an older temporary report (when there are multiple temp reports for same base title)
-					const tempGroup = tempReportGroupsForCount.get(baseTitle);
-					if (tempGroup && tempGroup.length > 1) {
-						// If this report is not the newest (index > 0 in sorted array), it's deletable
-						const reportIndex = tempGroup.findIndex((r: Report) => r.id === report.id);
-						isOlderTempReport = reportIndex > 0; // Keep only the newest (index 0)
-					}
-				}
-				
-				return hasExactDuplicate || (isTempReport && hasFinalVersion) || isOlderTempReport;
-			}).length;
-			*/
-			
-			// totalIndications already comes from final reports only (calculation reports)
-			totalLISAs = result.stats.totalIndications || 0;
-			totalGaps = result.stats.totalGaps || 0;
-			
-			// Load car distance data from API
-			car1Distance = result.stats.car1Distance || 0;
-			car2Distance = result.stats.car2Distance || 0;
-			car3Distance = result.stats.car3Distance || 0;
-			
-			// Fetch sync info from centralized API
-							try {
-					const syncResponse = await fetch('/api/v1/sync-status');
-					if (syncResponse.ok) {
-						syncInfo = await syncResponse.json();
-					} else {
-						console.error('Error fetching sync status:', syncResponse.status, syncResponse.statusText);
-					}
-				} catch (syncErr) {
-					console.error('Error fetching sync status:', syncErr);
-				}
-			
-
+			} catch (syncErr) {
+				console.error('Error fetching sync status:', syncErr);
+			}
 		} catch (err) {
 			console.error('Error fetching reports:', err);
 			error = t('reports.error', $language);
 		} finally {
 			loading = false;
 			reportsLoading = false;
-			
-			// Multiple attempts at refreshing scrollbars to ensure they appear
 			refreshScrollbars();
 			setTimeout(refreshScrollbars, 100);
 			setTimeout(refreshScrollbars, 500);
-			setTimeout(refreshScrollbars, 1000);
 		}
 	};
 
@@ -808,17 +743,14 @@
 		lastTooltipTarget = null;
 	}
 
-	onMount(() => {
-		loadData();
-		
+	$effect(() => {
 		// Add window resize listener to handle responsive behavior
 		const handleResize = () => {
 			refreshScrollbars();
 		};
-		
+
 		window.addEventListener('resize', handleResize);
-		
-		// Return cleanup function directly
+
 		return () => {
 			window.removeEventListener('resize', handleResize);
 		};
