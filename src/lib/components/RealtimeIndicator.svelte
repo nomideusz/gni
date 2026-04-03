@@ -35,6 +35,7 @@
 	let unsubStore: (() => void) | undefined;
 	let unsubRefresh: (() => void) | undefined;
 	let syncTriggerTimeout: ReturnType<typeof setTimeout> | undefined;
+	let syncPollInterval: ReturnType<typeof setInterval> | undefined;
 
 	onMount(() => {
 		setupRealtime();
@@ -54,6 +55,7 @@
 	onDestroy(() => {
 		unsubStore?.();
 		unsubRefresh?.();
+		if (syncPollInterval) clearInterval(syncPollInterval);
 	});
 
 	async function fetchSyncStatus() {
@@ -73,10 +75,44 @@
 		setTimeout(() => { refreshing = false; }, 600);
 	}
 
+	/** Poll sync status until last_sync changes or timeout */
+	function startSyncPolling(previousSyncTime: string | undefined) {
+		if (syncPollInterval) clearInterval(syncPollInterval);
+		let elapsed = 0;
+		const POLL_INTERVAL = 5000; // 5s
+		const MAX_POLL_TIME = 120000; // 2 min
+
+		syncPollInterval = setInterval(async () => {
+			elapsed += POLL_INTERVAL;
+			await fetchSyncStatus();
+
+			const currentSync = localSyncInfo?.last_sync || localSyncInfo?.last_sync_success;
+			const changed = currentSync && currentSync !== previousSyncTime;
+
+			if (changed) {
+				clearInterval(syncPollInterval!);
+				syncPollInterval = undefined;
+				syncTriggerMessage = '✅ Sync complete';
+				if (onRefresh) onRefresh();
+				if (syncTriggerTimeout) clearTimeout(syncTriggerTimeout);
+				syncTriggerTimeout = setTimeout(() => { syncTriggerMessage = null; }, 5000);
+			} else if (elapsed >= MAX_POLL_TIME) {
+				clearInterval(syncPollInterval!);
+				syncPollInterval = undefined;
+				syncTriggerMessage = '⏳ Sync still running — refresh manually later';
+				if (syncTriggerTimeout) clearTimeout(syncTriggerTimeout);
+				syncTriggerTimeout = setTimeout(() => { syncTriggerMessage = null; }, 8000);
+			}
+		}, POLL_INTERVAL);
+	}
+
 	async function handleTriggerSync(force: boolean) {
 		syncTriggering = true;
 		syncTriggerMessage = null;
 		try {
+			// Capture current sync time before triggering
+			const previousSyncTime = localSyncInfo?.last_sync || localSyncInfo?.last_sync_success;
+
 			const res = await fetch('/api/v1/trigger-sync', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -85,12 +121,13 @@
 			});
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.error || 'Failed');
-			syncTriggerMessage = force ? '⏳ Full sync started...' : '⚡ Quick sync started...';
-			// Auto-clear message after 8s
-			if (syncTriggerTimeout) clearTimeout(syncTriggerTimeout);
-			syncTriggerTimeout = setTimeout(() => { syncTriggerMessage = null; }, 8000);
+			syncTriggerMessage = force ? '⏳ Full sync running...' : '⚡ Quick sync running...';
+			// Start polling for completion
+			startSyncPolling(previousSyncTime);
 		} catch (err) {
 			syncTriggerMessage = '❌ ' + (err instanceof Error ? err.message : 'Failed');
+			if (syncTriggerTimeout) clearTimeout(syncTriggerTimeout);
+			syncTriggerTimeout = setTimeout(() => { syncTriggerMessage = null; }, 8000);
 		} finally {
 			syncTriggering = false;
 		}
