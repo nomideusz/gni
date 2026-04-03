@@ -34,10 +34,16 @@ sshpass -p 'szczerzuja' ssh -o StrictHostKeyChecking=no root@100.42.177.36 'comm
 - `/arcgis/` — All sync scripts (Node.js, ES modules)
 - `/arcgis/src/gas-networks-sync.js` — Main GNI sync logic (55K lines)
 - `/arcgis/src/gas-networks-scheduler-safe.js` — PM2-managed scheduler with SIGUSR1/SIGUSR2 signal handlers
+- `/arcgis/src/gas-networks-config.js` — GNI layer config
 - `/arcgis/src/wwu-sync.js` — Wales & West Utilities sync
+- `/arcgis/src/wwu-scheduler-safe.js` / `wwu-config.js` — WWU scheduler + config
 - `/arcgis/src/sync-webhook.js` — HTTP webhook for manual sync triggers (port 8095, signal-based)
+- `/arcgis/src/auth.js` / `config.js` — Shared auth + legacy PSG config
+- `/arcgis/src/scheduler.js` — Legacy PSG scheduler (still running in PM2)
+- `/arcgis/src/fix-gni-report-stats.js` — Report stats recalculation (runs after sync when records created)
 - `/arcgis/.env` — ArcGIS + PocketBase credentials
 - `/arcgis/src/logs/` — Sync logs
+- `/arcgis/src/_archive/` — 40 archived dead scripts (check-*, fix-*, old sync-*.js, etc.)
 
 ### Key VPS Services
 - `pocketbase4.service` — PocketBase (systemd, port 8094, proxied via nginx)
