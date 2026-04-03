@@ -56,6 +56,7 @@
 	let unsubRefresh: (() => void) | undefined;
 	let syncTriggerTimeout: ReturnType<typeof setTimeout> | undefined;
 	let syncPollInterval: ReturnType<typeof setInterval> | undefined;
+	let isPolling = $state(false);
 
 	onMount(() => {
 		setupRealtime();
@@ -95,12 +96,14 @@
 		setTimeout(() => { refreshing = false; }, 600);
 	}
 
-	// Derived: is a sync currently in progress?
-	const isSyncRunning = $derived(localSyncInfo?.sync_status === 'in_progress');
+	// Derived: is a sync currently in progress (from API) or are we polling after a trigger?
+	// Derived: is a sync currently in progress (from API) or are we polling after a trigger?
+	const isSyncRunning = $derived(localSyncInfo?.sync_status === 'in_progress' || isPolling);
 
 	/** Poll sync status until sync completes or timeout */
 	function startSyncPolling(previousSyncTime: string | undefined) {
 		if (syncPollInterval) clearInterval(syncPollInterval);
+		isPolling = true;
 		let elapsed = 0;
 		const POLL_INTERVAL = 3000; // 3s for better progress updates
 		const MAX_POLL_TIME = 300000; // 5 min
@@ -122,6 +125,7 @@
 			if (syncDone && changed) {
 				clearInterval(syncPollInterval!);
 				syncPollInterval = undefined;
+				isPolling = false;
 				syncTriggerMessage = '✅ Sync complete';
 				if (onRefresh) onRefresh();
 				if (syncTriggerTimeout) clearTimeout(syncTriggerTimeout);
@@ -129,6 +133,7 @@
 			} else if (elapsed >= MAX_POLL_TIME) {
 				clearInterval(syncPollInterval!);
 				syncPollInterval = undefined;
+				isPolling = false;
 				syncTriggerMessage = '⏳ Sync still running — refresh manually later';
 				if (syncTriggerTimeout) clearTimeout(syncTriggerTimeout);
 				syncTriggerTimeout = setTimeout(() => { syncTriggerMessage = null; }, 8000);
